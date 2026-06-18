@@ -1298,6 +1298,17 @@
   opacity: 0.5 !important;
 }
 
+/* APU Height Resizer */
+.apu-height-resizer {
+  background-color: transparent;
+  transition: background-color 0.15s;
+}
+.apu-height-resizer:hover,
+.apu-height-resizer:active {
+  background-color: var(--color-primary) !important;
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
 
 
 

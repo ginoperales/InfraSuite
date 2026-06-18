@@ -58,6 +58,19 @@ const DEFAULT_PARTIDA_COLUMN_WIDTHS: Record<PartidaColumnKey, number> = {
   sc: 155
 };
 
+type ApuColumnKey = 'nombre' | 'unidad' | 'cuadrilla' | 'cantidad' | 'pu' | 'parcial' | 'tipo';
+
+const DEFAULT_APU_COLUMN_WIDTHS: Record<ApuColumnKey, number> = {
+  nombre: 400,
+  unidad: 90,
+  cuadrilla: 110,
+  cantidad: 110,
+  pu: 130,
+  parcial: 130,
+  tipo: 110
+};
+
+
 const WINDOWS_1252_EXTRA_BYTES: Record<number, number> = {
   0x20AC: 0x80,
   0x201A: 0x82,
@@ -419,6 +432,7 @@ export const Budgets: React.FC = () => {
   const [sidebarTab, setSidebarTab] = useState('Presupuesto APU');
   const [isInfraCostSidebarCollapsed, setIsInfraCostSidebarCollapsed] = useState(false);
   const [partidaColumnWidths, setPartidaColumnWidths] = useState<Record<PartidaColumnKey, number>>(DEFAULT_PARTIDA_COLUMN_WIDTHS);
+  const [apuColumnWidths, setApuColumnWidths] = useState<Record<ApuColumnKey, number>>(DEFAULT_APU_COLUMN_WIDTHS);
   const [apuPanelHeight, setApuPanelHeight] = useState<number>(() => {
     const saved = localStorage.getItem('infrasuite_apuPanelHeight');
     return saved ? parseInt(saved, 10) : 320;
@@ -733,6 +747,51 @@ export const Budgets: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const startApuColumnResize = (key: ApuColumnKey, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startWidth = apuColumnWidths[key];
+    const minWidth = key === 'nombre' ? 180 : 50;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      setApuColumnWidths(prev => ({
+        ...prev,
+        [key]: Math.max(minWidth, startWidth + moveEvent.clientX - startX)
+      }));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const startApuHeightResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startY = e.clientY;
+    const startHeight = apuPanelHeight;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      setApuPanelHeight(Math.max(160, Math.min(640, startHeight - deltaY)));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   const handleOpenMenu = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1010,10 +1069,124 @@ export const Budgets: React.FC = () => {
     </th>
   );
 
+  const apuTableWidth = Object.values(apuColumnWidths).reduce((sum, width) => sum + width, 0);
+  const apuColumnStyle = (key: ApuColumnKey, extra: React.CSSProperties = {}): React.CSSProperties => ({
+    ...thStyle,
+    width: `${apuColumnWidths[key]}px`,
+    minWidth: `${apuColumnWidths[key]}px`,
+    maxWidth: `${apuColumnWidths[key]}px`,
+    position: 'relative',
+    ...extra
+  });
+  const renderApuHeader = (key: ApuColumnKey, label: string, extra: React.CSSProperties = {}) => (
+    <th key={key} style={apuColumnStyle(key, extra)}>
+      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <span
+        role="separator"
+        aria-orientation="vertical"
+        title="Ajustar columna"
+        onMouseDown={(e) => startApuColumnResize(key, e)}
+        className="resize-handle"
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '8px',
+          height: '100%',
+          cursor: 'col-resize',
+          userSelect: 'none',
+          zIndex: 1
+        }}
+      />
+    </th>
+  );
+
   // Render list view
   if (viewState === 'list') {
     return (
-      <div className="content-container" style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
+        {/* Global Tabs Bar */}
+        <div style={{
+          height: '48px',
+          background: 'rgba(12, 14, 21, 0.9)',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          gap: '8px',
+          flexShrink: 0
+        }}>
+          <button
+            onClick={() => setViewState('list')}
+            style={{
+              padding: '6px 14px',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-color)',
+              borderBottom: 'none',
+              borderRadius: '6px 6px 0 0',
+              color: 'var(--color-primary)',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              fontWeight: 700
+            }}
+          >
+            📂 PRESUPUESTOS
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingRight: 8 }}>
+            {openBudgets.map(b => (
+              <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6 }}>
+                <button
+                  onClick={() => handleSelectBudgetTab(b.id)}
+                  title={b.nombre}
+                  style={{
+                    padding: '6px 10px 6px 12px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderBottom: 'none',
+                    borderRadius: '6px 6px 0 0',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span style={{ fontSize: '0.98rem' }}>📊</span>
+                  <span style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}>{b.nombre}</span>
+                </button>
+                <button
+                  onClick={(e) => handleCloseBudgetTab(b.id, e as any)}
+                  title="Cerrar pestaña"
+                  style={{
+                    position: 'absolute',
+                    right: -6,
+                    top: 2,
+                    width: 20,
+                    height: 20,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 10,
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'rgba(0,0,0,0.4)',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    zIndex: 2
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="content-container" style={{ position: 'relative', overflowY: 'auto', flexGrow: 1 }}>
         {/* Top Filter and Search Bar */}
         <div style={{
           display: 'flex',
@@ -1281,12 +1454,95 @@ export const Budgets: React.FC = () => {
           </form>
         </Modal>
       </div>
+      </div>
     );
   }
 
   // Render budget sheet editor view
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 80px)', background: 'var(--bg-main)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
+      {/* Global Tabs Bar */}
+      <div style={{
+        height: '48px',
+        background: 'rgba(12, 14, 21, 0.9)',
+        borderBottom: '1px solid var(--border-color)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 12px',
+        gap: '8px',
+        flexShrink: 0
+      }}>
+        <button
+          onClick={() => setViewState('list')}
+          style={{
+            padding: '6px 14px',
+            background: 'transparent',
+            border: '1px solid var(--border-color)',
+            borderBottom: 'none',
+            borderRadius: '6px 6px 0 0',
+            color: 'var(--text-secondary)',
+            fontSize: '0.82rem',
+            cursor: 'pointer',
+            fontWeight: 700
+          }}
+        >
+          📂 PRESUPUESTOS
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingRight: 8 }}>
+          {openBudgets.map(b => (
+            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6 }}>
+              <button
+                onClick={() => handleSelectBudgetTab(b.id)}
+                title={b.nombre}
+                style={{
+                  padding: '6px 10px 6px 12px',
+                  background: activeBudget?.id === b.id ? 'var(--bg-surface-elevated)' : 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderBottom: activeBudget?.id === b.id ? 'none' : undefined,
+                  borderRadius: '6px 6px 0 0',
+                  color: activeBudget?.id === b.id ? 'var(--color-primary)' : 'var(--text-secondary)',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span style={{ fontSize: '0.98rem' }}>📊</span>
+                <span style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}>{b.nombre}</span>
+              </button>
+              <button
+                onClick={(e) => handleCloseBudgetTab(b.id, e as any)}
+                title="Cerrar pestaña"
+                style={{
+                  position: 'absolute',
+                  right: -6,
+                  top: 2,
+                  width: 20,
+                  height: 20,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 10,
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(0,0,0,0.4)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  zIndex: 2
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', width: '100%' }}>
       
       {/* 1. Contextual Sidebar */}
       <aside style={{
@@ -1384,97 +1640,7 @@ export const Budgets: React.FC = () => {
       {/* 2. Main Editor Panel */}
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         
-        {/* Pestañas de Archivos / Tabs */}
-        <div style={{
-          height: '48px',
-          background: 'rgba(12, 14, 21, 0.9)',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 12px',
-          gap: '8px'
-        }}>
-          <button
-            onClick={() => setViewState('list')}
-            style={{
-              padding: '6px 14px',
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              fontSize: '0.82rem',
-              cursor: 'pointer',
-              fontWeight: 700
-            }}
-          >
-            📂 PRESUPUESTOS
-          </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingRight: 8 }}>
-            {openBudgets.length === 0 ? (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-color)',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                fontSize: '0.82rem',
-                color: 'var(--text-secondary)'
-              }}>Ningún presupuesto abierto</div>
-            ) : (
-              openBudgets.map(b => (
-                <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6 }}>
-                  <button
-                    onClick={() => handleSelectBudgetTab(b.id)}
-                    title={b.nombre}
-                    style={{
-                      padding: '6px 10px 6px 12px',
-                      background: activeBudget?.id === b.id ? 'var(--bg-surface-elevated)' : 'transparent',
-                      border: '1px solid var(--border-color)',
-                      borderBottom: activeBudget?.id === b.id ? 'none' : undefined,
-                      borderRadius: '6px 6px 0 0',
-                      color: activeBudget?.id === b.id ? 'var(--color-primary)' : 'var(--text-secondary)',
-                      fontSize: '0.82rem',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <span style={{ fontSize: '0.98rem' }}>📊</span>
-                    <span style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' }}>{b.nombre}</span>
-                    <span style={{ marginLeft: 6, opacity: 0.6, fontSize: '0.85rem' }}>{activeBudget?.id === b.id ? '' : ''}</span>
-                  </button>
-                  <button
-                    onClick={(e) => handleCloseBudgetTab(b.id, e as any)}
-                    title="Cerrar pestaña"
-                    style={{
-                      position: 'absolute',
-                      right: -6,
-                      top: 2,
-                      width: 20,
-                      height: 20,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 10,
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      background: 'rgba(0,0,0,0.4)',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem'
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
 
         {/* Top actions toolbar */}
         <div style={{
@@ -2652,8 +2818,24 @@ export const Budgets: React.FC = () => {
                 borderTop: '1px solid var(--border-color)',
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                position: 'relative'
               }}>
+
+              {/* Vertical Height Resizer Handle */}
+              <div
+                onMouseDown={startApuHeightResize}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  cursor: 'ns-resize',
+                  zIndex: 20
+                }}
+                className="apu-height-resizer"
+              />
               
               {/* APU Header and KPI indicators */}
               <div style={{
@@ -2738,9 +2920,15 @@ export const Budgets: React.FC = () => {
               </div>
 
               {/* APU Insumos list */}
-              <div style={{ flexGrow: 1, overflow: 'auto' }}>
+              <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'auto' }}>
                 <div style={{ transform: `scale(${apuZoom})`, transformOrigin: 'left top', width: '100%' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                <table style={{
+                  width: `${apuTableWidth}px`,
+                  tableLayout: 'fixed',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.82rem',
+                  textAlign: 'left'
+                }}>
                   <thead style={{
                     position: 'sticky',
                     top: 0,
@@ -2750,13 +2938,13 @@ export const Budgets: React.FC = () => {
                     zIndex: 5
                   }}>
                     <tr>
-                      <th style={thStyle}>Nombre de Insumo</th>
-                      <th style={thStyle}>Unidad</th>
-                      <th style={thStyle}>Cuadrilla</th>
-                      <th style={thStyle}>Cantidad</th>
-                      <th style={thStyle}>P. Unitario (PU)</th>
-                      <th style={thStyle}>Parcial</th>
-                      <th style={thStyle}>Tipo</th>
+                      {renderApuHeader('nombre', 'Nombre de Insumo')}
+                      {renderApuHeader('unidad', 'Unidad')}
+                      {renderApuHeader('cuadrilla', 'Cuadrilla')}
+                      {renderApuHeader('cantidad', 'Cantidad')}
+                      {renderApuHeader('pu', 'P. Unitario (PU)')}
+                      {renderApuHeader('parcial', 'Parcial')}
+                      {renderApuHeader('tipo', 'Tipo')}
                     </tr>
                   </thead>
                   <tbody>
@@ -5253,6 +5441,7 @@ export const Budgets: React.FC = () => {
 
       {/* Especificaciones Técnicas modal removed - now rendered inline in workspace */}
 
+    </div>
     </div>
   );
 };
