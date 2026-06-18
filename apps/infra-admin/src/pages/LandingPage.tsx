@@ -178,6 +178,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
   const [modules, setModules] = useState<any[]>([]);
   const [currency, setCurrency] = useState<'PEN' | 'USD'>('PEN');
   const [hasIntersected, setHasIntersected] = useState(false);
+  const [activeLandingTab, setActiveLandingTab] = useState<'docs' | 'price' | 'support'>('docs');
 
   useEffect(() => {
     const loadData = async () => {
@@ -464,199 +465,352 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
         </div>
       </section>
 
-      {/* Modules Feature Grid */}
-      <section id="modulos" className="landing-section" style={{ position: 'relative', zIndex: 10 }}>
-        <motion.h2 
-          className="section-title"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.5 }}
-        >
-          Ecosistema Modular Integrado
-        </motion.h2>
-        
-        <motion.p 
-          className="section-subtitle"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-        >
-          Cada herramienta funciona de forma independiente en su base local, pero se sincronizan en la nube compartiendo la misma seguridad y directorio de usuarios.
-        </motion.p>
-        
-        <motion.div 
-          className="modules-grid"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-100px' }}
-        >
-          {((modules.length > 0 ? modules : Object.entries(FALLBACK_MODULES_INFO).map(([code, m]) => ({ codigo: code, ...m }))))
-            .map(getModuleInfo)
-            .filter((m) => m.visibleLanding)
-            .map((m, index) => (
-              <motion.div key={m.id || index} variants={itemVariants}>
-                <Card className="module-card">
-                  <div className="module-card-icon">{m.icon}</div>
-                  <h3 className="module-card-title">{m.nombre}</h3>
-                  <p className="module-card-desc">{m.desc}</p>
-                </Card>
-              </motion.div>
-            ))}
-        </motion.div>
-      </section>
-
-      {/* Promotions & Pricing Section */}
-      <section id="promociones" ref={pricingRef} className="landing-section" style={{ background: 'rgba(255,255,255,0.01)', position: 'relative', zIndex: 10 }}>
-        <motion.h2 
-          className="section-title"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.5 }}
-        >
-          Planes y Promociones Activas
-        </motion.h2>
-        
-        <motion.p 
-          className="section-subtitle"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-        >
-          Elige el nivel de escala que tu corporación necesita. Todos los planes anuales incluyen las promociones detalladas a continuación.
-        </motion.p>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+      {/* Interactive Tabs Menu for Landing Page */}
+      <section id="interactivo" className="landing-section" style={{ position: 'relative', zIndex: 10, padding: '40px 5%' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
           <div style={{
-            display: 'inline-flex',
-            background: 'rgba(255, 255, 255, 0.05)',
-            padding: '4px',
+            display: 'flex',
+            background: 'var(--bg-surface)',
+            padding: '6px',
             borderRadius: '100px',
             border: '1px solid var(--border-color)',
-            backdropFilter: 'blur(8px)'
+            boxShadow: 'var(--shadow-md)',
+            backdropFilter: 'blur(8px)',
+            gap: '8px'
           }}>
-            <button
-              type="button"
-              onClick={() => setCurrency('PEN')}
-              style={{
-                background: currency === 'PEN' ? 'var(--color-primary)' : 'transparent',
-                color: currency === 'PEN' ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '8px 20px',
-                borderRadius: '100px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              Soles (PEN)
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrency('USD')}
-              style={{
-                background: currency === 'USD' ? 'var(--color-primary)' : 'transparent',
-                color: currency === 'USD' ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                padding: '8px 20px',
-                borderRadius: '100px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-            >
-              Dólares (USD)
-            </button>
+            {[
+              { id: 'docs', label: 'Documentación', icon: '📄' },
+              { id: 'price', label: 'Precio', icon: '💰' },
+              { id: 'support', label: 'Soporte', icon: '🛠️' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveLandingTab(tab.id as any);
+                  if (tab.id === 'price') {
+                    setHasIntersected(true);
+                  }
+                }}
+                style={{
+                  background: activeLandingTab === tab.id ? 'var(--color-primary)' : 'transparent',
+                  color: activeLandingTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '100px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        <motion.div 
-          className="pricing-grid"
-          variants={pricingContainerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-100px' }}
-        >
-          {plans.length === 0 ? (
-            Array.from({ length: 3 }).map((_, idx) => (
-              <div key={`skeleton-price-${idx}`} className="card price-card" style={{ height: '100%' }}>
-                <span className="skeleton" style={{ width: '45%', height: '20px', marginBottom: '16px' }}></span>
-                <div className="skeleton skeleton-title" style={{ width: '80%', marginTop: '8px' }}></div>
-                <div className="skeleton skeleton-text" style={{ width: '95%', height: '14px' }}></div>
-                <div className="skeleton skeleton-text" style={{ width: '75%', height: '14px', marginBottom: '24px' }}></div>
-                <div className="skeleton skeleton-price"></div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1, marginBottom: '24px' }}>
-                  <div className="skeleton skeleton-text" style={{ width: '85%' }}></div>
-                  <div className="skeleton skeleton-text" style={{ width: '70%' }}></div>
-                  <div className="skeleton skeleton-text" style={{ width: '90%' }}></div>
-                </div>
-                <div className="skeleton skeleton-button"></div>
+        {/* Tab Content Rendering */}
+        <div style={{ minHeight: '400px' }}>
+          {activeLandingTab === 'docs' && (
+            <motion.div
+              key="tab-docs"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="section-title">Ecosistema Modular Integrado</h2>
+              <p className="section-subtitle">
+                Cada herramienta funciona de forma independiente en su base local, pero se sincronizan en la nube compartiendo la misma seguridad y directorio de usuarios.
+              </p>
+              
+              <motion.div 
+                className="modules-grid" 
+                style={{ marginBottom: '48px' }}
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+              >
+                {((modules.length > 0 ? modules : Object.entries(FALLBACK_MODULES_INFO).map(([code, m]) => ({ codigo: code, ...m }))))
+                  .map(getModuleInfo)
+                  .filter((m) => m.visibleLanding)
+                  .map((m, index) => (
+                    <motion.div key={m.id || index} variants={itemVariants}>
+                      <Card className="module-card">
+                        <div className="module-card-icon">{m.icon}</div>
+                        <h3 className="module-card-title">{m.nombre}</h3>
+                        <p className="module-card-desc">{m.desc}</p>
+                      </Card>
+                    </motion.div>
+                  ))}
+              </motion.div>
+
+              {/* Technical Docs highlights */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', maxWidth: '1280px', margin: '0 auto' }}>
+                <Card title="Autenticación Unificada (SSO)" icon="🛡️">
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Inicia sesión una sola vez para acceder a todo el ecosistema con credenciales corporativas y tokens JWT de alta seguridad administrados desde una consola centralizada.
+                  </p>
+                </Card>
+                <Card title="Sincronización Offline (SQLite)" icon="💾">
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Trabaja sin conexión a internet en tus bases de datos SQLite locales. Una vez restablecida la señal, el motor de sincronización consolida automáticamente los datos con Firestore.
+                  </p>
+                </Card>
+                <Card title="Arquitectura Monorepo" icon="⚡">
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    Garantiza dependencias estables y un diseño visual coherente de vanguardia en todas las aplicaciones, optimizando la reutilización de código y los tiempos de despliegue.
+                  </p>
+                </Card>
               </div>
-            ))
-          ) : (
-            plans.map((p, index) => {
-              const featuresList = typeof p.features === 'string'
-                ? p.features.split(',')
-                : (Array.isArray(p.features) ? p.features : []);
-
-              // Database prices (99, 199, 349) are treated as Soles (PEN) by default.
-              // Converted to USD dividing by 3.8.
-              const displayPrice = currency === 'PEN'
-                ? parseInt(p.price, 10)
-                : Math.round(parseInt(p.price, 10) / 3.8);
-
-              return (
-                <motion.div 
-                  key={p.id || index} 
-                  variants={pricingCardVariants}
-                  whileHover={{ y: -10, transition: { duration: 0.2 } }}
-                >
-                  <div className={`card price-card ${p.popular ? 'price-card-popular' : ''}`} style={{ height: '100%' }}>
-                    {p.promo && <span className="price-promo-tag">{p.promo}</span>}
-                    <h3 className="price-card-title">{p.title}</h3>
-                    <p className="price-card-desc">{p.desc}</p>
-                    
-                    <div className="price-amount-box">
-                      <span className="price-currency">{currency === 'PEN' ? 'S/' : '$'}</span>
-                      <span 
-                        className="price-counter"
-                        data-target={displayPrice}
-                      >
-                        0
-                      </span>
-                      <span className="price-period">/ mes</span>
-                    </div>
-
-                    <ul className="price-features-list">
-                      {featuresList.map((feat: string, fIndex: number) => (
-                        <li key={fIndex} className="price-feature-item">
-                          <span className="price-feature-item-icon">✓</span>
-                          <span>{feat.trim()}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button
-                      variant={p.popular ? 'primary' : 'secondary'}
-                      onClick={onStartLogin}
-                      style={{ width: '100%' }}
-                    >
-                      Adquirir / Iniciar
-                    </Button>
-                  </div>
-                </motion.div>
-              );
-            })
+            </motion.div>
           )}
-        </motion.div>
+
+          {activeLandingTab === 'price' && (
+            <motion.div
+              key="tab-price"
+              ref={pricingRef}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="section-title">Planes y Promociones Activas</h2>
+              <p className="section-subtitle">
+                Elige el nivel de escala que tu corporación necesita. Todos los planes anuales incluyen las promociones detalladas a continuación.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+                <div style={{
+                  display: 'inline-flex',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '4px',
+                  borderRadius: '100px',
+                  border: '1px solid var(--border-color)',
+                  backdropFilter: 'blur(8px)'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setCurrency('PEN')}
+                    style={{
+                      background: currency === 'PEN' ? 'var(--color-primary)' : 'transparent',
+                      color: currency === 'PEN' ? '#ffffff' : 'var(--text-secondary)',
+                      border: 'none',
+                      padding: '8px 20px',
+                      borderRadius: '100px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      transition: 'all 0.2s',
+                      outline: 'none'
+                    }}
+                  >
+                    Soles (PEN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrency('USD')}
+                    style={{
+                      background: currency === 'USD' ? 'var(--color-primary)' : 'transparent',
+                      color: currency === 'USD' ? '#ffffff' : 'var(--text-secondary)',
+                      border: 'none',
+                      padding: '8px 20px',
+                      borderRadius: '100px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      transition: 'all 0.2s',
+                      outline: 'none'
+                    }}
+                  >
+                    Dólares (USD)
+                  </button>
+                </div>
+              </div>
+
+              <motion.div 
+                className="pricing-grid"
+                variants={pricingContainerVariants}
+                initial="hidden"
+                animate="show"
+              >
+                {plans.length === 0 ? (
+                  Array.from({ length: 3 }).map((_, idx) => (
+                    <div key={`skeleton-price-${idx}`} className="card price-card" style={{ height: '100%' }}>
+                      <span className="skeleton" style={{ width: '45%', height: '20px', marginBottom: '16px' }}></span>
+                      <div className="skeleton skeleton-title" style={{ width: '80%', marginTop: '8px' }}></div>
+                      <div className="skeleton skeleton-text" style={{ width: '95%', height: '14px' }}></div>
+                      <div className="skeleton skeleton-text" style={{ width: '75%', height: '14px', marginBottom: '24px' }}></div>
+                      <div className="skeleton skeleton-price"></div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1, marginBottom: '24px' }}>
+                        <div className="skeleton skeleton-text" style={{ width: '85%' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '70%' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '90%' }}></div>
+                      </div>
+                      <div className="skeleton skeleton-button"></div>
+                    </div>
+                  ))
+                ) : (
+                  plans.map((p, index) => {
+                    const featuresList = typeof p.features === 'string'
+                      ? p.features.split(',')
+                      : (Array.isArray(p.features) ? p.features : []);
+
+                    const displayPrice = currency === 'PEN'
+                      ? parseInt(p.price, 10)
+                      : Math.round(parseInt(p.price, 10) / 3.8);
+
+                    return (
+                      <motion.div
+                        key={p.id || index}
+                        variants={pricingCardVariants}
+                        whileHover={{ y: -10, transition: { duration: 0.2 } }}
+                      >
+                        <div className={`card price-card ${p.popular ? 'price-card-popular' : ''}`} style={{ height: '100%' }}>
+                          {p.promo && <span className="price-promo-tag">{p.promo}</span>}
+                          <h3 className="price-card-title">{p.title}</h3>
+                          <p className="price-card-desc">{p.desc}</p>
+                          
+                          <div className="price-amount-box">
+                            <span className="price-currency">{currency === 'PEN' ? 'S/' : '$'}</span>
+                            <span className="price-counter" data-target={displayPrice}>{displayPrice}</span>
+                            <span className="price-period">/ mes</span>
+                          </div>
+
+                          <ul className="price-features-list">
+                            {featuresList.map((feat: string, fIndex: number) => (
+                              <li key={fIndex} className="price-feature-item">
+                                <span className="price-feature-item-icon">✓</span>
+                                <span>{feat.trim()}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <Button variant={p.popular ? 'primary' : 'secondary'} onClick={onStartLogin} style={{ width: '100%' }}>
+                            Adquirir / Iniciar
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+
+          {activeLandingTab === 'support' && (
+            <motion.div
+              key="tab-support"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="section-title">Soporte Técnico Especializado</h2>
+              <p className="section-subtitle">
+                ¿Tienes dudas o necesitas asistencia? Nuestro equipo de ingenieros está listo para ayudarte con cualquier requerimiento de licenciamiento o técnico.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', maxWidth: '1100px', margin: '0 auto' }}>
+                {/* Info Card */}
+                <Card title="Canales de Contacto Directo" icon="📞">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '12px 0' }}>
+                    <div>
+                      <h4 style={{ color: 'var(--color-primary)', fontSize: '0.95rem', fontWeight: 700 }}>Soporte VIP 24/7</h4>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Atención prioritaria y soporte especializado mediante videollamada para clientes con licencias activas Enterprise.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 style={{ color: 'var(--color-secondary)', fontSize: '0.95rem', fontWeight: 700 }}>Correo Electrónico</h4>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Escríbenos a: <strong style={{ color: 'var(--text-primary)' }}>soporte@infrasuite.com</strong>
+                      </p>
+                    </div>
+                    <div>
+                      <h4 style={{ color: 'var(--color-success)', fontSize: '0.95rem', fontWeight: 700 }}>Central Telefónica</h4>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Llámanos al: <strong style={{ color: 'var(--text-primary)' }}>+51 1 700-8000</strong> (Lunes a Viernes de 8:00 AM a 6:00 PM)
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Form Card */}
+                <Card title="Crear un Ticket de Soporte" icon="✉️">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      alert('¡Ticket de soporte creado con éxito! Nos pondremos en contacto contigo en breve.');
+                      e.currentTarget.reset();
+                    }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nombre Completo</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Tu nombre"
+                        style={{
+                          background: 'rgba(255,255,255,0.02)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '10px',
+                          borderRadius: '6px',
+                          fontSize: '0.88rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Correo Electrónico</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="correo@empresa.com"
+                        style={{
+                          background: 'rgba(255,255,255,0.02)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '10px',
+                          borderRadius: '6px',
+                          fontSize: '0.88rem',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Mensaje o Consulta</label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Describe detalladamente tu problema o requerimiento..."
+                        style={{
+                          background: 'rgba(255,255,255,0.02)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '10px',
+                          borderRadius: '6px',
+                          fontSize: '0.88rem',
+                          fontFamily: 'var(--font-sans)',
+                          outline: 'none',
+                          resize: 'none'
+                        }}
+                      />
+                    </div>
+                    <Button type="submit" style={{ background: 'var(--grad-primary)', border: 'none', fontWeight: 700 }}>
+                      Enviar Requerimiento
+                    </Button>
+                  </form>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+        </div>
       </section>
 
       {/* Dynamic client marquee */}
