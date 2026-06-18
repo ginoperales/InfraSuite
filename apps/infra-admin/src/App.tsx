@@ -44,6 +44,7 @@ const AppContent: React.FC = () => {
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [successProgress, setSuccessProgress] = useState(0);
   const [successMessage, setSuccessMessage] = useState('Iniciando carga segura...');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -832,15 +833,122 @@ const AppContent: React.FC = () => {
               </nav>
             )}
 
-            <div className="sidebar-footer" style={{ padding: isSidebarCollapsed ? '12px 8px' : '24px 20px 0 20px' }}>
+            <div className="sidebar-footer" style={{ padding: isSidebarCollapsed ? '12px 8px' : '24px 20px 0 20px', position: 'relative' }}>
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 'calc(100% - 10px)',
+                  left: isSidebarCollapsed ? '10px' : '20px',
+                  width: '260px',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg), 0 8px 30px rgba(0,0,0,0.3)',
+                  zIndex: 1000,
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--text-primary)',
+                  animation: 'fadeIn var(--transition-normal) forwards'
+                }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center' }}>💻</span>
+                    <strong style={{ fontSize: '0.92rem', fontWeight: 700 }}>Presupuestos.pe</strong>
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'center', margin: '4px 0' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Suscripción venció el: 05-05-2020</span>
+                  </div>
+
+                  {/* Promo Button */}
+                  <button 
+                    onClick={() => alert('¡Revisa nuestras ofertas exclusivas en la consola!')}
+                    style={{
+                      background: 'linear-gradient(135deg, #ff4500 0%, #ff6347 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 12px',
+                      fontSize: '0.82rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'opacity 0.2s',
+                      boxShadow: '0 4px 12px rgba(255, 69, 0, 0.2)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  >
+                    <span>🎁</span> Tenemos una oferta para ti
+                  </button>
+
+                  {/* Menu Options */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <button 
+                      onClick={() => alert('Funcionalidad para cambiar contraseña en desarrollo')}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center' }}>⚙️</span> Cambiar mi contraseña
+                    </button>
+                    <button 
+                      onClick={() => alert('Ampliando suscripción...')}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center' }}>📅</span> Ampliar mi suscripción
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div 
                 className="user-profile-badge" 
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 style={{ 
                   marginBottom: '12px',
                   padding: isSidebarCollapsed ? '8px' : '10px 14px',
                   justifyContent: 'center',
                   border: isSidebarCollapsed ? 'none' : '1px solid var(--border-color)',
                   background: isSidebarCollapsed ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
+                  cursor: 'pointer'
                 }}
                 title={`${user.nombre} (${user.role})`}
               >
