@@ -1145,8 +1145,9 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
 
   // Filter list
   const filteredBudgets = budgets.filter((b) => {
-    const matchesSearch = b.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          b.cliente.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!b) return false;
+    const matchesSearch = (b.nombre || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+                          (b.cliente || '').toLowerCase().includes((searchTerm || '').toLowerCase());
     const matchesGroup = selectedGroup === 'TODOS LOS PRESUPUESTOS' || b.grupo === selectedGroup;
     return matchesSearch && matchesGroup;
   });
