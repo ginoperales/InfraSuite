@@ -549,6 +549,41 @@ export const Budgets: React.FC = () => {
     };
   }, [isDraggingPartidaWindow]);
 
+  // Draggable Title Edit Window State
+  const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
+  const [editTitlePos, setEditTitlePos] = useState({ x: 100, y: 100 });
+  const [isDraggingTitleWindow, setIsDraggingTitleWindow] = useState(false);
+  const dragStartTitleOffset = useRef({ x: 0, y: 0 });
+
+  const handleTitleHeaderMouseDown = (e: React.MouseEvent) => {
+    setIsDraggingTitleWindow(true);
+    dragStartTitleOffset.current = {
+      x: e.clientX - editTitlePos.x,
+      y: e.clientY - editTitlePos.y
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingTitleWindow) return;
+      setEditTitlePos({
+        x: e.clientX - dragStartTitleOffset.current.x,
+        y: e.clientY - dragStartTitleOffset.current.y
+      });
+    };
+    const handleMouseUp = () => {
+      setIsDraggingTitleWindow(false);
+    };
+    if (isDraggingTitleWindow) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingTitleWindow]);
+
   // Gantt Scheduling State
   const [ganttData, setGanttData] = useState<{ [key: string]: { duracion: number; inicio: string; fin: string; predecesora: string } }>({
     'p_1': { duracion: 8, inicio: '2026-01-07', fin: '2026-01-14', predecesora: '' },
@@ -2847,7 +2882,19 @@ export const Budgets: React.FC = () => {
 
                   if (p.esTitulo) {
                     return (
-                      <tr key={p.id} style={{ background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <tr
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedPartidaId(p.id);
+                          setIsEditTitleOpen(true);
+                          setEditTitlePos({ x: window.innerWidth / 2 - 250, y: Math.max(50, window.innerHeight / 2 - 150) });
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.01)',
+                          borderBottom: '1px solid rgba(255,255,255,0.03)',
+                          cursor: 'pointer'
+                        }}
+                      >
                         <td style={{ ...tdStyle, fontWeight: 700, color: 'var(--color-secondary)' }}>{p.item}</td>
                         <td colSpan={9} style={{ ...tdStyle, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.5px' }}>
                           {p.nombre}
@@ -5872,6 +5919,105 @@ export const Budgets: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Draggable Edit Title Window */}
+      {isEditTitleOpen && selectedPartida && (
+        <div style={{
+          position: 'fixed',
+          left: `${editTitlePos.x}px`,
+          top: `${editTitlePos.y}px`,
+          width: '500px',
+          background: 'var(--bg-surface-elevated)',
+          border: '2px solid var(--color-primary)',
+          borderRadius: '8px',
+          boxShadow: 'var(--shadow-lg), 0 12px 48px rgba(0,0,0,0.5)',
+          zIndex: 2001,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: 'var(--font-sans)',
+          color: 'var(--text-primary)'
+        }}>
+          {/* Header */}
+          <div
+            onMouseDown={handleTitleHeaderMouseDown}
+            style={{
+              background: 'linear-gradient(90deg, #0056b3, #0047ab)',
+              color: '#ffffff',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'move',
+              userSelect: 'none'
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '0.3px' }}>Editar Título</span>
+            <button
+              onClick={() => setIsEditTitleOpen(false)}
+              style={{
+                background: '#dc3545',
+                border: 'none',
+                color: '#ffffff',
+                width: '32px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                borderRadius: '4px',
+                fontSize: '0.9rem'
+              }}
+            >
+              X
+            </button>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Título</label>
+              <input
+                type="text"
+                value={selectedPartida.nombre}
+                onChange={(e) => handleUpdatePartidaNombre(selectedPartida.id, e.target.value)}
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.9rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '10px' }}>
+              <button
+                onClick={() => setIsEditTitleOpen(false)}
+                style={{
+                  background: '#198754',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#157347'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#198754'}
+              >
+                Aceptar
+              </button>
+            </div>
           </div>
         </div>
       )}
