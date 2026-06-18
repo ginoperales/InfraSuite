@@ -1104,11 +1104,11 @@ export const Budgets: React.FC = () => {
   // Render list view
   if (viewState === 'list') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 52px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
         {/* Global Tabs Bar */}
         <div style={{
           height: '48px',
-          background: 'rgba(12, 14, 21, 0.9)',
+          background: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
@@ -1460,11 +1460,11 @@ export const Budgets: React.FC = () => {
 
   // Render budget sheet editor view
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 52px)', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
       {/* Global Tabs Bar */}
       <div style={{
         height: '48px',
-        background: 'rgba(12, 14, 21, 0.9)',
+        background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',

@@ -201,13 +201,13 @@
 }
 
 .top-bar {
-  height: 80px;
+  height: 52px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
-  background: rgba(12, 14, 21, 0.8);
+  padding: 0 24px;
+  background: var(--bg-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   position: sticky;
@@ -218,18 +218,19 @@
 .page-title-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.3px;
+  line-height: 1.2;
 }
 
 .page-subtitle {
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
