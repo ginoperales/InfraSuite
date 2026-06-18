@@ -34,13 +34,15 @@ export const Users: React.FC = () => {
     setCompanies(companyList);
     
     // Map company names for users
-    const mapped = userList.map((u) => {
-      const comp = companyList.find((c) => c.id === u.empresaId);
-      return {
-        ...u,
-        companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
-      };
-    });
+    const mapped = userList
+      .filter((u) => u && u.uid && u.email)
+      .map((u) => {
+        const comp = companyList.find((c) => c.id === u.empresaId);
+        return {
+          ...u,
+          companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
+        };
+      });
     
     setUsers(mapped);
     if (shouldSetLoadingState) setIsLoading(false);

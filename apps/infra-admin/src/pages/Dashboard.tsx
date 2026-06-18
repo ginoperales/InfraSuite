@@ -51,13 +51,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setRecentLogs(sortedLogs);
 
     // Map company names for users
-    const mappedUsers = users.map((u) => {
-      const comp = companies.find((c) => c.id === u.empresaId);
-      return {
-        ...u,
-        companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
-      };
-    });
+    const mappedUsers = users
+      .filter((u) => u && u.uid && u.email)
+      .map((u) => {
+        const comp = companies.find((c) => c.id === u.empresaId);
+        return {
+          ...u,
+          companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
+        };
+      });
     setUsersList(mappedUsers);
 
     setIsLoading(false);
@@ -102,13 +104,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         .slice(0, 5);
       setRecentLogs(sortedLogs);
 
-      const mappedUsers = users.map((u) => {
-        const comp = companies.find((c) => c.id === u.empresaId);
-        return {
-          ...u,
-          companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
-        };
-      });
+      const mappedUsers = users
+        .filter((u) => u && u.uid && u.email)
+        .map((u) => {
+          const comp = companies.find((c) => c.id === u.empresaId);
+          return {
+            ...u,
+            companyName: comp ? comp.nombre : (u.role === 'SUPER_ADMIN' ? 'Ecosistema InfraSuite' : 'Sin asignar')
+          };
+        });
       setUsersList(mappedUsers);
     } catch (error) {
       console.error(error);
