@@ -3185,11 +3185,11 @@ export const Budgets: React.FC = () => {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value="TODOS LOS PRESUPUESTOS" style={{ background: '#121622', color: 'var(--text-primary)' }}>TODOS LOS PRESUPUESTOS</option>
-                  <option value="EDIFICACIONES" style={{ background: '#121622', color: 'var(--text-primary)' }}>EDIFICACIONES</option>
-                  <option value="CARRETERAS" style={{ background: '#121622', color: 'var(--text-primary)' }}>CARRETERAS</option>
-                  <option value="SANEAMIENTO" style={{ background: '#121622', color: 'var(--text-primary)' }}>SANEAMIENTO</option>
-                  <option value="MINERÍA" style={{ background: '#121622', color: 'var(--text-primary)' }}>MINERÍA</option>
+                  <option value="TODOS LOS PRESUPUESTOS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>TODOS LOS PRESUPUESTOS</option>
+                  <option value="EDIFICACIONES" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>EDIFICACIONES</option>
+                  <option value="CARRETERAS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>CARRETERAS</option>
+                  <option value="SANEAMIENTO" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>SANEAMIENTO</option>
+                  <option value="MINERÍA" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>MINERÍA</option>
                 </select>
               </div>
 
@@ -3343,8 +3343,8 @@ export const Budgets: React.FC = () => {
                       boxSizing: 'border-box'
                     }}
                   >
-                    <option value="SOLES" style={{ background: '#121622', color: 'var(--text-primary)' }}>SOLES</option>
-                    <option value="DOLARES" style={{ background: '#121622', color: 'var(--text-primary)' }}>DOLARES</option>
+                    <option value="SOLES" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>SOLES</option>
+                    <option value="DOLARES" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>DOLARES</option>
                   </select>
                 </div>
               </div>
@@ -3593,10 +3593,10 @@ export const Budgets: React.FC = () => {
                     fontFamily: 'var(--font-sans)'
                   }}
                 >
-                  <option value="TODOS" style={{ background: '#121622' }}>TODOS LOS REGISTROS ({MOCK_CATALOGO_INSUMOS.length})</option>
-                  <option value="MATERIAL" style={{ background: '#121622' }}>MATERIAL</option>
-                  <option value="EQUIPO" style={{ background: '#121622' }}>EQUIPO</option>
-                  <option value="SUB CONTRATO" style={{ background: '#121622' }}>SUB CONTRATO</option>
+                  <option value="TODOS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>TODOS LOS REGISTROS ({MOCK_CATALOGO_INSUMOS.length})</option>
+                  <option value="MATERIAL" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>MATERIAL</option>
+                  <option value="EQUIPO" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>EQUIPO</option>
+                  <option value="SUB CONTRATO" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>SUB CONTRATO</option>
                 </select>
               </div>
 
@@ -4316,7 +4316,7 @@ export const Budgets: React.FC = () => {
                           '37 : HERRAMIENTA MANUAL',
                           '39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)'
                         ].map(iuItem => (
-                          <option key={iuItem} value={iuItem} style={{ background: '#121622', color: 'var(--text-primary)' }}>
+                          <option key={iuItem} value={iuItem} style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>
                             {iuItem}
                           </option>
                         ))}
@@ -4493,8 +4493,8 @@ export const Budgets: React.FC = () => {
                       fontWeight: 600
                     }}
                   >
-                    <option value="FIJOS" style={{ background: '#121622' }}>GASTOS GENERALES FIJOS</option>
-                    <option value="VARIABLES" style={{ background: '#121622' }}>GASTOS GENERALES VARIABLES</option>
+                    <option value="FIJOS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>GASTOS GENERALES FIJOS</option>
+                    <option value="VARIABLES" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>GASTOS GENERALES VARIABLES</option>
                   </select>
                 </div>
 
