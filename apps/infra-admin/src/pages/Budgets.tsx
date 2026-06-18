@@ -1836,20 +1836,20 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
           gap: '12px'
         }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <Button onClick={() => alert('¡Presupuesto guardado en base local!')} style={{ background: 'var(--grad-primary)', border: 'none' }}>
+            <Button onClick={() => alert('¡Presupuesto guardado en base local!')} style={{ background: 'var(--grad-primary)', border: 'none' }} className="btn-sm">
               💾 Guardar
             </Button>
-            <Button variant="secondary" onClick={() => { setPartidaEsTitulo(true); setIsAddPartidaOpen(true); }}>
+            <Button variant="secondary" onClick={() => { setPartidaEsTitulo(true); setIsAddPartidaOpen(true); }} className="btn-sm">
               🏷️ +Título
             </Button>
-            <Button variant="secondary" onClick={() => { setPartidaEsTitulo(false); setIsAddPartidaOpen(true); }}>
+            <Button variant="secondary" onClick={() => { setPartidaEsTitulo(false); setIsAddPartidaOpen(true); }} className="btn-sm">
               ➕ +Partida
             </Button>
             <div style={{ width: '1px', background: 'var(--border-color)', margin: '0 8px' }} />
-            <Button variant="secondary" onClick={() => alert('Exportando a Excel...')}>
+            <Button variant="secondary" onClick={() => alert('Exportando a Excel...')} className="btn-sm">
               📥 Excel
             </Button>
-            <Button variant="secondary" onClick={() => alert('Exportando reporte PDF...')}>
+            <Button variant="secondary" onClick={() => alert('Exportando reporte PDF...')} className="btn-sm">
               📄 PDF
             </Button>
           </div>

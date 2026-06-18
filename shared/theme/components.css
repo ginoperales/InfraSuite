@@ -21,6 +21,12 @@
   user-select: none;
 }
 
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+}
+
 .btn-primary {
   background: var(--grad-primary);
   background-size: 200% auto;
