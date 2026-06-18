@@ -397,7 +397,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <Button onClick={onStartLogin}>Acceder a la Consola</Button>
+          <Button onClick={onStartLogin}>Iniciar Sesión</Button>
         </div>
       </motion.header>
 
