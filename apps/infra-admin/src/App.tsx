@@ -15,6 +15,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LandingAdmin } from './pages/LandingAdmin';
 import { Budgets } from './pages/Budgets';
 import { Applications } from './pages/Applications';
+import { ProfileSettings } from './pages/ProfileSettings';
 
 // App Inner Layout
 const AppContent: React.FC = () => {
@@ -868,7 +869,10 @@ const AppContent: React.FC = () => {
 
                   {/* Promo Button */}
                   <button 
-                    onClick={() => alert('¡Revisa nuestras ofertas exclusivas en la consola!')}
+                    onClick={() => {
+                      setActiveTab('profile-settings');
+                      setIsUserMenuOpen(false);
+                    }}
                     style={{
                       background: 'linear-gradient(135deg, #ff4500 0%, #ff6347 100%)',
                       color: '#ffffff',
@@ -894,7 +898,34 @@ const AppContent: React.FC = () => {
                   {/* Menu Options */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <button 
-                      onClick={() => alert('Funcionalidad para cambiar contraseña en desarrollo')}
+                      onClick={() => {
+                        setActiveTab('profile-settings');
+                        setIsUserMenuOpen(false);
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-primary)',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center' }}>⚙️</span> Configurar mi cuenta
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setActiveTab('profile-settings');
+                        setIsUserMenuOpen(false);
+                      }}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -915,7 +946,10 @@ const AppContent: React.FC = () => {
                       <span style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center' }}>⚙️</span> Cambiar mi contraseña
                     </button>
                     <button 
-                      onClick={() => alert('Ampliando suscripción...')}
+                      onClick={() => {
+                        setActiveTab('profile-settings');
+                        setIsUserMenuOpen(false);
+                      }}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -988,6 +1022,7 @@ const AppContent: React.FC = () => {
                   {activeTab === 'landing' && 'Configuración de Inicio'}
                   {activeTab === 'budgets' && 'PRESUPUESTOS'}
                   {activeTab === 'applications' && 'Aplicaciones Disponibles'}
+                  {activeTab === 'profile-settings' && 'Perfil y Configuración de Cuenta'}
                 </h1>
                 <span className="page-subtitle">Ecosistema InfraSuite • Modos SSO activos</span>
               </div>
@@ -1028,6 +1063,7 @@ const AppContent: React.FC = () => {
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
               {activeTab === 'budgets' && <Budgets />}
               {activeTab === 'applications' && <Applications />}
+              {activeTab === 'profile-settings' && <ProfileSettings />}
               
               {activeTab === 'sync' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && (
                 <div className="content-container">
