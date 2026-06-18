@@ -62,8 +62,9 @@ export const Modal: React.FC<ModalProps> = ({
         className="modal-content" 
         onClick={(e) => e.stopPropagation()}
         style={{ 
-          transform: `translate(${offset.x}px, ${offset.y}px)`,
-          transition: isDragging ? 'none' : 'transform 0.1s ease'
+          left: `${offset.x}px`,
+          top: `${offset.y}px`,
+          position: 'relative'
         }}
       >
         <div 

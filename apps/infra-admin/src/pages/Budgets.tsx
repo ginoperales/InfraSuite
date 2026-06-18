@@ -413,7 +413,13 @@ const MOCK_CATALOGO_PARTIDAS = [
   }
 ];
 
-export const Budgets: React.FC = () => {
+interface BudgetsProps {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  companies: any[];
+}
+
+export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies }) => {
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem('infrasuite_budgets_v3');
     if (!saved) return INITIAL_BUDGETS;
@@ -1229,30 +1235,32 @@ export const Budgets: React.FC = () => {
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           padding: '0 12px',
           gap: '8px',
           flexShrink: 0
         }}>
-          <button
-            onClick={() => setViewState('list')}
-            style={{
-              padding: '6px 14px',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-color)',
-              borderBottom: 'none',
-              borderRadius: '6px 6px 0 0',
-              color: 'var(--color-primary)',
-              fontSize: '0.82rem',
-              cursor: 'pointer',
-              fontWeight: 700
-            }}
-          >
-            📂 PRESUPUESTOS
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
+            <button
+              onClick={() => setViewState('list')}
+              style={{
+                padding: '6px 14px',
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-color)',
+                borderBottom: 'none',
+                borderRadius: '6px 6px 0 0',
+                color: 'var(--color-primary)',
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                fontWeight: 700,
+                flexShrink: 0
+              }}
+            >
+              📂 PRESUPUESTOS
+            </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingRight: 8 }}>
             {openBudgets.map(b => (
-              <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6 }}>
+              <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
                 <button
                   onClick={() => handleSelectBudgetTab(b.id)}
                   title={b.nombre}
@@ -1300,6 +1308,33 @@ export const Budgets: React.FC = () => {
                 </button>
               </div>
             ))}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0, paddingRight: '8px' }}>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderRadius: 'var(--radius-sm)',
+                transition: 'background 0.2s'
+              }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              Empresa: <strong style={{ color: 'var(--color-primary)' }}>
+                {user?.role === 'SUPER_ADMIN' ? 'Suite Global' : companies.find(c => c.id === user?.empresaId)?.nombre || 'Cargando...'}
+              </strong>
+            </span>
           </div>
         </div>
 
@@ -1585,30 +1620,32 @@ export const Budgets: React.FC = () => {
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         padding: '0 12px',
         gap: '8px',
         flexShrink: 0
       }}>
-        <button
-          onClick={() => setViewState('list')}
-          style={{
-            padding: '6px 14px',
-            background: 'transparent',
-            border: '1px solid var(--border-color)',
-            borderBottom: 'none',
-            borderRadius: '6px 6px 0 0',
-            color: 'var(--text-secondary)',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            fontWeight: 700
-          }}
-        >
-          📂 PRESUPUESTOS
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
+          <button
+            onClick={() => setViewState('list')}
+            style={{
+              padding: '6px 14px',
+              background: 'transparent',
+              border: '1px solid var(--border-color)',
+              borderBottom: 'none',
+              borderRadius: '6px 6px 0 0',
+              color: 'var(--text-secondary)',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              fontWeight: 700,
+              flexShrink: 0
+            }}
+          >
+            📂 PRESUPUESTOS
+          </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingRight: 8 }}>
           {openBudgets.map(b => (
-            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6 }}>
+            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
               <button
                 onClick={() => handleSelectBudgetTab(b.id)}
                 title={b.nombre}
@@ -1656,6 +1693,33 @@ export const Budgets: React.FC = () => {
               </button>
             </div>
           ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0, paddingRight: '8px' }}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.2rem',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'background 0.2s'
+            }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+            Empresa: <strong style={{ color: 'var(--color-primary)' }}>
+              {user?.role === 'SUPER_ADMIN' ? 'Suite Global' : companies.find(c => c.id === user?.empresaId)?.nombre || 'Cargando...'}
+            </strong>
+          </span>
         </div>
       </div>
 

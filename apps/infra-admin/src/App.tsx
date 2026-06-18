@@ -1011,48 +1011,50 @@ const AppContent: React.FC = () => {
 
           {/* Main Panel Content */}
           <main className="main-wrapper">
-            <header className="top-bar">
-              <div className="page-title-section">
-                <h1 className="page-title">
-                  {activeTab === 'dashboard' && 'Panel de Control Principal'}
-                  {activeTab === 'companies' && 'Administración de Empresas'}
-                  {activeTab === 'users' && 'Administración de Usuarios'}
-                  {activeTab === 'logs' && 'Auditoría del Ecosistema'}
-                  {activeTab === 'sync' && 'Motor de Sincronización Local'}
-                  {activeTab === 'landing' && 'Configuración de Inicio'}
-                  {activeTab === 'budgets' && 'PRESUPUESTOS'}
-                  {activeTab === 'applications' && 'Aplicaciones Disponibles'}
-                  {activeTab === 'profile-settings' && 'Perfil y Configuración de Cuenta'}
-                </h1>
-                <span className="page-subtitle">Ecosistema InfraSuite • Modos SSO activos</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.4rem',
-                    cursor: 'pointer',
-                    color: 'var(--text-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '8px',
-                    borderRadius: 'var(--radius-sm)',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  {theme === 'dark' ? '☀️' : '🌙'}
-                </button>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Empresa: <strong style={{ color: 'var(--color-primary)' }}>
-                    {user.role === 'SUPER_ADMIN' ? 'Suite Global' : companies.find(c => c.id === user.empresaId)?.nombre || 'Cargando...'}
-                  </strong>
-                </span>
-              </div>
-            </header>
+            {activeTab !== 'budgets' && (
+              <header className="top-bar">
+                <div className="page-title-section">
+                  <h1 className="page-title">
+                    {activeTab === 'dashboard' && 'Panel de Control Principal'}
+                    {activeTab === 'companies' && 'Administración de Empresas'}
+                    {activeTab === 'users' && 'Administración de Usuarios'}
+                    {activeTab === 'logs' && 'Auditoría del Ecosistema'}
+                    {activeTab === 'sync' && 'Motor de Sincronización Local'}
+                    {activeTab === 'landing' && 'Configuración de Inicio'}
+                    {activeTab === 'budgets' && 'PRESUPUESTOS'}
+                    {activeTab === 'applications' && 'Aplicaciones Disponibles'}
+                    {activeTab === 'profile-settings' && 'Perfil y Configuración de Cuenta'}
+                  </h1>
+                  <span className="page-subtitle">Ecosistema InfraSuite • Modos SSO activos</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '1.4rem',
+                      cursor: 'pointer',
+                      color: 'var(--text-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '8px',
+                      borderRadius: 'var(--radius-sm)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    {theme === 'dark' ? '☀️' : '🌙'}
+                  </button>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Empresa: <strong style={{ color: 'var(--color-primary)' }}>
+                      {user.role === 'SUPER_ADMIN' ? 'Suite Global' : companies.find(c => c.id === user.empresaId)?.nombre || 'Cargando...'}
+                    </strong>
+                  </span>
+                </div>
+              </header>
+            )}
 
             {/* Tab router views */}
             <React.Fragment>
@@ -1061,7 +1063,7 @@ const AppContent: React.FC = () => {
               {activeTab === 'landing' && user.role === 'SUPER_ADMIN' && <LandingAdmin />}
               {activeTab === 'users' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Users />}
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
-              {activeTab === 'budgets' && <Budgets />}
+              {activeTab === 'budgets' && <Budgets theme={theme} toggleTheme={toggleTheme} companies={companies} />}
               {activeTab === 'applications' && <Applications />}
               {activeTab === 'profile-settings' && <ProfileSettings />}
               
