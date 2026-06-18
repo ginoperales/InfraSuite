@@ -2884,7 +2884,8 @@ export const Budgets: React.FC = () => {
                     return (
                       <tr
                         key={p.id}
-                        onClick={() => {
+                        onClick={() => setSelectedPartidaId(p.id)}
+                        onDoubleClick={() => {
                           setSelectedPartidaId(p.id);
                           setIsEditTitleOpen(true);
                           setEditTitlePos({ x: window.innerWidth / 2 - 250, y: Math.max(50, window.innerHeight / 2 - 150) });
@@ -2906,7 +2907,8 @@ export const Budgets: React.FC = () => {
                   return (
                     <tr
                       key={p.id}
-                      onClick={() => {
+                      onClick={() => setSelectedPartidaId(p.id)}
+                      onDoubleClick={() => {
                         setSelectedPartidaId(p.id);
                         setIsEditPartidaOpen(true);
                         setEditPartidaPos({ x: window.innerWidth / 2 - 450, y: Math.max(50, window.innerHeight / 2 - 300) });
