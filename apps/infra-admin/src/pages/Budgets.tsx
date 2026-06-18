@@ -430,6 +430,20 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
       return INITIAL_BUDGETS;
     }
   });
+
+  const [catalogoInsumos, setCatalogoInsumos] = useState<any[]>(() => {
+    const saved = localStorage.getItem('infrasuite_catalogo_insumos');
+    if (!saved) return MOCK_CATALOGO_INSUMOS;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return MOCK_CATALOGO_INSUMOS;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('infrasuite_catalogo_insumos', JSON.stringify(catalogoInsumos));
+  }, [catalogoInsumos]);
   
   const [viewState, setViewState] = useState<'list' | 'editor'>('list');
   const [activeBudget, setActiveBudget] = useState<Budget | null>(null);
@@ -457,6 +471,34 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddInsumoOpen, setIsAddInsumoOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; targetPartida: Partida | null }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetPartida: null
+  });
+
+  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut' | null; partida: Partida | null }>({
+    action: null,
+    partida: null
+  });
+
+  useEffect(() => {
+    const handleCloseMenu = () => {
+      if (contextMenu.visible) {
+        setContextMenu(prev => ({ ...prev, visible: false }));
+      }
+    };
+    window.addEventListener('click', handleCloseMenu);
+    window.addEventListener('scroll', handleCloseMenu, true);
+    return () => {
+      window.removeEventListener('click', handleCloseMenu);
+      window.removeEventListener('scroll', handleCloseMenu, true);
+    };
+  }, [contextMenu.visible]);
+
   const [isAddPartidaOpen, setIsAddPartidaOpen] = useState(false);
   
   // "Datos Generales" Modal State
@@ -654,6 +696,56 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
   const [insumoCuadrilla, setInsumoCuadrilla] = useState('1');
   const [insumoPU, setInsumoPU] = useState('10');
   const [insumoTipo, setInsumoTipo] = useState<'MO' | 'MT' | 'EQ' | 'SC' | 'SP'>('MO');
+
+  const mapCatalogueTipoToInsumoTipo = (catTipo: string): 'MO' | 'MT' | 'EQ' | 'SC' | 'SP' => {
+    const t = (catTipo || '').toUpperCase();
+    if (t.includes('MANO') || t.includes('OBRA') || t === 'MO') return 'MO';
+    if (t.includes('MATERIAL') || t === 'MT') return 'MT';
+    if (t.includes('EQUIPO') || t.includes('MAQUINARIA') || t === 'EQ') return 'EQ';
+    if (t.includes('CONTRATO') || t === 'SC') return 'SC';
+    return 'SP';
+  };
+
+  const matchingSuggestions = insumoNombre.trim()
+    ? catalogoInsumos.filter(item =>
+        item.nombre.toLowerCase().includes(insumoNombre.toLowerCase())
+      )
+    : [];
+
+  const handleSelectSuggestion = (item: any) => {
+    setInsumoNombre(item.nombre);
+    setInsumoUnidad(item.unidad);
+    setInsumoPU(item.precio.toString());
+    setInsumoTipo(mapCatalogueTipoToInsumoTipo(item.tipo));
+    setShowSuggestions(false);
+  };
+
+  const handleCreateNewInsumoOption = () => {
+    setShowSuggestions(false);
+  };
+
+  const contextMenuItemStyle: React.CSSProperties = {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-primary, #ffffff)',
+    padding: '8px 16px',
+    textAlign: 'left',
+    fontSize: '0.82rem',
+    cursor: 'pointer',
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    transition: 'background 0.15s ease'
+  };
+
+  const handleItemMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+  };
+
+  const handleItemMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = 'transparent';
+  };
 
   // Form states (Partida)
   const [partidaNombre, setPartidaNombre] = useState('');
@@ -1013,16 +1105,44 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
   // APU Insumos Modifiers
   const handleUpdateInsumoField = (insumoId: string, field: 'cuadrilla' | 'pu', value: number) => {
     if (!activeBudget || !selectedPartidaId) return;
-    const updatedPartidas = activeBudget.partidas.map(p => {
-      if (p.id === selectedPartidaId) {
-        return {
-          ...p,
-          insumos: p.insumos.map(i => i.id === insumoId ? { ...i, [field]: value } : i)
-        };
+
+    // Find the target insumo to know its name
+    let targetInsumoNombre = '';
+    for (const p of activeBudget.partidas) {
+      const found = p.insumos.find(i => i.id === insumoId);
+      if (found) {
+        targetInsumoNombre = found.nombre;
+        break;
       }
-      return p;
+    }
+
+    const updatedPartidas = activeBudget.partidas.map(p => {
+      return {
+        ...p,
+        insumos: p.insumos.map(i => {
+          // If field is 'pu', update globally by name match.
+          if (field === 'pu' && targetInsumoNombre && i.nombre.toLowerCase() === targetInsumoNombre.toLowerCase()) {
+            return { ...i, pu: value };
+          }
+          if (i.id === insumoId) {
+            return { ...i, [field]: value };
+          }
+          return i;
+        })
+      };
     });
     updateBudgetsList({ ...activeBudget, partidas: updatedPartidas });
+
+    // Also update price in our catalogoInsumos state!
+    if (field === 'pu' && targetInsumoNombre) {
+      setCatalogoInsumos(prev =>
+        prev.map(cat =>
+          cat.nombre.toLowerCase() === targetInsumoNombre.toLowerCase()
+            ? { ...cat, precio: value }
+            : cat
+        )
+      );
+    }
   };
 
   const handleUpdateRendimiento = (value: number) => {
@@ -1071,14 +1191,27 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
 
   const handleDeleteInsumo = (insumoId: string) => {
     if (!activeBudget || !selectedPartidaId) return;
-    const updatedPartidas = activeBudget.partidas.map(p => {
-      if (p.id === selectedPartidaId) {
-        return {
-          ...p,
-          insumos: p.insumos.filter(i => i.id !== insumoId)
-        };
+
+    // Find target insumo name
+    let targetInsumoNombre = '';
+    for (const p of activeBudget.partidas) {
+      const found = p.insumos.find(i => i.id === insumoId);
+      if (found) {
+        targetInsumoNombre = found.nombre;
+        break;
       }
-      return p;
+    }
+
+    if (!targetInsumoNombre) return;
+
+    const confirmDelete = window.confirm(`¿Desea eliminar el insumo "${targetInsumoNombre}" de todas las partidas donde se utiliza?`);
+    if (!confirmDelete) return;
+
+    const updatedPartidas = activeBudget.partidas.map(p => {
+      return {
+        ...p,
+        insumos: p.insumos.filter(i => i.nombre.toLowerCase() !== targetInsumoNombre.toLowerCase())
+      };
     });
     updateBudgetsList({ ...activeBudget, partidas: updatedPartidas });
   };
@@ -1087,9 +1220,25 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
     e.preventDefault();
     if (!activeBudget || !selectedPartidaId || !insumoNombre) return;
 
+    const insumoNameTrimmed = insumoNombre.trim().toUpperCase();
+
+    // Check if insumo already exists in catalogue (case-insensitive)
+    const exists = catalogoInsumos.some(item => item.nombre.toLowerCase() === insumoNameTrimmed.toLowerCase());
+    if (!exists) {
+      const newCatItem = {
+        nombre: insumoNameTrimmed,
+        unidad: insumoUnidad.trim().toUpperCase(),
+        precio: parseFloat(insumoPU) || 0,
+        tipo: insumoTipo === 'MT' ? 'MATERIAL' : (insumoTipo === 'EQ' ? 'EQUIPO' : (insumoTipo === 'SC' ? 'SUB CONTRATO' : (insumoTipo === 'MO' ? 'MANO DE OBRA' : 'SUBPARTIDA'))),
+        iu: '39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)', // Default IU
+        color: insumoTipo === 'MO' ? '#f97316' : (insumoTipo === 'MT' ? '#00f0ff' : (insumoTipo === 'EQ' ? '#10b981' : '#8b5cf6'))
+      };
+      setCatalogoInsumos(prev => [...prev, newCatItem]);
+    }
+
     const newInsumo: Insumo = {
       id: 'i_' + Math.random().toString(36).substring(2, 9),
-      nombre: insumoNombre,
+      nombre: insumoNameTrimmed,
       unidad: insumoUnidad,
       cuadrilla: parseFloat(insumoCuadrilla) || 0,
       pu: parseFloat(insumoPU) || 0,
@@ -1136,6 +1285,84 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
     setPartidaEsTitulo(false);
     setPartidaMetrado('1');
     setPartidaRendimiento('1');
+  };
+
+  const handleDeletePartida = (partidaId: string) => {
+    if (!activeBudget) return;
+    const pDelete = activeBudget.partidas.find(p => p.id === partidaId);
+    if (!pDelete) return;
+
+    const confirmDelete = window.confirm(`¿Está seguro de que desea eliminar ${pDelete.esTitulo ? 'el título' : 'la partida'} "${pDelete.nombre}"?`);
+    if (!confirmDelete) return;
+
+    const updatedPartidas = activeBudget.partidas.filter(p => p.id !== partidaId);
+    const resequencedPartidas = updatedPartidas.map((p, idx) => ({
+      ...p,
+      item: (idx + 1).toString()
+    }));
+
+    updateBudgetsList({ ...activeBudget, partidas: resequencedPartidas });
+    if (selectedPartidaId === partidaId) {
+      setSelectedPartidaId(null);
+    }
+  };
+
+  const handleCopyPartida = (partida: Partida) => {
+    setClipboard({ action: 'copy', partida });
+  };
+
+  const handleCutPartida = (partida: Partida) => {
+    setClipboard({ action: 'cut', partida });
+  };
+
+  const handlePastePartida = (targetPartidaId: string, replicate: boolean) => {
+    if (!activeBudget || !clipboard.partida) return;
+
+    const targetIndex = activeBudget.partidas.findIndex(p => p.id === targetPartidaId);
+    if (targetIndex === -1) return;
+
+    let newPartida: Partida;
+
+    if (clipboard.action === 'cut' && !replicate) {
+      newPartida = { ...clipboard.partida };
+    } else {
+      const newPartidaId = 'p_' + Math.random().toString(36).substring(2, 9);
+      const copiedInsumos = clipboard.partida.insumos.map(ins => ({
+        ...ins,
+        id: 'i_' + Math.random().toString(36).substring(2, 9)
+      }));
+
+      newPartida = {
+        ...clipboard.partida,
+        id: newPartidaId,
+        nombre: replicate ? `${clipboard.partida.nombre} (Copia)` : clipboard.partida.nombre,
+        insumos: copiedInsumos
+      };
+    }
+
+    let currentPartidas = activeBudget.partidas;
+    if (clipboard.action === 'cut') {
+      currentPartidas = currentPartidas.filter(p => p.id !== clipboard.partida!.id);
+    }
+
+    const newTargetIndex = currentPartidas.findIndex(p => p.id === targetPartidaId);
+
+    const updated = [
+      ...currentPartidas.slice(0, newTargetIndex + 1),
+      newPartida,
+      ...currentPartidas.slice(newTargetIndex + 1)
+    ];
+
+    const resequenced = updated.map((p, idx) => ({
+      ...p,
+      item: (idx + 1).toString()
+    }));
+
+    updateBudgetsList({ ...activeBudget, partidas: resequenced });
+
+    if (clipboard.action === 'cut') {
+      setClipboard({ action: null, partida: null });
+    }
   };
 
   const handleOpenBudgetEditor = (b: Budget) => {
@@ -2955,6 +3182,16 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                           setIsEditTitleOpen(true);
                           setEditTitlePos({ x: window.innerWidth / 2 - 250, y: Math.max(50, window.innerHeight / 2 - 150) });
                         }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setSelectedPartidaId(p.id);
+                          setContextMenu({
+                            visible: true,
+                            x: e.clientX,
+                            y: e.clientY,
+                            targetPartida: p
+                          });
+                        }}
                         style={{
                           background: 'rgba(255,255,255,0.01)',
                           borderBottom: '1px solid rgba(255,255,255,0.03)',
@@ -2977,6 +3214,16 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                         setSelectedPartidaId(p.id);
                         setIsEditPartidaOpen(true);
                         setEditPartidaPos({ x: window.innerWidth / 2 - 450, y: Math.max(50, window.innerHeight / 2 - 300) });
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setSelectedPartidaId(p.id);
+                        setContextMenu({
+                          visible: true,
+                          x: e.clientX,
+                          y: e.clientY,
+                          targetPartida: p
+                        });
                       }}
                       style={{
                         background: isSelected ? 'rgba(0, 240, 255, 0.02)' : 'transparent',
@@ -3012,7 +3259,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
           </div>
 
           {/* 4. Bottom APU Calculator Panel */}
-          {selectedPartida ? (
+          {selectedPartida && !selectedPartida.esTitulo ? (
             <div style={{
                 height: `${apuPanelHeight}px`,
                 background: 'var(--bg-surface)',
@@ -3146,6 +3393,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                       {renderApuHeader('pu', 'P. Unitario (PU)')}
                       {renderApuHeader('parcial', 'Parcial')}
                       {renderApuHeader('tipo', 'Tipo')}
+                      <th style={{ width: '40px', padding: '8px 12px' }}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3182,6 +3430,24 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                               {ins.tipo}
                             </span>
                           </td>
+                          <td style={{ ...tdStyle, textAlign: 'center', padding: '2px' }}>
+                            <button
+                              onClick={() => handleDeleteInsumo(ins.id)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#dc3545',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220,53,69,0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            >
+                              🗑️
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -3209,14 +3475,17 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
             </div>
           ) : (
             <div style={{
-              height: '320px',
+              height: '160px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               borderTop: '1px solid var(--border-color)',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted)',
+              background: 'var(--bg-surface)'
             }}>
-              Haz clic en una partida para analizar sus Precios Unitarios (APU).
+              {selectedPartida && selectedPartida.esTitulo
+                ? "ℹ️ El elemento seleccionado es un Título. Los títulos no poseen Análisis de Precios Unitarios (APU)."
+                : "Haz clic en una partida para analizar sus Precios Unitarios (APU)."}
             </div>
           )}
 
@@ -3707,7 +3976,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                     fontFamily: 'var(--font-sans)'
                   }}
                 >
-                  <option value="TODOS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>TODOS LOS REGISTROS ({MOCK_CATALOGO_INSUMOS.length})</option>
+                  <option value="TODOS" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>TODOS LOS REGISTROS ({catalogoInsumos.length})</option>
                   <option value="MATERIAL" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>MATERIAL</option>
                   <option value="EQUIPO" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>EQUIPO</option>
                   <option value="SUB CONTRATO" style={{ background: 'var(--bg-surface-elevated)', color: 'var(--text-primary)' }}>SUB CONTRATO</option>
@@ -3766,7 +4035,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
                 </tr>
               </thead>
               <tbody>
-                {MOCK_CATALOGO_INSUMOS
+                {catalogoInsumos
                   .filter(ins => {
                     const matchesSearch = ins.nombre.toLowerCase().includes(ciSearchTerm.toLowerCase());
                     const matchesTipo = ciSelectedTipo === 'TODOS' || ins.tipo === ciSelectedTipo;
@@ -5528,13 +5797,94 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
       {/* Modal - Add Insumo */}
       <Modal isOpen={isAddInsumoOpen} onClose={() => setIsAddInsumoOpen(false)} title="Agregar Insumo al Análisis (APU)">
         <form onSubmit={handleAddInsumo} className="login-form">
-          <Input
-            label="Descripción del Insumo *"
-            placeholder="Ej. PEON, ALAMBRE NEGRO, OPERARIO"
-            value={insumoNombre}
-            onChange={(e) => setInsumoNombre(e.target.value)}
-            required
-          />
+          <div style={{ position: 'relative' }}>
+            <Input
+              label="Descripción del Insumo *"
+              placeholder="Ej. PEON, ALAMBRE NEGRO, OPERARIO"
+              value={insumoNombre}
+              onChange={(e) => {
+                setInsumoNombre(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => {
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              required
+            />
+            {showSuggestions && insumoNombre.trim() !== '' && (
+              <div 
+                className="autocomplete-dropdown"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--bg-surface-elevated, #181d28)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+                  borderRadius: '6px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  zIndex: 1000,
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                  marginTop: '4px'
+                }}
+              >
+                {matchingSuggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectSuggestion(item)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      borderBottom: '1px solid rgba(255,255,255,0.02)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    className="autocomplete-item"
+                  >
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>{item.nombre}</strong>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                        ({item.unidad})
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      {item.tipo}
+                    </span>
+                  </div>
+                ))}
+
+                {!matchingSuggestions.some(item => item.nombre.toLowerCase() === insumoNombre.trim().toLowerCase()) && (
+                  <div
+                    onClick={handleCreateNewInsumoOption}
+                    style={{
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      background: 'rgba(0, 240, 255, 0.05)',
+                      color: '#00f0ff',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    className="autocomplete-create-item"
+                  >
+                    ✨ Crear nuevo insumo "{insumoNombre.trim().toUpperCase()}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Select
               label="Tipo de Recurso"
@@ -6089,9 +6439,133 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies 
         </div>
       )}
 
-      {/* Cotizar modal removed - now rendered inline in workspace */}
-
-      {/* Especificaciones Técnicas modal removed - now rendered inline in workspace */}
+      {/* Custom Context Menu */}
+      {contextMenu.visible && contextMenu.targetPartida && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+            background: 'var(--bg-surface-elevated, #181d28)',
+            border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
+            borderRadius: '8px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+            padding: '4px 0',
+            zIndex: 10000,
+            minWidth: '160px',
+            fontFamily: 'var(--font-sans)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              setPartidaEsTitulo(true);
+              setIsAddPartidaOpen(true);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={contextMenuItemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span>➕ Agregar Título</span>
+          </button>
+          <button
+            onClick={() => {
+              setPartidaEsTitulo(false);
+              setIsAddPartidaOpen(true);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={contextMenuItemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span>➕ Agregar Partida</span>
+          </button>
+          <button
+            onClick={() => {
+              const p = contextMenu.targetPartida!;
+              setSelectedPartidaId(p.id);
+              if (p.esTitulo) {
+                setIsEditTitleOpen(true);
+                setEditTitlePos({ x: window.innerWidth / 2 - 250, y: Math.max(50, window.innerHeight / 2 - 150) });
+              } else {
+                setIsEditPartidaOpen(true);
+                setEditPartidaPos({ x: window.innerWidth / 2 - 450, y: Math.max(50, window.innerHeight / 2 - 300) });
+              }
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={contextMenuItemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span>✏️ Editar</span>
+          </button>
+          <button
+            onClick={() => {
+              handleDeletePartida(contextMenu.targetPartida!.id);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={{ ...contextMenuItemStyle, color: '#dc3545' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(220, 53, 69, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span>🗑️ Eliminar</span>
+          </button>
+          <div style={{ height: '1px', background: 'var(--border-color, rgba(255,255,255,0.08))', margin: '4px 0' }} />
+          <button
+            onClick={() => {
+              handleCopyPartida(contextMenu.targetPartida!);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={contextMenuItemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span>📄 Copiar</span>
+          </button>
+          <button
+            onClick={() => {
+              handleCutPartida(contextMenu.targetPartida!);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            style={contextMenuItemStyle}
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            <span>✂️ Cortar</span>
+          </button>
+          <button
+            onClick={() => {
+              handlePastePartida(contextMenu.targetPartida!.id, false);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            disabled={!clipboard.partida}
+            style={{ ...contextMenuItemStyle, opacity: clipboard.partida ? 1 : 0.5, cursor: clipboard.partida ? 'pointer' : 'not-allowed' }}
+            onMouseEnter={clipboard.partida ? handleItemMouseEnter : undefined}
+            onMouseLeave={clipboard.partida ? handleItemMouseLeave : undefined}
+          >
+            <span>📋 Pegar</span>
+          </button>
+          <button
+            onClick={() => {
+              handlePastePartida(contextMenu.targetPartida!.id, true);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            disabled={!clipboard.partida}
+            style={{ ...contextMenuItemStyle, opacity: clipboard.partida ? 1 : 0.5, cursor: clipboard.partida ? 'pointer' : 'not-allowed' }}
+            onMouseEnter={clipboard.partida ? handleItemMouseEnter : undefined}
+            onMouseLeave={clipboard.partida ? handleItemMouseLeave : undefined}
+          >
+            <span>📋 Pegar y replicar</span>
+          </button>
+        </div>
+      )}
 
     </div>
     </div>
