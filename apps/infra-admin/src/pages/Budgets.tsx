@@ -514,6 +514,41 @@ export const Budgets: React.FC = () => {
     localStorage.setItem('infrasuite_show_gridlines', showGridlines.toString());
   }, [showGridlines]);
 
+  // Draggable Partida Edit Window State
+  const [isEditPartidaOpen, setIsEditPartidaOpen] = useState(false);
+  const [editPartidaPos, setEditPartidaPos] = useState({ x: 100, y: 100 });
+  const [isDraggingPartidaWindow, setIsDraggingPartidaWindow] = useState(false);
+  const dragStartOffset = useRef({ x: 0, y: 0 });
+
+  const handlePartidaHeaderMouseDown = (e: React.MouseEvent) => {
+    setIsDraggingPartidaWindow(true);
+    dragStartOffset.current = {
+      x: e.clientX - editPartidaPos.x,
+      y: e.clientY - editPartidaPos.y
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingPartidaWindow) return;
+      setEditPartidaPos({
+        x: e.clientX - dragStartOffset.current.x,
+        y: e.clientY - dragStartOffset.current.y
+      });
+    };
+    const handleMouseUp = () => {
+      setIsDraggingPartidaWindow(false);
+    };
+    if (isDraggingPartidaWindow) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingPartidaWindow]);
+
   // Gantt Scheduling State
   const [ganttData, setGanttData] = useState<{ [key: string]: { duracion: number; inicio: string; fin: string; predecesora: string } }>({
     'p_1': { duracion: 8, inicio: '2026-01-07', fin: '2026-01-14', predecesora: '' },
@@ -965,6 +1000,42 @@ export const Budgets: React.FC = () => {
     const updatedPartidas = activeBudget.partidas.map(p => {
       if (p.id === partidaId) {
         return { ...p, metrado: value };
+      }
+      return p;
+    });
+    updateBudgetsList({ ...activeBudget, partidas: updatedPartidas });
+  };
+
+  const handleUpdatePartidaNombre = (partidaId: string, value: string) => {
+    if (!activeBudget) return;
+    const updatedPartidas = activeBudget.partidas.map(p => {
+      if (p.id === partidaId) {
+        return { ...p, nombre: value };
+      }
+      return p;
+    });
+    updateBudgetsList({ ...activeBudget, partidas: updatedPartidas });
+  };
+
+  const handleUpdatePartidaUnidad = (partidaId: string, value: string) => {
+    if (!activeBudget) return;
+    const updatedPartidas = activeBudget.partidas.map(p => {
+      if (p.id === partidaId) {
+        return { ...p, unidad: value };
+      }
+      return p;
+    });
+    updateBudgetsList({ ...activeBudget, partidas: updatedPartidas });
+  };
+
+  const handleDeleteInsumo = (insumoId: string) => {
+    if (!activeBudget || !selectedPartidaId) return;
+    const updatedPartidas = activeBudget.partidas.map(p => {
+      if (p.id === selectedPartidaId) {
+        return {
+          ...p,
+          insumos: p.insumos.filter(i => i.id !== insumoId)
+        };
       }
       return p;
     });
@@ -2788,7 +2859,11 @@ export const Budgets: React.FC = () => {
                   return (
                     <tr
                       key={p.id}
-                      onClick={() => setSelectedPartidaId(p.id)}
+                      onClick={() => {
+                        setSelectedPartidaId(p.id);
+                        setIsEditPartidaOpen(true);
+                        setEditPartidaPos({ x: window.innerWidth / 2 - 450, y: Math.max(50, window.innerHeight / 2 - 300) });
+                      }}
                       style={{
                         background: isSelected ? 'rgba(0, 240, 255, 0.02)' : 'transparent',
                         borderBottom: '1px solid var(--border-color)',
@@ -5498,6 +5573,308 @@ export const Budgets: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Draggable Edit Partida Window */}
+      {isEditPartidaOpen && selectedPartida && (
+        <div style={{
+          position: 'fixed',
+          left: `${editPartidaPos.x}px`,
+          top: `${editPartidaPos.y}px`,
+          width: '920px',
+          background: 'var(--bg-surface-elevated)',
+          border: '2px solid var(--color-primary)',
+          borderRadius: '8px',
+          boxShadow: 'var(--shadow-lg), 0 12px 48px rgba(0,0,0,0.5)',
+          zIndex: 2000,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          fontFamily: 'var(--font-sans)',
+          color: 'var(--text-primary)'
+        }}>
+          {/* Header */}
+          <div
+            onMouseDown={handlePartidaHeaderMouseDown}
+            style={{
+              background: 'linear-gradient(90deg, #0056b3, #0047ab)',
+              color: '#ffffff',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'move',
+              userSelect: 'none'
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '0.3px' }}>Editar partida</span>
+            <button
+              onClick={() => setIsEditPartidaOpen(false)}
+              style={{
+                background: '#dc3545',
+                border: 'none',
+                color: '#ffffff',
+                width: '32px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                borderRadius: '4px',
+                fontSize: '0.9rem'
+              }}
+            >
+              X
+            </button>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Inputs Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Partida</label>
+                <input
+                  type="text"
+                  value={selectedPartida.nombre}
+                  onChange={(e) => handleUpdatePartidaNombre(selectedPartida.id, e.target.value)}
+                  style={{
+                    background: 'rgba(0,0,0,0.2)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Unidad</label>
+                <input
+                  type="text"
+                  value={selectedPartida.unidad}
+                  onChange={(e) => handleUpdatePartidaUnidad(selectedPartida.id, e.target.value)}
+                  style={{
+                    background: 'rgba(0,0,0,0.2)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Metrado</label>
+                <input
+                  type="number"
+                  value={selectedPartida.metrado}
+                  onChange={(e) => handleUpdatePartidaMetrado(selectedPartida.id, parseFloat(e.target.value) || 0)}
+                  style={{
+                    background: 'rgba(0,0,0,0.2)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    textAlign: 'right'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Rendimiento & Summaries Row */}
+            {(() => {
+              const br = getAPUBreakdown(selectedPartida);
+              const cu = getPartidaCU(selectedPartida);
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '10px' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Rendimiento</span>
+                    <input
+                      type="number"
+                      value={selectedPartida.rendimiento}
+                      onChange={(e) => handleUpdateRendimiento(parseFloat(e.target.value) || 0)}
+                      style={{
+                        width: '70px',
+                        padding: '6px 8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'rgba(0,0,0,0.2)',
+                        color: 'var(--text-primary)',
+                        borderRadius: '4px',
+                        fontSize: '0.85rem',
+                        textAlign: 'right',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ border: '1px solid #ff7a00', color: '#ff7a00', background: 'rgba(255,122,0,0.08)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                      MO: S/ {br.MO.toFixed(2)}
+                    </div>
+                    <div style={{ border: '1px solid #3b82f6', color: '#3b82f6', background: 'rgba(59,130,246,0.08)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                      MT: S/ {br.MT.toFixed(2)}
+                    </div>
+                    <div style={{ border: '1px solid #10b981', color: '#10b981', background: 'rgba(16,185,129,0.08)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                      EQ: S/ {br.EQ.toFixed(2)}
+                    </div>
+                    <div style={{ border: '1px solid #ec4899', color: '#ec4899', background: 'rgba(236,72,153,0.08)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                      SC: S/ {br.SC.toFixed(2)}
+                    </div>
+                    <div style={{ border: '1px solid #6366f1', color: '#6366f1', background: 'rgba(99,102,241,0.08)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                      SP: S/ {br.SP.toFixed(2)}
+                    </div>
+                    <div style={{ border: '1px solid var(--text-primary)', color: 'var(--text-primary)', background: 'rgba(255,255,255,0.04)', padding: '6px 12px', borderRadius: '4px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      CU: S/ {cu.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Insumos Spreadsheet Table */}
+            <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+              <table className={showGridlines ? 'table-gridlines' : ''} style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface-elevated)', zIndex: 10, borderBottom: '1px solid var(--border-color)' }}>
+                  <tr>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Insumo</th>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, width: '10%' }}>Unidad</th>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, width: '15%', textAlign: 'right' }}>Cuadrilla</th>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, width: '15%', textAlign: 'right' }}>Cantidad</th>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, width: '15%', textAlign: 'right' }}>PU</th>
+                    <th style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontWeight: 600, width: '15%', textAlign: 'right' }}>Parcial</th>
+                    <th style={{ padding: '8px 12px', width: '8%', textAlign: 'center' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedPartida.insumos.map(ins => {
+                    const cantidad = getInsumoCantidad(ins, selectedPartida.rendimiento);
+                    const parcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+                    return (
+                      <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>{ins.nombre}</td>
+                        <td style={{ padding: '8px 12px' }}>{ins.unidad}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            value={ins.cuadrilla}
+                            onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)}
+                            style={{ ...tableInputStyle, width: '100%' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>{cantidad.toFixed(4)}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={ins.pu}
+                            onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)}
+                            style={{ ...tableInputStyle, width: '100%' }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)' }}>S/ {parcial.toFixed(2)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => handleDeleteInsumo(ins.id)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#dc3545',
+                              cursor: 'pointer',
+                              fontSize: '1rem',
+                              padding: '2px 6px',
+                              borderRadius: '4px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220,53,69,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Quick Actions Row */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => {
+                  setSelectedPartidaId(selectedPartida.id);
+                  setIsAddInsumoOpen(true);
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+              >
+                ➕ Agregar Insumo
+              </button>
+              <button
+                onClick={() => alert('Nueva subpartida agregada')}
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+              >
+                ➕ Agregar Sub Partida
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <button
+                onClick={() => setIsEditPartidaOpen(false)}
+                style={{
+                  background: '#198754',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#157347'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#198754'}
+              >
+                Aceptar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Cotizar modal removed - now rendered inline in workspace */}
 
