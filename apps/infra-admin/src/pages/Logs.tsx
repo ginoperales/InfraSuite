@@ -47,12 +47,14 @@ export const Logs: React.FC = () => {
   };
 
   // Filter logs based on search query
-  const filteredLogs = logs.filter(
-    (log) =>
-      log.usuario.toLowerCase().includes(search.toLowerCase()) ||
-      log.accion.toLowerCase().includes(search.toLowerCase()) ||
-      log.detalle.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLogs = logs.filter((log) => {
+    if (!log) return false;
+    return (
+      (log.usuario || '').toLowerCase().includes((search || '').toLowerCase()) ||
+      (log.accion || '').toLowerCase().includes((search || '').toLowerCase()) ||
+      (log.detalle || '').toLowerCase().includes((search || '').toLowerCase())
+    );
+  });
 
   return (
     <div className="content-container">

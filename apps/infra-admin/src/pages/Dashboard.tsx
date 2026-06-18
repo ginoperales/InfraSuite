@@ -141,10 +141,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     alert('¡Respaldo completo del sistema generado con éxito!');
   };
 
-  const filteredUsers = usersList.filter((u) => 
-    u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = usersList.filter((u) => {
+    if (!u) return false;
+    return (
+      (u.nombre || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+      (u.email || '').toLowerCase().includes((searchTerm || '').toLowerCase())
+    );
+  });
 
   return (
     <div className="content-container">
