@@ -1310,6 +1310,13 @@
   box-shadow: 0 0 10px var(--color-primary);
 }
 
+/* Table Gridlines styling */
+.table-gridlines th,
+.table-gridlines td {
+  border: 1px solid var(--border-color) !important;
+}
+
+
 
 
 

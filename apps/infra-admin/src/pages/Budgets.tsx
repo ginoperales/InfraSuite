@@ -503,6 +503,17 @@ export const Budgets: React.FC = () => {
     { iu: '47 : MANO DE OBRA (INCLUYE LEYES SOCIALES)', coeficiente: 0.536, monomio: 1, factor: '', simbolo: 'MO' }
   ]);
 
+  // User Preferences / Configuraciones
+  const [showGridlines, setShowGridlines] = useState<boolean>(() => {
+    const saved = localStorage.getItem('infrasuite_show_gridlines');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [isConfiguracionOpen, setIsConfiguracionOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('infrasuite_show_gridlines', showGridlines.toString());
+  }, [showGridlines]);
+
   // Gantt Scheduling State
   const [ganttData, setGanttData] = useState<{ [key: string]: { duracion: number; inicio: string; fin: string; predecesora: string } }>({
     'p_1': { duracion: 8, inicio: '2026-01-07', fin: '2026-01-14', predecesora: '' },
@@ -1606,6 +1617,7 @@ export const Budgets: React.FC = () => {
             { label: 'Fórmula Polinómica', icon: '🧬', action: () => { setSidebarTab('Fórmula Polinómica'); setIsFormulaPolinomicaOpen(true); } },
             { label: 'Cotizar', icon: '🛍️', action: () => { setSidebarTab('Cotizar'); } },
             { label: 'Especificaciones Técnicas', icon: '📄', action: () => { setSidebarTab('Especificaciones Técnicas'); } },
+            { label: 'Configuraciones', icon: '⚙️', action: () => setIsConfiguracionOpen(true) },
             { label: 'Descargar Base de Datos', icon: '📥', action: downloadActiveBudgetDatabase }
           ].map(tab => (
             <button
@@ -1710,7 +1722,7 @@ export const Budgets: React.FC = () => {
 
         {/* 3. Splitted Workspace (Partidas Spreadsheet + APU breakdown OR Gantt Schedule View) */}
         {sidebarTab === 'Programar' ? (
-          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#0a0c10' }}>
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-main)' }}>
             {/* Gantt Toolbar */}
             <div style={{
               display: 'flex',
@@ -1825,7 +1837,7 @@ export const Budgets: React.FC = () => {
             <div style={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Spreadsheet style table */}
               <div style={{ width: '60%', overflowX: 'auto', overflowY: 'auto', borderRight: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.15)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
+                <table className={showGridlines ? 'table-gridlines' : ''} style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
                   <thead style={{
                     position: 'sticky',
                     top: 0,
@@ -1991,7 +2003,7 @@ export const Budgets: React.FC = () => {
                 </div>
 
               {/* Gantt Timeline Graphic (Right) */}
-              <div style={{ width: '40%', overflowX: 'auto', background: '#090b0f', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ width: '40%', overflowX: 'auto', background: 'var(--bg-surface)', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 {/* Timeline Header (Days of Jan 2026) */}
                 <div style={{
                   height: '42px',
@@ -2134,7 +2146,7 @@ export const Budgets: React.FC = () => {
             </div>
           </div>
         ) : sidebarTab === 'Cotizar' ? (
-          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#07090e', padding: '24px' }}>
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-main)', padding: '24px' }}>
             <div style={{
               background: 'rgba(255,255,255,0.01)',
               border: '1px solid var(--border-color)',
@@ -2473,7 +2485,7 @@ export const Budgets: React.FC = () => {
             </div>
           </div>
         ) : sidebarTab === 'Especificaciones Técnicas' ? (
-          <div style={{ flexGrow: 1, display: 'flex', overflow: 'hidden', background: '#07090e', position: 'relative' }}>
+          <div style={{ flexGrow: 1, display: 'flex', overflow: 'hidden', background: 'var(--bg-main)', position: 'relative' }}>
             {/* LEFT: Partidas list panel */}
             <div style={{
               width: '300px',
@@ -2726,7 +2738,7 @@ export const Budgets: React.FC = () => {
           <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Main Partidas Table */}
             <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'auto', background: 'rgba(0,0,0,0.15)' }}>
-            <table style={{
+            <table className={showGridlines ? 'table-gridlines' : ''} style={{
               width: `${partidaTableWidth}px`,
               tableLayout: 'fixed',
               borderCollapse: 'collapse',
@@ -2922,7 +2934,7 @@ export const Budgets: React.FC = () => {
               {/* APU Insumos list */}
               <div style={{ flexGrow: 1, overflowX: 'auto', overflowY: 'auto' }}>
                 <div style={{ transform: `scale(${apuZoom})`, transformOrigin: 'left top', width: '100%' }}>
-                <table style={{
+                <table className={showGridlines ? 'table-gridlines' : ''} style={{
                   width: `${apuTableWidth}px`,
                   tableLayout: 'fixed',
                   borderCollapse: 'collapse',
@@ -5435,6 +5447,56 @@ export const Budgets: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal - Configuración de Usuario */}
+      <Modal isOpen={isConfiguracionOpen} onClose={() => setIsConfiguracionOpen(false)} title="Configuración de Usuario">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)' }}>Mostrar cuadrículas por defecto</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Muestra las líneas divisorias en la tabla de presupuestos y en la tabla de APU.</div>
+            </div>
+            <label className="switch-container" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+              <input
+                type="checkbox"
+                checked={showGridlines}
+                onChange={(e) => setShowGridlines(e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span className="switch-slider" style={{
+                position: 'absolute',
+                cursor: 'pointer',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: showGridlines ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
+                transition: '0.3s',
+                borderRadius: '24px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  content: '""',
+                  height: '16px',
+                  width: '16px',
+                  left: showGridlines ? '22px' : '4px',
+                  bottom: '3px',
+                  backgroundColor: '#ffffff',
+                  transition: '0.3s',
+                  borderRadius: '50%',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }} />
+              </span>
+            </label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <Button onClick={() => setIsConfiguracionOpen(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Cotizar modal removed - now rendered inline in workspace */}
