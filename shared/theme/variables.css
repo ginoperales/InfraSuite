@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  /* Fonts */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+
+  /* Color Palette - Premium Cyber Dark Obsidian */
+  --bg-main: #06070a;
+  --bg-surface: #0c0e15;
+  --bg-surface-elevated: #121622;
+  --bg-surface-hover: #1b2030;
+  
+  /* Accent Colors */
+  --color-primary: #00f0ff;
+  --color-primary-hover: #00e0ef;
+  --color-primary-glow: rgba(0, 240, 255, 0.25);
+  
+  --color-secondary: #8b5cf6;
+  --color-secondary-hover: #7c3aed;
+  --color-secondary-glow: rgba(139, 92, 246, 0.25);
+
+  /* Accent Gradients */
+  --grad-primary: linear-gradient(135deg, #00f0ff 0%, #8b5cf6 50%, #d946ef 100%);
+  --grad-surface: linear-gradient(180deg, #0c0e15 0%, #06070a 100%);
+  --grad-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.005) 100%);
+  --grad-border: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+
+  /* UI Feedback States */
+  --color-success: #10b981;
+  --color-success-glow: rgba(16, 185, 129, 0.15);
+  --color-warning: #f59e0b;
+  --color-warning-glow: rgba(245, 158, 11, 0.15);
+  --color-danger: #f43f5e;
+  --color-danger-glow: rgba(244, 63, 94, 0.15);
+  --color-info: #0ea5e9;
+
+  /* Neutral Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-disabled: #475569;
+
+  /* Borders & Dividers */
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-color-focus: rgba(0, 240, 255, 0.3);
+  --border-glow: 0 0 15px rgba(0, 240, 255, 0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 12px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 30px rgba(0, 240, 255, 0.08);
+
+  /* Sizing & Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+  --radius-full: 9999px;
+
+  /* Animations & Transitions */
+  --transition-fast: 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Global Reset & Base Styling */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.015) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.02) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.2);
+}
+
+/* Light Theme Variables Override */
+[data-theme="light"] {
+  --bg-main: #f5f6fa;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #eef1f6;
+  --bg-surface-hover: #e2e8f0;
+  
+  --color-primary-glow: rgba(0, 240, 255, 0.08);
+  --color-secondary-glow: rgba(139, 92, 246, 0.08);
+  
+  --grad-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%);
+  --grad-border: linear-gradient(135deg, rgba(0, 240, 255, 0.12) 0%, rgba(139, 92, 246, 0.04) 100%);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
+  
+  --border-color: rgba(15, 23, 42, 0.08);
+  --border-glow: 0 0 15px rgba(0, 240, 255, 0.08);
+  
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 12px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.1);
+  --shadow-glow: 0 0 30px rgba(0, 240, 255, 0.04);
+}
+
+[data-theme="light"] body {
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 40%);
+}

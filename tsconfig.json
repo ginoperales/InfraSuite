@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Paths mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@infrasuite/shared": ["shared"],
+      "@infrasuite/shared/*": ["shared/*"],
+      "@infrasuite/auth": ["packages/auth"],
+      "@infrasuite/firebase": ["packages/firebase"],
+      "@infrasuite/sqlite": ["packages/sqlite"],
+      "@infrasuite/permissions": ["packages/permissions"],
+      "@infrasuite/license-service": ["services/license-service"],
+      "@infrasuite/sync-service": ["services/sync-service"]
+    }
+  },
+  "exclude": ["node_modules"]
+}

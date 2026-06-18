@@ -1,0 +1,28 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# OS Files
+.DS_Store
+Thumbs.db
