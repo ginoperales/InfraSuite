@@ -2,29 +2,67 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button } from '@infrasuite/shared';
 import { db } from '@infrasuite/firebase';
 import { useAuth } from '@infrasuite/auth';
-import { getCompanyModules } from '@infrasuite/license-service';
+import { 
+  getCompanyModules, 
+  activateModuleForCompany, 
+  deactivateModuleForCompany 
+} from '@infrasuite/license-service';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export const Applications: React.FC = () => {
+interface ApplicationsProps {
+  onModulesChanged?: () => void;
+}
+
+export const Applications: React.FC<ApplicationsProps> = ({ onModulesChanged }) => {
   const { user } = useAuth();
   const [allModules, setAllModules] = useState<any[]>([]);
   const [companyModules, setCompanyModules] = useState<string[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Premium modal confirmation state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: 'install' | 'uninstall' | null;
+    moduloCodigo: string;
+    displayName: string;
+    isExecuting: boolean;
+  }>({
+    isOpen: false,
+    type: null,
+    moduloCodigo: '',
+    displayName: '',
+    isExecuting: false
+  });
+
+  const loadModulesForCompany = async (companyId: string) => {
+    try {
+      const activeList = await getCompanyModules(companyId);
+      setCompanyModules(activeList);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     const loadAppData = async () => {
       setIsLoading(true);
       try {
-        // Load all system modules
         const modulesList = await db.getDocs('modules');
         setAllModules(modulesList);
 
-        // Load company active modules if not super admin
-        if (user && user.role !== 'SUPER_ADMIN') {
-          const activeList = await getCompanyModules(user.empresaId);
-          setCompanyModules(activeList);
-        } else if (user && user.role === 'SUPER_ADMIN') {
-          // Super admin has access to everything
-          setCompanyModules(modulesList.map((m: any) => m.codigo));
+        if (user) {
+          if (user.role === 'SUPER_ADMIN') {
+            const companyList = await db.getDocs('companies');
+            setCompanies(companyList);
+            const initialId = companyList[0]?.id || 'c1';
+            setSelectedCompanyId(initialId);
+            await loadModulesForCompany(initialId);
+          } else {
+            setSelectedCompanyId(user.empresaId);
+            await loadModulesForCompany(user.empresaId);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -35,11 +73,59 @@ export const Applications: React.FC = () => {
     loadAppData();
   }, [user]);
 
-  // Premium App Meta Info for visual excellence (Full Catalog)
+  const handleCompanyChange = async (e: any) => {
+    const cid = e.target.value;
+    setSelectedCompanyId(cid);
+    await loadModulesForCompany(cid);
+  };
+
+  const executeAction = async () => {
+    if (!confirmModal.type || !confirmModal.moduloCodigo) return;
+    
+    setConfirmModal(prev => ({ ...prev, isExecuting: true }));
+    const moduloCodigo = confirmModal.moduloCodigo;
+    const targetCid = selectedCompanyId || user?.empresaId || 'c1';
+
+    try {
+      // Simulate premium delay for UI feedback
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      if (confirmModal.type === 'install') {
+        await activateModuleForCompany(targetCid, moduloCodigo);
+      } else {
+        await deactivateModuleForCompany(targetCid, moduloCodigo);
+      }
+
+      await loadModulesForCompany(targetCid);
+      if (onModulesChanged) {
+        onModulesChanged();
+      }
+      
+      // Close modal on success
+      setConfirmModal({
+        isOpen: false,
+        type: null,
+        moduloCodigo: '',
+        displayName: '',
+        isExecuting: false
+      });
+    } catch (e) {
+      console.error(e);
+      alert(`Error al procesar la solicitud para el módulo ${moduloCodigo}.`);
+      setConfirmModal(prev => ({ ...prev, isExecuting: false }));
+    }
+  };
+
   const appMeta: { [key: string]: { icon: string; desc: string; color: string; gradient: string } } = {
     'INFRACOST': {
+      icon: '💰',
+      desc: 'Gestión clásica de presupuestos de obra y Análisis de Precios Unitarios (APU) esenciales.',
+      color: '#3b82f6',
+      gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%)'
+    },
+    'INFRACOST_PRO': {
       icon: '📊',
-      desc: 'Gestión de presupuestos de obra, análisis de precios unitarios (APU), gastos generales y programación con diagramas de Gantt.',
+      desc: 'Presupuestos de obra profesionales con pantalla dividida (Spreadsheet + Especificaciones y Asistente IA Gemini integrado).',
       color: '#00f0ff',
       gradient: 'linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(0, 110, 255, 0.05) 100%)'
     },
@@ -99,7 +185,6 @@ export const Applications: React.FC = () => {
     }
   };
 
-  // Combine database modules with extra fictional catalog apps to ensure all of them appear
   const getDisplayModules = () => {
     const dbCodes = new Set(allModules.map(m => m.codigo.toUpperCase()));
     const displayList = [...allModules];
@@ -108,7 +193,7 @@ export const Applications: React.FC = () => {
       if (!dbCodes.has(code)) {
         displayList.push({
           codigo: code,
-          nombre: code.charAt(0) + code.slice(1).toLowerCase(),
+          nombre: code === 'INFRACOST' ? 'InfraCost Lite' : (code === 'INFRACOST_PRO' ? 'InfraCost' : code.charAt(0) + code.slice(1).toLowerCase()),
           ficticio: true
         });
       }
@@ -118,11 +203,38 @@ export const Applications: React.FC = () => {
 
   return (
     <div className="content-container">
-      <div style={{ marginBottom: '24px' }}>
-        <h2>Tienda de Aplicaciones (Ecosistema InfraSuite)</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Visualiza las aplicaciones disponibles en la plataforma. Para instalar una aplicación nueva en tu panel, el Super Administrador debe habilitar el acceso a tu empresa.
-        </p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h2>Tienda de Aplicaciones (Ecosistema InfraSuite)</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+            Visualiza e instala las aplicaciones del ecosistema en tu panel de control corporativo.
+          </p>
+        </div>
+
+        {user?.role === 'SUPER_ADMIN' && companies.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Administrar Empresa:</span>
+            <select
+              value={selectedCompanyId}
+              onChange={handleCompanyChange}
+              style={{
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                outline: 'none'
+              }}
+            >
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -143,7 +255,7 @@ export const Applications: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
           {getDisplayModules().map((modulo) => {
             const moduloCodigoUpper = modulo.codigo.toUpperCase();
-            const isInstalled = user?.role === 'SUPER_ADMIN' || companyModules.some(code => code.toUpperCase() === moduloCodigoUpper);
+            const isInstalled = companyModules.some(code => code.toUpperCase() === moduloCodigoUpper);
             const meta = appMeta[moduloCodigoUpper] || {
               icon: '⚙️',
               desc: modulo.nombre,
@@ -156,17 +268,17 @@ export const Applications: React.FC = () => {
                 key={modulo.codigo} 
                 style={{
                   background: meta.gradient,
-                  border: isInstalled ? `1px solid rgba(0, 240, 255, 0.15)` : '1px solid var(--border-color)',
-                  boxShadow: isInstalled ? '0 4px 20px rgba(0, 240, 255, 0.03)' : 'none',
+                  border: isInstalled ? `1px solid rgba(0, 240, 255, 0.18)` : '1px solid var(--border-color)',
+                  boxShadow: isInstalled ? '0 4px 20px rgba(0, 240, 255, 0.04)' : 'none',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   height: '100%',
-                  minHeight: '260px'
+                  minHeight: '270px',
+                  transition: 'all 0.25s ease'
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Top header: Icon + Status */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '2rem' }}>{meta.icon}</span>
                     <span 
@@ -181,14 +293,13 @@ export const Applications: React.FC = () => {
                         borderRadius: '4px'
                       }}
                     >
-                      {isInstalled ? '✓ ACCESO CONCEDIDO' : '🔒 REQUIERE ACCESO'}
+                      {isInstalled ? '✓ INSTALADO' : '🔒 INACTIVO'}
                     </span>
                   </div>
 
-                  {/* App info */}
                   <div>
                     <h3 style={{ margin: '0 0 6px 0', color: isInstalled ? meta.color : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {modulo.codigo}
+                      {modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo))}
                       {modulo.ficticio && (
                         <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', color: 'var(--text-muted)' }}>
                           Catálogo
@@ -201,43 +312,54 @@ export const Applications: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Footer action button */}
-                <div style={{ marginTop: '20px' }}>
+                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {isInstalled ? (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <Button 
+                        onClick={() => alert(`Cargando consola segura de ${modulo.nombre || modulo.codigo}...`)}
+                        style={{
+                          background: `linear-gradient(135deg, ${meta.color} 0%, rgba(255,255,255,0.05) 100%)`,
+                          border: 'none',
+                          color: '#121622',
+                          fontWeight: 'bold',
+                          flex: 2
+                        }}
+                      >
+                        Abrir
+                      </Button>
+                      <Button
+                        variant="danger"
+                        onClick={() => setConfirmModal({
+                          isOpen: true,
+                          type: 'uninstall',
+                          moduloCodigo: modulo.codigo,
+                          displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo)),
+                          isExecuting: false
+                        })}
+                        style={{ flex: 1, padding: '10px 0' }}
+                      >
+                        Desinstalar
+                      </Button>
+                    </div>
+                  ) : (
                     <Button 
-                      onClick={() => alert(`Cargando consola segura de ${modulo.codigo}...`)}
+                      onClick={() => setConfirmModal({
+                        isOpen: true,
+                        type: 'install',
+                        moduloCodigo: modulo.codigo,
+                        displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo)),
+                        isExecuting: false
+                      })}
                       style={{
-                        background: `linear-gradient(135deg, ${meta.color} 0%, rgba(255,255,255,0.05) 100%)`,
-                        border: 'none',
-                        color: '#121622',
-                        fontWeight: 'bold',
+                        background: 'transparent',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-primary)',
+                        fontWeight: '600',
                         width: '100%'
                       }}
                     >
-                      Abrir Aplicación
+                      Instalar Aplicación
                     </Button>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <button
-                        disabled
-                        style={{
-                          width: '100%',
-                          background: 'rgba(255, 255, 255, 0.02)',
-                          border: '1px dashed var(--border-color)',
-                          color: 'var(--text-muted)',
-                          padding: '10px',
-                          borderRadius: '6px',
-                          cursor: 'not-allowed',
-                          fontSize: '0.88rem',
-                          fontWeight: 600
-                        }}
-                      >
-                        Bloqueado por Licencia
-                      </button>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', display: 'block' }}>
-                        * Solicita el alta del módulo a tu Super Administrador.
-                      </span>
-                    </div>
                   )}
                 </div>
               </Card>
@@ -245,6 +367,136 @@ export const Applications: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Premium Confirm Modal Dialog */}
+      <AnimatePresence>
+        {confirmModal.isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(5, 7, 12, 0.75)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
+              padding: '20px'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 220 }}
+              style={{
+                width: '100%',
+                maxWidth: '460px',
+                background: 'var(--bg-surface-elevated)',
+                border: `1px solid ${confirmModal.type === 'install' ? 'rgba(0, 240, 255, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                boxShadow: `0 8px 32px rgba(0, 0, 0, 0.4), 0 0 40px ${confirmModal.type === 'install' ? 'rgba(0, 240, 255, 0.05)' : 'rgba(239, 68, 68, 0.05)'}`,
+                borderRadius: '16px',
+                padding: '28px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Top accent glow line */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: confirmModal.type === 'install' ? 'linear-gradient(90deg, #00f0ff, #3b82f6)' : 'linear-gradient(90deg, #ef4444, #b91c1c)'
+                }}
+              />
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px' }}>
+                {/* Visual Icon Badge */}
+                <motion.div
+                  animate={confirmModal.isExecuting ? { rotate: 360 } : {}}
+                  transition={confirmModal.isExecuting ? { repeat: Infinity, duration: 1.5, ease: 'linear' } : {}}
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: confirmModal.type === 'install' ? 'rgba(0, 240, 255, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                    border: `1px solid ${confirmModal.type === 'install' ? 'rgba(0, 240, 255, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.8rem',
+                    color: confirmModal.type === 'install' ? '#00f0ff' : '#ef4444'
+                  }}
+                >
+                  {confirmModal.isExecuting ? '⏳' : (confirmModal.type === 'install' ? '📥' : '🗑️')}
+                </motion.div>
+
+                <div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
+                    {confirmModal.type === 'install' ? 'Confirmar Instalación' : 'Confirmar Desinstalación'}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                    {confirmModal.type === 'install' 
+                      ? `¿Estás seguro de que deseas habilitar e instalar el módulo "${confirmModal.displayName}" en el espacio de la empresa seleccionada?` 
+                      : `¿Estás seguro de que deseas desactivar y desinstalar el módulo "${confirmModal.displayName}"? Los accesos de los usuarios serán revocados.`}
+                  </p>
+                </div>
+
+                {/* Company Context Badge */}
+                <div 
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--border-color)',
+                    width: '100%',
+                    fontSize: '0.8rem',
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  Empresa Objetivo: <strong style={{ color: 'var(--color-primary)' }}>
+                    {companies.find(c => c.id === (selectedCompanyId || user?.empresaId || 'c1'))?.nombre || 'Empresa'}
+                  </strong>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '8px' }}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setConfirmModal({ isOpen: false, type: null, moduloCodigo: '', displayName: '', isExecuting: false })}
+                    disabled={confirmModal.isExecuting}
+                    style={{ flex: 1 }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={executeAction}
+                    isLoading={confirmModal.isExecuting}
+                    style={{
+                      flex: 1,
+                      background: confirmModal.type === 'install' ? 'var(--color-primary)' : '#ef4444',
+                      border: 'none',
+                      color: confirmModal.type === 'install' ? '#121622' : '#ffffff',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {confirmModal.type === 'install' ? 'Sí, Instalar' : 'Sí, Desinstalar'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { db } from '@infrasuite/firebase';
 import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { syncModuleData } from '@infrasuite/sync-service';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCompanyModules } from '@infrasuite/license-service';
 
 // Subpages
 import { Dashboard } from './pages/Dashboard';
@@ -13,15 +14,17 @@ import { Users } from './pages/Users';
 import { Logs } from './pages/Logs';
 import { LandingPage } from './pages/LandingPage';
 import { LandingAdmin } from './pages/LandingAdmin';
-import { Budgets } from './pages/Budgets';
+import { Budgets } from './pages/budgets/BudgetsContainer';
 import { Applications } from './pages/Applications';
 import { ProfileSettings } from './pages/ProfileSettings';
+import { HomeUser } from './pages/HomeUser';
 
 // App Inner Layout
 const AppContent: React.FC = () => {
   const { user, login, loginWithGoogle, logout, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [installedModules, setInstalledModules] = useState<string[]>([]);
   
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -62,12 +65,27 @@ const AppContent: React.FC = () => {
     }
   }, [user, sessionUser]);
 
+  const loadInstalledModules = async () => {
+    if (!user) return;
+    try {
+      const empresaId = user.empresaId || 'c1';
+      const mods = await getCompanyModules(empresaId);
+      setInstalledModules(mods.map((m: string) => m.toUpperCase()));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadInstalledModules();
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       if (user.role === 'SUPER_ADMIN') {
         setActiveTab('dashboard');
       } else {
-        setActiveTab('budgets');
+        setActiveTab('home');
       }
     }
   }, [user]);
@@ -715,18 +733,34 @@ const AppContent: React.FC = () => {
                   <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🔄</span>
                   {!isSidebarCollapsed && <span>Sincronizador Local</span>}
                 </button>
-                <button
-                  className={`menu-item ${activeTab === 'budgets' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('budgets')}
-                  title={isSidebarCollapsed ? "Presupuestos" : undefined}
-                  style={{
-                    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
-                    padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
-                  }}
-                >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
-                  {!isSidebarCollapsed && <span>PRESUPUESTOS</span>}
-                </button>
+                {installedModules.includes('INFRACOST') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_lite' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_lite')}
+                    title={isSidebarCollapsed ? "InfraCost Lite" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    {!isSidebarCollapsed && <span>InfraCost Lite</span>}
+                  </button>
+                )}
+                {installedModules.includes('INFRACOST_PRO') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_pro')}
+                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                  </button>
+                )}
                 <button
                   className={`menu-item ${activeTab === 'applications' ? 'active' : ''}`}
                   onClick={() => setActiveTab('applications')}
@@ -743,17 +777,59 @@ const AppContent: React.FC = () => {
             ) : user.role === 'ADMIN' ? (
               <nav className="sidebar-menu">
                 <button
-                  className={`menu-item ${activeTab === 'budgets' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('budgets')}
-                  title={isSidebarCollapsed ? "Presupuestos" : undefined}
+                  className={`menu-item ${activeTab === 'home' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('home')}
+                  title={isSidebarCollapsed ? "Inicio" : undefined}
                   style={{
                     justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
-                  {!isSidebarCollapsed && <span>PRESUPUESTOS</span>}
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🏠</span>
+                  {!isSidebarCollapsed && <span>Inicio</span>}
                 </button>
+
+                {!isSidebarCollapsed && (
+                  <div style={{
+                    margin: '16px 0 8px 18px',
+                    fontSize: '0.72rem',
+                    color: 'var(--text-muted)',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase'
+                  }}>
+                    Aplicaciones
+                  </div>
+                )}
+
+                {installedModules.includes('INFRACOST') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_lite' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_lite')}
+                    title={isSidebarCollapsed ? "InfraCost Lite" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    {!isSidebarCollapsed && <span>InfraCost Lite</span>}
+                  </button>
+                )}
+                {installedModules.includes('INFRACOST_PRO') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_pro')}
+                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                  </button>
+                )}
 
                 {!isSidebarCollapsed && (
                   <div style={{
@@ -808,17 +884,45 @@ const AppContent: React.FC = () => {
             ) : (
               <nav className="sidebar-menu">
                 <button
-                  className={`menu-item ${activeTab === 'budgets' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('budgets')}
-                  title={isSidebarCollapsed ? "Presupuestos" : undefined}
+                  className={`menu-item ${activeTab === 'home' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('home')}
+                  title={isSidebarCollapsed ? "Inicio" : undefined}
                   style={{
                     justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
-                  {!isSidebarCollapsed && <span>PRESUPUESTOS</span>}
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🏠</span>
+                  {!isSidebarCollapsed && <span>Inicio</span>}
                 </button>
+                {installedModules.includes('INFRACOST') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_lite' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_lite')}
+                    title={isSidebarCollapsed ? "InfraCost Lite" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    {!isSidebarCollapsed && <span>InfraCost Lite</span>}
+                  </button>
+                )}
+                {installedModules.includes('INFRACOST_PRO') && (
+                  <button
+                    className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('budgets_pro')}
+                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    style={{
+                      justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                      padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                  </button>
+                )}
                 <button
                   className={`menu-item ${activeTab === 'applications' ? 'active' : ''}`}
                   onClick={() => setActiveTab('applications')}
@@ -1011,17 +1115,19 @@ const AppContent: React.FC = () => {
 
           {/* Main Panel Content */}
           <main className="main-wrapper">
-            {activeTab !== 'budgets' && (
+            {activeTab !== 'budgets_lite' && activeTab !== 'budgets_pro' && activeTab !== 'home' && (
               <header className="top-bar">
                 <div className="page-title-section">
                   <h1 className="page-title">
+                    {activeTab === 'home' && 'Inicio'}
                     {activeTab === 'dashboard' && 'Panel de Control Principal'}
                     {activeTab === 'companies' && 'Administración de Empresas'}
                     {activeTab === 'users' && 'Administración de Usuarios'}
                     {activeTab === 'logs' && 'Auditoría del Ecosistema'}
                     {activeTab === 'sync' && 'Motor de Sincronización Local'}
                     {activeTab === 'landing' && 'Configuración de Inicio'}
-                    {activeTab === 'budgets' && 'PRESUPUESTOS'}
+                    {activeTab === 'budgets_lite' && 'InfraCost Lite'}
+                    {activeTab === 'budgets_pro' && 'InfraCost'}
                     {activeTab === 'applications' && 'Aplicaciones Disponibles'}
                     {activeTab === 'profile-settings' && 'Perfil y Configuración de Cuenta'}
                   </h1>
@@ -1058,13 +1164,15 @@ const AppContent: React.FC = () => {
 
             {/* Tab router views */}
             <React.Fragment>
+              {activeTab === 'home' && <HomeUser onNavigate={(tab) => setActiveTab(tab)} installedModules={installedModules} theme={theme} />}
               {activeTab === 'dashboard' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Dashboard onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'companies' && user.role === 'SUPER_ADMIN' && <Companies />}
               {activeTab === 'landing' && user.role === 'SUPER_ADMIN' && <LandingAdmin />}
               {activeTab === 'users' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Users />}
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
-              {activeTab === 'budgets' && <Budgets theme={theme} toggleTheme={toggleTheme} companies={companies} />}
-              {activeTab === 'applications' && <Applications />}
+              {activeTab === 'budgets_lite' && <Budgets mode="lite" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
+              {activeTab === 'budgets_pro' && <Budgets mode="pro" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
+              {activeTab === 'applications' && <Applications onModulesChanged={loadInstalledModules} />}
               {activeTab === 'profile-settings' && <ProfileSettings />}
               
               {activeTab === 'sync' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && (

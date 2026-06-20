@@ -47,7 +47,8 @@ const DEFAULT_LICENSES = [
 ];
 
 const DEFAULT_MODULES = [
-  { codigo: 'INFRACOST', nombre: 'InfraCost', desc: 'Gestión avanzada de costos, presupuestos de obra y Análisis de Precios Unitarios (APU) integrados.', icon: '📊', activo: true, visibleLanding: true },
+  { codigo: 'INFRACOST', nombre: 'InfraCost Lite', desc: 'Gestión clásica de presupuestos de obra y Análisis de Precios Unitarios (APU) esenciales.', icon: '💰', activo: true, visibleLanding: true },
+  { codigo: 'INFRACOST_PRO', nombre: 'InfraCost', desc: 'Presupuestos de obra profesionales con pantalla dividida (Spreadsheet + Especificaciones y Asistente IA Gemini integrado).', icon: '📊', activo: true, visibleLanding: true },
   { codigo: 'INFRAGEO', nombre: 'InfraGeo', desc: 'Mapeo geotécnico, modelado de sondajes y registro de ensayos de mecánica de suelos en campo.', icon: '🕳️', activo: true, visibleLanding: true },
   { codigo: 'INFRABIM', nombre: 'InfraBIM', desc: 'Visualización y coordinación de modelos 3D en formato abierto IFC directamente en el navegador.', icon: '📐', activo: true, visibleLanding: true },
   { codigo: 'INFRACONTROL', nombre: 'InfraControl', desc: 'Seguimiento financiero de obra, generación de valorizaciones mensuales y curvas S de avance.', icon: '📈', activo: true, visibleLanding: true },
@@ -59,6 +60,7 @@ const DEFAULT_MODULES = [
 
 const DEFAULT_COMPANY_MODULES = [
   { empresaId: 'c1', moduloId: 'INFRACOST' },
+  { empresaId: 'c1', moduloId: 'INFRACOST_PRO' },
   { empresaId: 'c1', moduloId: 'INFRADOCS' },
   { empresaId: 'c2', moduloId: 'INFRAGEO' },
   { empresaId: 'c2', moduloId: 'INFRAAI' },
