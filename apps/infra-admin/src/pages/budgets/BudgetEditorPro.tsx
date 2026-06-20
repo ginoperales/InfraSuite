@@ -303,6 +303,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   const [leftWidthPercent, setLeftWidthPercent] = useState(48);
   const [columnWidths, setColumnWidths] = useState({
     index: 35,
+    item: 70,
     desc: 280,
     cant: 80,
     price: 85,
@@ -587,6 +588,33 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                   };
                 }, [popupRow?.isDragging]);
 
+                const handleItemCodeChange = (partidaId: string, oldCode: string, newCode: string) => {
+                  if (!newCode) return;
+                  
+                  // Rule 1: Check duplication
+                  const duplicate = activeBudget.partidas.find(p => p.id !== partidaId && p.item === newCode);
+                  if (duplicate) {
+                    alert(`El código de ítem "${newCode}" ya existe. Ingrese un código único para evitar duplicados.`);
+                    return;
+                  }
+
+                  // Update the item and its subcategories reactively
+                  const nextPartidas = activeBudget.partidas.map(p => {
+                    if (p.id === partidaId) {
+                      return { ...p, item: newCode };
+                    }
+                    if (p.item.startsWith(oldCode + '.')) {
+                      const suffix = p.item.substring(oldCode.length);
+                      return { ...p, item: newCode + suffix };
+                    }
+                    return p;
+                  });
+
+                  if (updatePartidasList) {
+                    updatePartidasList(nextPartidas);
+                  }
+                };
+
                 // Filter out items whose parent is collapsed
                 const visiblePartidas = filteredPartidas.filter(p => {
                   return !collapsedItems.some(collapsedItem => {
@@ -603,6 +631,13 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                             #
                             <div
                               onMouseDown={(e) => { e.preventDefault(); handleColumnResize('index', e.clientX, columnWidths.index); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.item}px`, position: 'relative' }}>
+                            Ítem
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('item', e.clientX, columnWidths.item); }}
                               style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
                             />
                           </th>
@@ -661,6 +696,43 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                             >
                               {/* Index Row */}
                               <td style={{ padding: '6px 8px', color: 'var(--text-muted)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}</td>
+                              
+                              {/* Item Column (Editable on Blur/Enter) */}
+                              <td style={{ padding: '4px 6px', width: `${columnWidths.item}px` }}>
+                                <input
+                                  type="text"
+                                  defaultValue={p.item}
+                                  key={p.item}
+                                  onBlur={(e) => {
+                                    const newCode = e.target.value.trim();
+                                    if (newCode !== p.item) {
+                                      handleItemCodeChange(p.id, p.item, newCode);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const newCode = e.currentTarget.value.trim();
+                                      if (newCode !== p.item) {
+                                        handleItemCodeChange(p.id, p.item, newCode);
+                                      }
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    width: '100%',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: p.esTitulo ? '#ef4444' : 'var(--text-primary)',
+                                    fontWeight: p.esTitulo ? 'bold' : 'normal',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.8rem',
+                                    outline: 'none',
+                                    padding: '2px'
+                                  }}
+                                />
+                              </td>
+
                               {/* Description (with hierarchy offset) */}
                               <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <span 
@@ -681,7 +753,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                   {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
                                 </span>
                                 <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
-                                  {p.item} {p.nombre}
+                                  {p.nombre}
                                 </span>
                               </td>
                               {/* Cantidad / Metrado */}
@@ -793,8 +865,33 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                         {/* Popup Content */}
                         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Nombre del Elemento</span>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{popupRow.partida.nombre}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Nombre del Elemento</span>
+                            <input
+                              type="text"
+                              value={popupRow.partida.nombre}
+                              onChange={(e) => {
+                                const newName = e.target.value;
+                                setPopupRow({
+                                  ...popupRow,
+                                  partida: {
+                                    ...popupRow.partida,
+                                    nombre: newName
+                                  }
+                                });
+                                handlePartidaCellChange(popupRow.partida.id, 'nombre', newName);
+                              }}
+                              style={{
+                                width: '100%',
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-primary)',
+                                padding: '6px 10px',
+                                borderRadius: '4px',
+                                fontSize: '0.82rem',
+                                outline: 'none',
+                                fontFamily: 'var(--font-sans)'
+                              }}
+                            />
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
