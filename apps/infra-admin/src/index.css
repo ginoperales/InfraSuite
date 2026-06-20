@@ -1317,6 +1317,50 @@
 
 
 
+/* Custom Context Menu and Popup buttons styles */
+.context-menu-item {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s, color 0.15s;
+  width: 100%;
+  outline: none;
+  font-family: var(--font-sans);
+}
 
+.context-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
 
+.popup-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: bold;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.popup-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-primary, #00f0ff);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
 

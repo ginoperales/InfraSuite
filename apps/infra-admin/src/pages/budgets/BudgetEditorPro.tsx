@@ -2,6 +2,42 @@ import React, { useState } from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
 import type { Budget, Partida, Insumo, PartidaColumnKey } from './types';
 
+const contextMenuItemStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  textAlign: 'left',
+  padding: '6px 12px',
+  fontSize: '0.78rem',
+  color: 'var(--text-primary)',
+  cursor: 'pointer',
+  borderRadius: '4px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  transition: 'background-color 0.15s, color 0.15s',
+  width: '100%',
+  outline: 'none',
+  fontFamily: 'var(--font-sans)',
+};
+
+const popupBtnStyle: React.CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.05)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '4px',
+  color: 'var(--text-primary)',
+  padding: '6px 12px',
+  fontSize: '0.78rem',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  fontWeight: 'bold',
+  outline: 'none',
+  fontFamily: 'var(--font-sans)',
+};
+
 interface BudgetEditorProProps {
   activeBudget: Budget;
   openBudgets: Budget[];
@@ -301,7 +337,11 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
             <div style={{ flexGrow: 1, overflowY: 'auto' }}>
               {(() => {
                 const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
+                const [contextMenuRow, setContextMenuRow] = useState<{ visible: boolean; x: number; y: number; partida: Partida } | null>(null);
                 
+                // Double-click movable popup dialog state (without backdrop filter/overlay)
+                const [popupRow, setPopupRow] = useState<{ visible: boolean; x: number; y: number; partida: Partida; isDragging: boolean; dragStart: { x: number; y: number } } | null>(null);
+
                 const toggleCollapse = (itemStr: string) => {
                   setCollapsedItems(prev => 
                     prev.includes(itemStr) 
@@ -310,123 +350,324 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                   );
                 };
 
+                const handleRowContextMenu = (e: React.MouseEvent, p: Partida) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setContextMenuRow({
+                    visible: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    partida: p
+                  });
+                };
+
+                const handleRowDoubleClick = (e: React.MouseEvent, p: Partida) => {
+                  e.preventDefault();
+                  // Open floating menu near cursor position
+                  setPopupRow({
+                    visible: true,
+                    x: e.clientX,
+                    y: e.clientY - 20,
+                    partida: p,
+                    isDragging: false,
+                    dragStart: { x: 0, y: 0 }
+                  });
+                };
+
+                const handleAction = (action: string, p: Partida) => {
+                  alert(`Acción "${action}" seleccionada para el elemento: ${p.item} ${p.nombre}`);
+                  setContextMenuRow(null);
+                  setPopupRow(null);
+                };
+
+                // Close menus on click
+                React.useEffect(() => {
+                  const closeMenus = () => {
+                    setContextMenuRow(null);
+                  };
+                  window.addEventListener('click', closeMenus);
+                  return () => window.removeEventListener('click', closeMenus);
+                }, []);
+
+                // Global dragging effect for Quick Properties Popup
+                React.useEffect(() => {
+                  if (!popupRow || !popupRow.isDragging) return;
+
+                  const handleMouseMove = (e: MouseEvent) => {
+                    setPopupRow(prev => {
+                      if (!prev || !prev.isDragging) return prev;
+                      return {
+                        ...prev,
+                        x: e.clientX - prev.dragStart.x,
+                        y: e.clientY - prev.dragStart.y
+                      };
+                    });
+                  };
+
+                  const handleMouseUp = () => {
+                    setPopupRow(prev => {
+                      if (!prev) return null;
+                      return { ...prev, isDragging: false };
+                    });
+                  };
+
+                  window.addEventListener('mousemove', handleMouseMove);
+                  window.addEventListener('mouseup', handleMouseUp);
+                  return () => {
+                    window.removeEventListener('mousemove', handleMouseMove);
+                    window.removeEventListener('mouseup', handleMouseUp);
+                  };
+                }, [popupRow?.isDragging]);
+
                 // Filter out items whose parent is collapsed
-                // E.g., if "1" is collapsed, hide "1.1", "1.1.1", "2.1" is unaffected.
                 const visiblePartidas = filteredPartidas.filter(p => {
                   return !collapsedItems.some(collapsedItem => {
-                    // Check if current item starts with collapsedItem + "." and is not the collapsedItem itself
                     return p.item !== collapsedItem && p.item.startsWith(collapsedItem + ".");
                   });
                 });
 
                 return (
-                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem', fontFamily: 'monospace' }}>
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
-                      <tr>
-                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.index}px`, textAlign: 'center', position: 'relative' }}>
-                          #
-                          <div
-                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('index', e.clientX, columnWidths.index); }}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                          />
-                        </th>
-                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.desc}px`, position: 'relative' }}>
-                          Descripción
-                          <div
-                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('desc', e.clientX, columnWidths.desc); }}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                          />
-                        </th>
-                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.cant}px`, textAlign: 'right', position: 'relative' }}>
-                          Cantidad
-                          <div
-                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('cant', e.clientX, columnWidths.cant); }}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                          />
-                        </th>
-                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.price}px`, textAlign: 'right', position: 'relative' }}>
-                          Precio
-                          <div
-                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('price', e.clientX, columnWidths.price); }}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                          />
-                        </th>
-                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.total}px`, textAlign: 'right', position: 'relative' }}>
-                          Total
-                          <div
-                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('total', e.clientX, columnWidths.total); }}
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                          />
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visiblePartidas.map((p, idx) => {
-                        const isSelected = selectedPartidaId === p.id;
-                        const price = getPartidaCU(p);
-                        const totalVal = getPartidaParcial(p);
-                        const isCollapsed = collapsedItems.includes(p.item);
+                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                    <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                        <tr>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.index}px`, textAlign: 'center', position: 'relative' }}>
+                            #
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('index', e.clientX, columnWidths.index); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.desc}px`, position: 'relative' }}>
+                            Descripción
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('desc', e.clientX, columnWidths.desc); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.cant}px`, textAlign: 'right', position: 'relative' }}>
+                            Cantidad
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('cant', e.clientX, columnWidths.cant); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.price}px`, textAlign: 'right', position: 'relative' }}>
+                            Precio
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('price', e.clientX, columnWidths.price); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.total}px`, textAlign: 'right', position: 'relative' }}>
+                            Total
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('total', e.clientX, columnWidths.total); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visiblePartidas.map((p, idx) => {
+                          const isSelected = selectedPartidaId === p.id;
+                          const price = getPartidaCU(p);
+                          const totalVal = getPartidaParcial(p);
+                          const isCollapsed = collapsedItems.includes(p.item);
 
-                        // Calculate indent level based on dot count in item number
-                        // E.g., "01" -> 0, "01.01" -> 1, "01.01.01" -> 2
-                        const level = p.item.split('.').length - 1;
-                        const paddingLeft = 10 + (level * 16);
+                          const level = p.item.split('.').length - 1;
+                          const paddingLeft = 10 + (level * 16);
 
-                        return (
-                          <tr
-                            key={p.id}
-                            onClick={() => handlePartidaCellClick(p)}
-                            onContextMenu={(e) => handlePartidaContextMenu(e, p)}
-                            style={{
-                              background: isSelected ? 'rgba(0, 240, 255, 0.05)' : p.esTitulo ? 'rgba(139, 92, 246, 0.02)' : 'transparent',
-                              borderBottom: '1px solid var(--border-color)',
-                              cursor: 'pointer',
-                              fontWeight: p.esTitulo ? 'bold' : 'normal'
-                            }}
+                          return (
+                            <tr
+                              key={p.id}
+                              onClick={() => handlePartidaCellClick(p)}
+                              onContextMenu={(e) => handleRowContextMenu(e, p)}
+                              onDoubleClick={(e) => handleRowDoubleClick(e, p)}
+                              style={{
+                                background: isSelected ? 'rgba(0, 240, 255, 0.05)' : p.esTitulo ? 'rgba(139, 92, 246, 0.02)' : 'transparent',
+                                borderBottom: '1px solid var(--border-color)',
+                                cursor: 'pointer',
+                                fontWeight: p.esTitulo ? 'bold' : 'normal'
+                              }}
+                            >
+                              {/* Index Row */}
+                              <td style={{ padding: '6px 8px', color: 'var(--text-muted)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}</td>
+                              {/* Description (with hierarchy offset) */}
+                              <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span 
+                                  onClick={(e) => {
+                                    if (p.esTitulo) {
+                                      e.stopPropagation();
+                                      toggleCollapse(p.item);
+                                    }
+                                  }}
+                                  style={{ 
+                                    marginRight: '6px', 
+                                    cursor: p.esTitulo ? 'pointer' : 'default',
+                                    userSelect: 'none',
+                                    display: 'inline-block',
+                                    transition: 'transform 0.15s ease'
+                                  }}
+                                >
+                                  {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
+                                </span>
+                                <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
+                                  {p.item} {p.nombre}
+                                </span>
+                              </td>
+                              {/* Cantidad / Metrado */}
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                                {!p.esTitulo && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>{p.unidad}</span>}
+                              </td>
+                              {/* Precio */}
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.esTitulo ? '' : price.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              </td>
+                              {/* Total */}
+                              <td style={{ padding: '6px 8px', textAlign: 'right', color: p.esTitulo ? '#ef4444' : 'var(--color-primary)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                S/ {totalVal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    {/* Right click custom Context Menu */}
+                    {contextMenuRow && contextMenuRow.visible && (
+                      <div 
+                        style={{
+                          position: 'fixed',
+                          top: contextMenuRow.y,
+                          left: contextMenuRow.x,
+                          background: theme === 'light' ? '#ffffff' : 'var(--bg-surface-elevated, #171923)',
+                          border: '1px solid var(--border-color)',
+                          boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                          borderRadius: '8px',
+                          padding: '6px',
+                          zIndex: 99999,
+                          minWidth: '170px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '4px 8px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {contextMenuRow.partida.esTitulo ? '📂 Título' : '📄 Partida'}: {contextMenuRow.partida.item}
+                        </div>
+                        <button onClick={() => handleAction('Cambiar Jerarquía', contextMenuRow.partida)} style={contextMenuItemStyle}>📐 Cambiar Jerarquía</button>
+                        <button onClick={() => handleAction('Duplicar', contextMenuRow.partida)} style={contextMenuItemStyle}>👯 Duplicar</button>
+                        <button onClick={() => handleAction('Mover', contextMenuRow.partida)} style={contextMenuItemStyle}>🔃 Mover</button>
+                        <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
+                        <button onClick={() => handleAction('Eliminar', contextMenuRow.partida)} style={{ ...contextMenuItemStyle, color: '#ef4444' }}>🗑️ Eliminar</button>
+                      </div>
+                    )}
+
+                    {/* Double Click Movable Floating Dialog Menu (No dark backdrop filter) */}
+                    {popupRow && popupRow.visible && (
+                      <div 
+                        style={{
+                          position: 'fixed',
+                          top: popupRow.y,
+                          left: popupRow.x,
+                          background: theme === 'light' ? '#ffffff' : 'var(--bg-surface-elevated, #171923)',
+                          border: '1px solid var(--color-primary, #00f0ff)',
+                          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 240, 255, 0.1)',
+                          borderRadius: '10px',
+                          width: '320px',
+                          zIndex: 99999,
+                          color: 'var(--text-primary)',
+                          fontFamily: 'var(--font-sans)',
+                          overflow: 'hidden'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Popup Header (Draggable Handle) */}
+                        <div 
+                          onMouseDown={(e) => {
+                            const container = e.currentTarget.parentElement;
+                            if (!container) return;
+                            const rect = container.getBoundingClientRect();
+                            setPopupRow({
+                              ...popupRow,
+                              isDragging: true,
+                              dragStart: { x: e.clientX - rect.left, y: e.clientY - rect.top }
+                            });
+                          }}
+                          style={{
+                            background: 'linear-gradient(90deg, #1e3a8a 0%, #0f52ba 100%)',
+                            color: '#ffffff',
+                            padding: '10px 14px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'move',
+                            userSelect: 'none'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800 }}>PROPIEDADES RAPIDAS</span>
+                          <span 
+                            onClick={() => setPopupRow(null)}
+                            style={{ cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold', padding: '0 4px' }}
                           >
-                            {/* Index Row */}
-                            <td style={{ padding: '6px 8px', color: 'var(--text-muted)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}</td>
-                            {/* Description (with hierarchy offset) */}
-                            <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <span 
-                                onClick={(e) => {
-                                  if (p.esTitulo) {
-                                    e.stopPropagation();
-                                    toggleCollapse(p.item);
-                                  }
-                                }}
-                                style={{ 
-                                  marginRight: '6px', 
-                                  cursor: p.esTitulo ? 'pointer' : 'default',
-                                  userSelect: 'none',
-                                  display: 'inline-block',
-                                  transition: 'transform 0.15s ease'
-                                }}
-                              >
-                                {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
+                            ×
+                          </span>
+                        </div>
+                        {/* Popup Content */}
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Nombre del Elemento</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{popupRow.partida.nombre}</span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Ítem Código</span>
+                              <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 'bold' }}>{popupRow.partida.item}</span>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Tipo Elemento</span>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: popupRow.partida.esTitulo ? 'var(--color-secondary)' : '#107c41' }}>
+                                {popupRow.partida.esTitulo ? '📁 Título' : '📄 Partida'}
                               </span>
-                              <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
-                                {p.item} {p.nombre}
-                              </span>
-                            </td>
-                            {/* Cantidad / Metrado */}
-                            <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                              {!p.esTitulo && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>{p.unidad}</span>}
-                            </td>
-                            {/* Precio */}
-                            <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {p.esTitulo ? '' : price.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                            </td>
-                            {/* Total */}
-                            <td style={{ padding: '6px 8px', textAlign: 'right', color: p.esTitulo ? '#ef4444' : 'var(--color-primary)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              S/ {totalVal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+
+                          {/* Conditional Options */}
+                          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: 600 }}>Operaciones Rápidas</span>
+                            {popupRow.partida.esTitulo ? (
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <button onClick={() => handleAction('Degradar Título', popupRow.partida)} style={popupBtnStyle}>📉 Degradar</button>
+                                <button onClick={() => handleAction('Promover Título', popupRow.partida)} style={popupBtnStyle}>📈 Promover</button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                  <button onClick={() => handleAction('Editar Metrado', popupRow.partida)} style={popupBtnStyle}>✏️ Metrado</button>
+                                  <button onClick={() => handleAction('Ver Subpresupuesto', popupRow.partida)} style={popupBtnStyle}>🔍 Presupuesto</button>
+                                </div>
+                                <button 
+                                  onClick={() => handleAction('Convertir a Título', popupRow.partida)}
+                                  style={{
+                                    ...popupBtnStyle,
+                                    background: 'rgba(139, 92, 246, 0.1)',
+                                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                                    color: '#a78bfa'
+                                  }}
+                                >
+                                  📁 Convertir a Título
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })()}
             </div>
