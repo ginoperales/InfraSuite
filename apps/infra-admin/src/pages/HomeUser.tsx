@@ -86,6 +86,14 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [isPromoLoaded, setIsPromoLoaded] = useState(false);
 
+  const [files, setFiles] = useState<any[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    fileId: string;
+  }>({ visible: false, x: 0, y: 0, fileId: '' });
+
   useEffect(() => {
     if (promotions.length <= 1) return;
     const interval = setInterval(() => {
@@ -132,104 +140,132 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
 
   const ownerName = user?.nombre || 'Gino Harold Perales Guerra';
 
-  // Base mockup files mapped to InfraSuite apps
-  const mockFiles: (DashboardFile & { isTemplate?: boolean })[] = [
-    {
-      id: 'f_1',
-      name: 'PLAN ANUAL DE SEGURIDAD Y SALUD EN EL TRABAJO - CONSORCIO SEDE PUCALLPA',
-      type: 'infraplan',
-      modified: '22 may.',
-      owner: ownerName,
-      category: 'Plan de Obra',
-      isTemplate: true
-    },
-    {
-      id: 'f_2',
-      name: '0. RESUMEN DE PRESUP. SEDE GOREU I ETAPA',
-      type: 'infracost_pro',
-      modified: '22 may.',
-      owner: ownerName,
-      category: 'Presupuestos Pro',
-      tabNavigate: 'budgets_pro',
-      isTemplate: false // infracost_pro is installed
-    },
-    {
-      id: 'f_3',
-      name: 'TALLER DE INDUCCION SEDE-wrom an',
-      type: 'infraplan',
-      modified: '22 may.',
-      owner: ownerName,
-      category: 'Plan de Obra',
-      isTemplate: true
-    },
-    {
-      id: 'f_4',
-      name: '2631805-GDU-MO1-ZZZ-M30-ES-001',
+  // Initialize files state based on recent budgets + templates + user-created mock files
+  useEffect(() => {
+    const budgetFiles = recentBudgets.map((b) => ({
+      id: b.id || `real_${Math.random()}`,
+      name: b.nombre || 'Presupuesto de Obra',
       type: 'infracost_lite',
-      modified: '20 abr.',
+      modified: 'ahora mismo',
       owner: ownerName,
-      category: 'Presupuestos Lite',
+      category: 'Presupuestos locales',
       tabNavigate: 'budgets_lite',
-      isTemplate: true // infracost_lite is not installed
-    },
-    {
-      id: 'f_5',
-      name: 'ESTRUCTURAS',
-      type: 'infracost_pro',
-      modified: '6 abr.',
-      owner: ownerName,
-      category: 'Presupuestos Pro',
-      tabNavigate: 'budgets_pro',
-      isTemplate: false // infracost_pro is installed
-    },
-    {
-      id: 'f_6',
-      name: 'PROYECTO SANEAMIENTO CURIMANA',
-      type: 'infrageo',
-      modified: '25 mar.',
-      owner: ownerName,
-      category: 'Sondeos Geológicos',
-      isTemplate: true
-    },
-    {
-      id: 'f_7',
-      name: 'CT2',
-      type: 'infracost_lite',
-      modified: '10 mar.',
-      owner: ownerName,
-      category: 'Presupuestos Lite',
-      tabNavigate: 'budgets_lite',
-      isTemplate: true // infracost_lite is not installed
-    },
-    {
-      id: 'f_8',
-      name: 'SUSTENTO DE METRADO MOBILIARIO ok ok',
-      type: 'infracost_lite',
-      modified: '7 mar.',
-      owner: ownerName,
-      category: 'Presupuestos Lite',
-      tabNavigate: 'budgets_lite',
-      isTemplate: true // infracost_lite is not installed
+      isRealBudget: true,
+      isTemplate: false
+    }));
+
+    const templates = [
+      // 3 InfraCost Lite templates
+      { id: 't_lite_1', name: 'Presupuesto Vivienda Unifamiliar - Plantilla Base', type: 'infracost_lite', modified: '20 may.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: true, tabNavigate: 'budgets_lite' },
+      { id: 't_lite_2', name: 'Presupuesto Remodelación Oficina Comercial - Plantilla', type: 'infracost_lite', modified: '15 may.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: true, tabNavigate: 'budgets_lite' },
+      { id: 't_lite_3', name: 'Presupuesto Construcción Cerco Perimétrico - Plantilla', type: 'infracost_lite', modified: '10 may.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: true, tabNavigate: 'budgets_lite' },
+      
+      // 3 InfraCost Pro templates
+      { id: 't_pro_1', name: 'Presupuesto Hospital de Complejidad II - Plantilla Pro', type: 'infracost_pro', modified: '18 may.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: true, tabNavigate: 'budgets_pro' },
+      { id: 't_pro_2', name: 'Presupuesto Edificio Residencial 15 Pisos - Plantilla Pro', type: 'infracost_pro', modified: '14 may.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: true, tabNavigate: 'budgets_pro' },
+      { id: 't_pro_3', name: 'Presupuesto Pavimentación Vial Urbana - Plantilla Pro', type: 'infracost_pro', modified: '12 may.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: true, tabNavigate: 'budgets_pro' },
+      
+      // 3 InfraGeo templates
+      { id: 't_geo_1', name: 'Perfil de Sondaje Geotécnico Estándar - Plantilla', type: 'infrageo', modified: '25 may.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: true },
+      { id: 't_geo_2', name: 'Ensayo de Penetración Estándar (SPT) - Plantilla', type: 'infrageo', modified: '22 may.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: true },
+      { id: 't_geo_3', name: 'Estudio de Suelos Cimentación - Plantilla', type: 'infrageo', modified: '19 may.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: true },
+      
+      // 3 InfraPlan templates
+      { id: 't_plan_1', name: 'Plan Anual de Seguridad y Salud - Plantilla', type: 'infraplan', modified: '22 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: true },
+      { id: 't_plan_2', name: 'Cronograma de Obra Gantt - Plantilla', type: 'infraplan', modified: '20 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: true },
+      { id: 't_plan_3', name: 'Plan de Monitoreo Ambiental - Plantilla', type: 'infraplan', modified: '18 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: true },
+    ];
+
+    const staticUserFiles = [
+      // 3 InfraCost Lite user-created
+      { id: 'u_lite_1', name: '2631805-GDU-MO1-ZZZ-M30-ES-001', type: 'infracost_lite', modified: '20 abr.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: false, tabNavigate: 'budgets_lite' },
+      { id: 'u_lite_2', name: 'Presupuesto Obras Civiles Lote 12', type: 'infracost_lite', modified: '18 abr.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: false, tabNavigate: 'budgets_lite' },
+      { id: 'u_lite_3', name: 'Metrado y Valorización Inicial Pucallpa', type: 'infracost_lite', modified: '12 abr.', owner: ownerName, category: 'Presupuestos Lite', isTemplate: false, tabNavigate: 'budgets_lite' },
+      
+      // 3 InfraCost Pro user-created
+      { id: 'u_pro_1', name: '0. RESUMEN DE PRESUP. SEDE GOREU I ETAPA', type: 'infracost_pro', modified: '22 may.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: false, tabNavigate: 'budgets_pro' },
+      { id: 'u_pro_2', name: 'ESTRUCTURAS SEDE PUCALLPA', type: 'infracost_pro', modified: '6 abr.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: false, tabNavigate: 'budgets_pro' },
+      { id: 'u_pro_3', name: 'Presupuesto Instalaciones Sanitarias Final', type: 'infracost_pro', modified: '2 abr.', owner: ownerName, category: 'Presupuestos Pro', isTemplate: false, tabNavigate: 'budgets_pro' },
+      
+      // 3 InfraGeo user-created
+      { id: 'u_geo_1', name: 'PROYECTO SANEAMIENTO CURIMANA', type: 'infrageo', modified: '25 mar.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: false },
+      { id: 'u_geo_2', name: 'Sondaje y Perfiles Lote 2B - Yarinacocha', type: 'infrageo', modified: '22 mar.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: false },
+      { id: 'u_geo_3', name: 'Registro de Ensayos Lab Sedes Delta', type: 'infrageo', modified: '15 mar.', owner: ownerName, category: 'Sondeos Geológicos', isTemplate: false },
+      
+      // 3 InfraPlan user-created
+      { id: 'u_plan_1', name: 'Planificación Sede Goreu Etapa I', type: 'infraplan', modified: '22 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: false },
+      { id: 'u_plan_2', name: 'Cronograma de Adquisición de Insumos', type: 'infraplan', modified: '14 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: false },
+      { id: 'u_plan_3', name: 'Plan de Seguridad Consorcio Sur', type: 'infraplan', modified: '10 may.', owner: ownerName, category: 'Plan de Obra', isTemplate: false }
+    ];
+
+    setFiles([...budgetFiles, ...staticUserFiles, ...templates]);
+  }, [recentBudgets, ownerName]);
+
+  // Context Menu handlers
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setContextMenu((prev) => prev.visible ? { ...prev, visible: false } : prev);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  const handleContextMenu = (e: React.MouseEvent, fileId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      fileId
+    });
+  };
+
+  const handleOpenFile = (file: any) => {
+    const isModuleInstalled = 
+      (file.type === 'infracost_lite' && installedModules.includes('INFRACOST')) ||
+      (file.type === 'infracost_pro' && installedModules.includes('INFRACOST_PRO')) ||
+      (file.type === 'infrageo' && installedModules.includes('INFRAGEO')) ||
+      (file.type === 'infraplan' && installedModules.includes('INFRAPLAN'));
+
+    const isTemplate = file.isTemplate !== false && (!isModuleInstalled || file.isTemplate);
+
+    if (isTemplate) {
+      onNavigate('applications');
+    } else if (file.tabNavigate) {
+      onNavigate(file.tabNavigate);
+    } else {
+      alert(`Abriendo el archivo "${file.name}" de la aplicación ${file.type}...`);
     }
-  ];
+  };
 
-  // Map real Budgets to files dynamically
-  const budgetFiles: DashboardFile[] = recentBudgets.map((b) => ({
-    id: b.id || `real_${Math.random()}`,
-    name: b.nombre || 'Presupuesto de Obra',
-    type: 'infracost_lite',
-    modified: 'ahora mismo',
-    owner: ownerName,
-    category: 'Presupuestos locales',
-    tabNavigate: 'budgets_lite',
-    isRealBudget: true
-  }));
+  const handleDuplicateFile = (fileId: string) => {
+    const target = files.find((f) => f.id === fileId);
+    if (!target) return;
+    const duplicated: any = {
+      ...target,
+      id: 'dup_' + Math.random().toString(36).substring(2, 9),
+      name: `${target.name} - Copia`,
+      modified: 'ahora mismo',
+      isTemplate: false
+    };
+    setFiles((prev) => {
+      const idx = prev.findIndex((f) => f.id === fileId);
+      const copy = [...prev];
+      copy.splice(idx + 1, 0, duplicated);
+      return copy;
+    });
+  };
 
-  // Combine both real budgets and mock files
-  const allFiles = [...budgetFiles, ...mockFiles];
+  const handleRemoveFile = (fileId: string) => {
+    const target = files.find((f) => f.id === fileId);
+    if (!target) return;
+    if (confirm(`¿Estás seguro de que deseas eliminar "${target.name}"?`)) {
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+    }
+  };
 
   // Filter logic
-  const filteredFiles = allFiles.filter((file) => {
+  const filteredFiles = files.filter((file) => {
     const query = (globalSearch || tableSearch).toLowerCase();
     const matchesSearch = file.name.toLowerCase().includes(query) || file.owner.toLowerCase().includes(query);
     const matchesFilter = selectedFilter === 'all' || file.type === selectedFilter;
@@ -724,18 +760,13 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                     return (
                       <tr
                         key={file.id}
-                        onClick={() => {
-                          if (isTemplate) {
-                            onNavigate('applications');
-                          } else if (file.tabNavigate) {
-                            onNavigate(file.tabNavigate);
-                          }
-                        }}
+                        onClick={() => handleOpenFile(file)}
+                        onContextMenu={(e) => handleContextMenu(e, file.id)}
                         style={{
                           borderBottom: '1px solid var(--border-color)',
-                          cursor: (file.tabNavigate || isTemplate) ? 'pointer' : 'default',
+                          cursor: 'pointer',
                           transition: 'background-color 0.15s',
-                          opacity: isTemplate ? 0.8 : 1
+                          opacity: file.isTemplate ? 0.8 : 1
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
@@ -761,7 +792,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                               }}
                             >
                               {file.name}
-                              {isTemplate && (
+                              {file.isTemplate && (
                                 <span style={{ fontSize: '0.62rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>PLANTILLA</span>
                               )}
                             </span>
@@ -790,6 +821,96 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
         </div>
       </div>
       </div>
+
+      {/* ── CUSTOM CONTEXT MENU ── */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            backgroundColor: theme === 'light' ? '#ffffff' : 'var(--bg-surface-elevated, #171923)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            zIndex: 9999,
+            padding: '6px',
+            minWidth: '160px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3px',
+            backdropFilter: 'blur(12px)',
+            animation: 'fadeIn 0.1s ease-out'
+          }}
+        >
+          <button
+            onClick={() => {
+              const file = files.find(f => f.id === contextMenu.fileId);
+              if (file) handleOpenFile(file);
+            }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
+              padding: '8px 12px',
+              textAlign: 'left',
+              fontSize: '0.85rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <span style={{ fontSize: '1rem' }}>📂</span> Abrir
+          </button>
+          <button
+            onClick={() => handleDuplicateFile(contextMenu.fileId)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-primary)',
+              padding: '8px 12px',
+              textAlign: 'left',
+              fontSize: '0.85rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <span style={{ fontSize: '1rem' }}>👯</span> Duplicar
+          </button>
+          <button
+            onClick={() => handleRemoveFile(contextMenu.fileId)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#ef4444',
+              padding: '8px 12px',
+              textAlign: 'left',
+              fontSize: '0.85rem',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <span style={{ fontSize: '1rem' }}>🗑️</span> Eliminar
+          </button>
+        </div>
+      )}
     </div>
   );
 };
