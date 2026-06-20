@@ -26,6 +26,7 @@ interface BudgetsListProProps {
   handleDeleteBudget: (id: string) => void;
   theme: 'light' | 'dark';
   menuItemStyle: React.CSSProperties;
+  onNavigate?: (tab: string) => void;
 }
 
 export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
@@ -51,7 +52,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
   handleDuplicateBudget,
   handleDeleteBudget,
   theme,
-  menuItemStyle
+  menuItemStyle,
+  onNavigate
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
@@ -92,6 +94,33 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             <span style={{ fontSize: '1.1rem' }}>⚙️</span>
             <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>Optimizar base</span>
           </div>
+          {/* InfraSuite Navigation Shortcuts */}
+          {onNavigate && (
+            <>
+              <div style={{ width: '1px', height: '40px', background: 'var(--border-color)', margin: '0 4px' }} />
+              <div
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '6px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', border: '1px solid var(--border-color)', minWidth: '70px' }}
+                onClick={() => onNavigate('shared')}
+              >
+                <span style={{ fontSize: '1.1rem' }}>📁</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>Compartido</span>
+              </div>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '6px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', border: '1px solid var(--border-color)', minWidth: '70px' }}
+                onClick={() => onNavigate('contacts')}
+              >
+                <span style={{ fontSize: '1.1rem' }}>👥</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>Contactos</span>
+              </div>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', padding: '6px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', border: '1px solid var(--border-color)', minWidth: '70px' }}
+                onClick={() => onNavigate('trash')}
+              >
+                <span style={{ fontSize: '1.1rem' }}>🗑️</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>Papelera</span>
+              </div>
+            </>
+          )}
         </div>
         {/* Right: Brand logo/Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

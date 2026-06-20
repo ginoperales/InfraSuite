@@ -32,6 +32,7 @@ interface BudgetsListLiteProps {
   handleDuplicateBudget: (id: string) => void;
   handleDeleteBudget: (id: string) => void;
   menuItemStyle: React.CSSProperties;
+  onNavigate?: (tab: string) => void;
 }
 
 export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
@@ -63,7 +64,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   startEditBudget,
   handleDuplicateBudget,
   handleDeleteBudget,
-  menuItemStyle
+  menuItemStyle,
+  onNavigate
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
@@ -143,7 +145,60 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0, paddingRight: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingRight: '8px' }}>
+          {/* InfraSuite Navigation Shortcuts */}
+          {onNavigate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '8px', borderRight: '1px solid var(--border-color)', paddingRight: '12px' }}>
+              <button
+                type="button"
+                onClick={() => onNavigate('shared')}
+                title="Compartido"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '5px 10px', background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-color)', borderRadius: '5px',
+                  color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'; }}
+              >
+                📁 Compartido
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('contacts')}
+                title="Contactos"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '5px 10px', background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-color)', borderRadius: '5px',
+                  color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'; }}
+              >
+                👥 Contactos
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigate('trash')}
+                title="Papelera de reciclaje"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '5px 10px', background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border-color)', borderRadius: '5px',
+                  color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-surface-hover)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'; }}
+              >
+                🗑️ Papelera
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={toggleTheme}

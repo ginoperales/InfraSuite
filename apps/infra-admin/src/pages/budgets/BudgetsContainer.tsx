@@ -239,7 +239,7 @@ const DEFAULT_APU_COLUMN_WIDTHS: Record<ApuColumnKey, number> = {
   tipo: 110
 };
 
-export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies, mode = 'lite' }) => {
+export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies, mode = 'lite', onNavigate }) => {
   const { user } = useAuth();
   
   // Budgets state
@@ -872,6 +872,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
             handleDuplicateBudget={handleDuplicateBudget}
             handleDeleteBudget={handleDeleteBudget}
             menuItemStyle={Modals.menuItemStyle}
+            onNavigate={onNavigate}
           />
           <Modals.CreateBudgetModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreateBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
           <Modals.EditBudgetModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSubmit={handleEditBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
@@ -905,6 +906,7 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
           handleDuplicateBudget={handleDuplicateBudget}
           handleDeleteBudget={handleDeleteBudget}
           menuItemStyle={Modals.menuItemStyle}
+          onNavigate={onNavigate}
         />
         <Modals.CreateBudgetModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreateBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
         <Modals.EditBudgetModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSubmit={handleEditBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />

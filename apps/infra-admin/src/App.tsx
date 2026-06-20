@@ -1387,8 +1387,8 @@ const AppContent: React.FC = () => {
               {activeTab === 'contacts' && <Contacts />}
               {activeTab === 'trash' && <RecycleBin />}
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
-              {activeTab === 'budgets_lite' && <Budgets mode="lite" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
-              {activeTab === 'budgets_pro' && <Budgets mode="pro" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
+              {activeTab === 'budgets_lite' && <Budgets mode="lite" theme={theme} toggleTheme={toggleTheme} companies={companies} onNavigate={(tab) => setActiveTab(tab)} />}
+              {activeTab === 'budgets_pro' && <Budgets mode="pro" theme={theme} toggleTheme={toggleTheme} companies={companies} onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'applications' && <Applications onModulesChanged={loadInstalledModules} />}
               {activeTab === 'profile-settings' && <ProfileSettings />}
               

@@ -49,4 +49,5 @@ export interface BudgetsProps {
   toggleTheme: () => void;
   companies: any[];
   mode?: 'lite' | 'pro';
+  onNavigate?: (tab: string) => void;
 }
