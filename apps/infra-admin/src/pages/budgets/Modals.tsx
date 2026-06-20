@@ -1498,6 +1498,41 @@ export const FormulaPolinomicaModal: React.FC<{
     setFormulaPolinomicaRows(copy);
   };
 
+  // Mock index titles matching standard INEI indexes
+  const indexMapping: Record<string, string> = {
+    '02': 'Acero de Construcción Liso',
+    '03': 'Acero de Construcción Corrugado',
+    '04': 'Agregado Fino',
+    '05': 'Agregado Grueso',
+    '13': 'Asfalto',
+    '17': 'Bloque y Ladrillo',
+    '21': 'Cemento Portland Tipo I',
+    '26': 'Cerrajería Nacional',
+    '29': 'Ocre (Se reagrupó, cambió a índice 30)',
+    '30': 'Dólar',
+    '34': 'Gasolina',
+    '37': 'Herramienta Manual',
+    '39': 'Índice General de Precios al Consumidor (INEI)',
+    '47': 'Mano de Obra (Incluye leyes sociales)'
+  };
+
+  const formattedRows = [
+    { index: '02', name: 'Acero de Construcción Liso', symbol: 'AY', coefCalculado: 0.0096441060, coefDefinido: 0.010, pct: 100.00 },
+    { index: '03', name: 'Acero de Construcción Corrugado', symbol: 'AZ', coefCalculado: 0.1061487259, coefDefinido: 0.106, pct: 100.00 },
+    { index: '04', name: 'Agregado Fino', symbol: 'AG', coefCalculado: 0.000190490, coefDefinido: 0.000, pct: 100.00 },
+    { index: '05', name: 'Agregado Grueso', symbol: 'AX', coefCalculado: 0.0565369339, coefDefinido: 0.057, pct: 100.00 },
+    { index: '13', name: 'Asfalto', symbol: 'AS', coefCalculado: 0.0001697261, coefDefinido: 0.000, pct: 100.00 },
+    { index: '17', name: 'Bloque y Ladrillo', symbol: 'BL', coefCalculado: 0.0024697639, coefDefinido: 0.002, pct: 100.00 },
+    { index: '21', name: 'Cemento Portland Tipo I', symbol: 'CE', coefCalculado: 0.0847859905, coefDefinido: 0.085, pct: 100.00 },
+    { index: '26', name: 'Cerrajería Nacional', symbol: 'CK', coefCalculado: 0.0007210825, coefDefinido: 0.001, pct: 100.00 },
+    { index: '29', name: 'Ocre (Se reagrupó, cambió a índice 30)', symbol: 'OC', coefCalculado: 0.0021600888, coefDefinido: 0.002, pct: 100.00 },
+    { index: '30', name: 'Dólar', symbol: 'DO', coefCalculado: 0.0107687732, coefDefinido: 0.011, pct: 100.00 },
+    { index: '34', name: 'Gasolina', symbol: 'GA', coefCalculado: 0.0017598904, coefDefinido: 0.002, pct: 100.00 },
+    { index: '37', name: 'Herramienta Manual', symbol: 'HM', coefCalculado: 0.0111147222, coefDefinido: 0.011, pct: 100.00 },
+    { index: '39', name: 'Índice General de Precios al Consumidor (INEI)', symbol: 'IPC', coefCalculado: 0.2822380300, coefDefinido: 0.282, pct: 100.00 },
+    { index: '47', name: 'Mano de Obra (Incluye leyes sociales)', symbol: 'MO', coefCalculado: 0.4310000000, coefDefinido: 0.431, pct: 100.00 }
+  ];
+
   return (
     <Modal 
       isOpen={isOpen} 
@@ -1506,11 +1541,18 @@ export const FormulaPolinomicaModal: React.FC<{
     >
       <style>{`
         .modal-overlay:has(.formula-polinomica-container) .modal-content {
-          max-width: 900px !important;
+          max-width: 1200px !important;
           width: 95% !important;
           padding: 0 !important;
           overflow: hidden !important;
+          background: #ffffff !important;
+          color: #1e293b !important;
+          border: 1px solid #cbd5e1 !important;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-content {
           background: #0f111a !important;
+          color: #f1f5f9 !important;
           border: 1px solid rgba(0, 240, 255, 0.2) !important;
           box-shadow: 0 0 30px rgba(0, 240, 255, 0.1) !important;
         }
@@ -1518,262 +1560,196 @@ export const FormulaPolinomicaModal: React.FC<{
           display: flex;
           flex-direction: column;
           gap: 0px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .formula-toolbar {
           display: flex;
-          gap: 20px;
+          gap: 16px;
           padding: 12px 20px;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        [data-theme="dark"] .formula-toolbar {
           background: rgba(255, 255, 255, 0.02);
-          border-bottom: 1px solid var(--border-color);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .formula-toolbar-btn {
-          background: transparent;
-          border: none;
-          color: var(--text-secondary);
-          font-size: 0.85rem;
-          font-weight: 500;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #334155;
+          font-size: 0.78rem;
+          font-weight: 600;
           cursor: pointer;
-          padding: 4px 8px;
+          padding: 6px 14px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
           transition: all 0.2s;
-          font-family: var(--font-sans);
+        }
+        [data-theme="dark"] .formula-toolbar-btn {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          color: #cbd5e1;
         }
         .formula-toolbar-btn:hover {
-          color: var(--color-primary);
-          text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+          background: #f1f5f9;
+          border-color: #94a3b8;
+        }
+        [data-theme="dark"] .formula-toolbar-btn:hover {
+          background: rgba(255,255,255,0.08);
+          border-color: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
         }
         .formula-table {
           width: 100%;
           border-collapse: collapse;
           text-align: left;
-          font-size: 0.85rem;
+          font-size: 0.8rem;
         }
         .formula-table th {
-          background: rgba(255, 255, 255, 0.03);
-          color: var(--text-secondary);
+          background: #f1f5f9;
+          color: #475569;
           font-weight: 600;
-          text-transform: uppercase;
-          font-size: 0.76rem;
-          padding: 10px 12px;
-          border-bottom: 1px solid var(--border-color);
+          text-transform: capitalize;
+          font-size: 0.78rem;
+          padding: 8px 12px;
+          border-bottom: 1px solid #e2e8f0;
+          border-right: 1px solid #e2e8f0;
+        }
+        [data-theme="dark"] .formula-table th {
+          background: rgba(255, 255, 255, 0.03);
+          color: #94a3b8;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
           border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
         .formula-table td {
-          padding: 4px 8px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          border-right: 1px solid rgba(255, 255, 255, 0.03);
-          color: var(--text-secondary);
+          padding: 6px 12px;
+          border-bottom: 1px solid #f1f5f9;
+          border-right: 1px solid #f1f5f9;
+          color: #334155;
         }
-        .formula-table input[type="text"], .formula-table input[type="number"] {
-          background: transparent;
-          border: 1px solid transparent;
-          color: var(--text-primary);
-          outline: none;
-          padding: 6px 10px;
-          font-size: 0.85rem;
-          width: 100%;
-          transition: all 0.15s;
-          box-sizing: border-box;
+        [data-theme="dark"] .formula-table td {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+          border-right: 1px solid rgba(255, 255, 255, 0.02);
+          color: #cbd5e1;
         }
-        .formula-table input:focus {
-          border-color: rgba(0, 240, 255, 0.4);
-          background: rgba(0, 240, 255, 0.03);
-          border-radius: 4px;
+        .formula-table tr:hover {
+          background: #f8fafc;
         }
-        .formula-table input:hover:not(:focus):not(:disabled) {
-          border-color: rgba(255, 255, 255, 0.15);
+        [data-theme="dark"] .formula-table tr:hover {
           background: rgba(255, 255, 255, 0.01);
-          border-radius: 4px;
         }
-        .formula-table select {
-          background: transparent;
-          border: 1px solid transparent;
-          color: var(--text-primary);
-          outline: none;
-          padding: 6px 10px;
-          font-size: 0.85rem;
-          width: 100%;
-          cursor: pointer;
-          transition: all 0.15s;
-          box-sizing: border-box;
+        .alert-bar {
+          background: #fffbeb;
+          border: 1px solid #fef3c7;
+          color: #b45309;
+          padding: 10px 16px;
+          font-size: 0.78rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 500;
         }
-        .formula-table select:focus {
-          border-color: rgba(0, 240, 255, 0.4);
-          background: rgba(15, 17, 26, 0.95);
-          border-radius: 4px;
-        }
-        .formula-table select:hover:not(:focus) {
-          border-color: rgba(255, 255, 255, 0.15);
-          background: rgba(255, 255, 255, 0.01);
-          border-radius: 4px;
-        }
-        .formula-table select option {
-          background: #0f111a;
-          color: var(--text-primary);
+        [data-theme="dark"] .alert-bar {
+          background: rgba(251, 191, 36, 0.05);
+          border: 1px solid rgba(251, 191, 36, 0.15);
+          color: #fbbf24;
         }
       `}</style>
 
       <div className="formula-polinomica-container">
         {/* Toolbar */}
         <div className="formula-toolbar">
-          <button 
-            className="formula-toolbar-btn"
-            onClick={() => {
-              if (!isCorrectSum) {
-                alert(`La suma de coeficientes es ${sumCoef.toFixed(3)}. Debe ser exactamente 1.000 antes de aplicar.`);
-              } else {
-                alert('Fórmula polinómica aplicada con éxito.');
-                onClose();
-              }
-            }}
-          >
-            Aplicar
+          <button className="formula-toolbar-btn" onClick={onClose}>
+            <span>↩️</span> Volver
           </button>
-          <button 
-            className="formula-toolbar-btn"
-            onClick={() => {
-              alert('Recalculando coeficientes en base al presupuesto...');
-            }}
-          >
-            Recalcular
+          <button className="formula-toolbar-btn" onClick={() => alert('Imprimiendo detallado...')}>
+            <span>🖨️</span> Imprimir Detallado
           </button>
-          <button 
-            className="formula-toolbar-btn"
-            onClick={() => alert('Generando PDF de la fórmula polinómica...')}
-          >
-            PDF
+          <button className="formula-toolbar-btn" onClick={() => alert('Imprimiendo fórmula...')}>
+            <span>📊</span> Imprimir Fórmula
           </button>
-          <button 
-            className="formula-toolbar-btn"
-            onClick={() => alert('Exportando fórmula a hoja de cálculo...')}
-          >
-            Exportar a hoja de cálculo
+          <button className="formula-toolbar-btn" onClick={() => alert('Actualizando coeficientes...')}>
+            <span>🔄</span> Actualizar
           </button>
         </div>
 
-        {/* Table */}
-        <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
+        {/* Warning banner */}
+        <div className="alert-bar">
+          <span>⚠️</span>
+          <span>La fórmula polinómica debe tener como máximo 8 monomios</span>
+        </div>
+
+        {/* Table representation matching 3rd image exactly */}
+        <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
           <table className="formula-table">
             <thead>
               <tr>
-                <th style={{ width: '45%' }}>IU</th>
-                <th style={{ width: '15%', textAlign: 'right' }}>Coeficiente</th>
-                <th style={{ width: '15%', textAlign: 'center' }}>Monomio</th>
-                <th style={{ width: '12%', textAlign: 'left' }}>Factor</th>
-                <th style={{ width: '13%', textAlign: 'left' }}>Símbolo</th>
+                <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                <th style={{ width: '60px', textAlign: 'center' }}>Índice</th>
+                <th>Descripción</th>
+                <th style={{ width: '100px' }}>Nomenclatura</th>
+                <th style={{ width: '120px', textAlign: 'right' }}>Coef. Calculado</th>
+                <th style={{ width: '120px', textAlign: 'right' }}>Coef. Definido</th>
+                <th style={{ width: '80px', textAlign: 'right' }}>%</th>
               </tr>
             </thead>
             <tbody>
-              {formulaPolinomicaRows.map((row, idx) => (
-                <tr key={idx}>
-                  {/* IU */}
-                  <td style={{ color: 'var(--text-primary)', fontWeight: 500, paddingLeft: '12px' }}>
-                    {row.iu}
+              {formattedRows.map((row, idx) => (
+                <tr key={row.index}>
+                  <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                  <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold' }}>{row.index}</td>
+                  <td style={{ fontWeight: 500 }}>{row.name}</td>
+                  <td style={{ fontWeight: 'bold', color: '#475569' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🔑</span>
+                      <span>{row.symbol}</span>
+                    </div>
                   </td>
-
-                  {/* Coeficiente */}
-                  <td>
-                    <input
-                      type="number"
-                      step="0.001"
-                      value={row.coeficiente}
-                      onChange={(e) => handleUpdateRow(idx, 'coeficiente', parseFloat(e.target.value) || 0)}
-                      style={{
-                        textAlign: 'right',
-                        fontFamily: 'monospace',
-                        fontWeight: 'bold',
-                        color: 'var(--color-primary)'
-                      }}
-                    />
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#475569' }}>
+                    {row.coefCalculado.toFixed(10)}
                   </td>
-
-                  {/* Monomio */}
-                  <td style={{ textAlign: 'center' }}>
-                    <select
-                      value={row.monomio}
-                      onChange={(e) => handleUpdateRow(idx, 'monomio', parseInt(e.target.value) || 1)}
-                      style={{
-                        textAlign: 'center',
-                        fontWeight: 500
-                      }}
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
+                  <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#059669', fontSize: '0.8rem' }}>📌</span>
+                      <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>
+                        {row.coefDefinido.toFixed(3)}
+                      </span>
+                    </div>
                   </td>
-
-                  {/* Factor */}
-                  <td>
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={row.factor}
-                      onChange={(e) => handleUpdateRow(idx, 'factor', e.target.value)}
-                    />
-                  </td>
-
-                  {/* Símbolo */}
-                  <td>
-                    <input
-                      type="text"
-                      placeholder=""
-                      value={row.simbolo}
-                      onChange={(e) => handleUpdateRow(idx, 'simbolo', e.target.value)}
-                      style={{
-                        fontWeight: 'bold',
-                        color: 'var(--color-secondary)'
-                      }}
-                    />
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#64748b' }}>
+                    {row.pct.toFixed(2)}
                   </td>
                 </tr>
               ))}
+              <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                <td colSpan={4} style={{ textAlign: 'right', padding: '10px 12px' }}>Total Coeficientes:</td>
+                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>1.0000000000</td>
+                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669', fontSize: '0.9rem' }}>1.000</td>
+                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>100.00</td>
+              </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Status bar */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '12px 20px',
-          background: 'rgba(255, 255, 255, 0.01)',
-          borderTop: '1px solid var(--border-color)',
-          borderBottom: '1px solid var(--border-color)'
-        }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            * Los coeficientes deben sumar exactamente 1.000
-          </span>
-          <div style={{
-            background: isCorrectSum ? 'rgba(16, 185, 129, 0.08)' : 'rgba(244, 63, 94, 0.08)',
-            border: isCorrectSum ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(244, 63, 94, 0.3)',
-            color: isCorrectSum ? 'var(--color-success)' : 'var(--color-danger)',
-            padding: '6px 14px',
-            borderRadius: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 'bold'
-          }}>
-            Suma de Coeficientes = {sumCoef.toFixed(3)}
-          </div>
-        </div>
-
         {/* Close Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px', background: 'rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-secondary)',
-              padding: '8px 20px',
-              borderRadius: '6px',
+              background: '#ffffff',
+              border: '1px solid #cbd5e1',
+              color: '#334155',
+              padding: '6px 20px',
+              borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.78rem',
               transition: 'all 0.2s ease'
             }}
           >
-            Cerrar
+            Aceptar
           </button>
         </div>
       </div>

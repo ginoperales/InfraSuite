@@ -299,91 +299,136 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
 
             {/* Hierarchical Spreadsheet Table */}
             <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-              <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem', fontFamily: 'monospace' }}>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
-                  <tr>
-                    <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.index}px`, textAlign: 'center', position: 'relative' }}>
-                      #
-                      <div
-                        onMouseDown={(e) => { e.preventDefault(); handleColumnResize('index', e.clientX, columnWidths.index); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                      />
-                    </th>
-                    <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.desc}px`, position: 'relative' }}>
-                      Descripción
-                      <div
-                        onMouseDown={(e) => { e.preventDefault(); handleColumnResize('desc', e.clientX, columnWidths.desc); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                      />
-                    </th>
-                    <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.cant}px`, textAlign: 'right', position: 'relative' }}>
-                      Cantidad
-                      <div
-                        onMouseDown={(e) => { e.preventDefault(); handleColumnResize('cant', e.clientX, columnWidths.cant); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                      />
-                    </th>
-                    <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.price}px`, textAlign: 'right', position: 'relative' }}>
-                      Precio
-                      <div
-                        onMouseDown={(e) => { e.preventDefault(); handleColumnResize('price', e.clientX, columnWidths.price); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                      />
-                    </th>
-                    <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.total}px`, textAlign: 'right', position: 'relative' }}>
-                      Total
-                      <div
-                        onMouseDown={(e) => { e.preventDefault(); handleColumnResize('total', e.clientX, columnWidths.total); }}
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                      />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPartidas.map((p, idx) => {
-                    const isSelected = selectedPartidaId === p.id;
-                    const price = getPartidaCU(p);
-                    const totalVal = getPartidaParcial(p);
+              {(() => {
+                const [collapsedItems, setCollapsedItems] = useState<string[]>([]);
+                
+                const toggleCollapse = (itemStr: string) => {
+                  setCollapsedItems(prev => 
+                    prev.includes(itemStr) 
+                      ? prev.filter(x => x !== itemStr) 
+                      : [...prev, itemStr]
+                  );
+                };
 
-                    return (
-                      <tr
-                        key={p.id}
-                        onClick={() => handlePartidaCellClick(p)}
-                        onContextMenu={(e) => handlePartidaContextMenu(e, p)}
-                        style={{
-                          background: isSelected ? 'rgba(0, 240, 255, 0.05)' : p.esTitulo ? 'rgba(139, 92, 246, 0.02)' : 'transparent',
-                          borderBottom: '1px solid var(--border-color)',
-                          cursor: 'pointer',
-                          fontWeight: p.esTitulo ? 'bold' : 'normal'
-                        }}
-                      >
-                        {/* Index Row */}
-                        <td style={{ padding: '6px 8px', color: 'var(--text-muted)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}</td>
-                        {/* Description (with hierarchy offset) */}
-                        <td style={{ padding: '6px 8px', paddingLeft: p.esTitulo ? '10px' : '22px', color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <span style={{ marginRight: '6px' }}>{p.esTitulo ? '📁' : '📄'}</span>
-                          <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
-                            {p.item} {p.nombre}
-                          </span>
-                        </td>
-                        {/* Cantidad / Metrado */}
-                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                          {!p.esTitulo && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>{p.unidad}</span>}
-                        </td>
-                        {/* Precio */}
-                        <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {p.esTitulo ? '' : price.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                        </td>
-                        {/* Total */}
-                        <td style={{ padding: '6px 8px', textAlign: 'right', color: p.esTitulo ? '#ef4444' : 'var(--color-primary)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          S/ {totalVal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                        </td>
+                // Filter out items whose parent is collapsed
+                // E.g., if "1" is collapsed, hide "1.1", "1.1.1", "2.1" is unaffected.
+                const visiblePartidas = filteredPartidas.filter(p => {
+                  return !collapsedItems.some(collapsedItem => {
+                    // Check if current item starts with collapsedItem + "." and is not the collapsedItem itself
+                    return p.item !== collapsedItem && p.item.startsWith(collapsedItem + ".");
+                  });
+                });
+
+                return (
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                      <tr>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.index}px`, textAlign: 'center', position: 'relative' }}>
+                          #
+                          <div
+                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('index', e.clientX, columnWidths.index); }}
+                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                          />
+                        </th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.desc}px`, position: 'relative' }}>
+                          Descripción
+                          <div
+                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('desc', e.clientX, columnWidths.desc); }}
+                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                          />
+                        </th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.cant}px`, textAlign: 'right', position: 'relative' }}>
+                          Cantidad
+                          <div
+                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('cant', e.clientX, columnWidths.cant); }}
+                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                          />
+                        </th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.price}px`, textAlign: 'right', position: 'relative' }}>
+                          Precio
+                          <div
+                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('price', e.clientX, columnWidths.price); }}
+                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                          />
+                        </th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.total}px`, textAlign: 'right', position: 'relative' }}>
+                          Total
+                          <div
+                            onMouseDown={(e) => { e.preventDefault(); handleColumnResize('total', e.clientX, columnWidths.total); }}
+                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                          />
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {visiblePartidas.map((p, idx) => {
+                        const isSelected = selectedPartidaId === p.id;
+                        const price = getPartidaCU(p);
+                        const totalVal = getPartidaParcial(p);
+                        const isCollapsed = collapsedItems.includes(p.item);
+
+                        // Calculate indent level based on dot count in item number
+                        // E.g., "01" -> 0, "01.01" -> 1, "01.01.01" -> 2
+                        const level = p.item.split('.').length - 1;
+                        const paddingLeft = 10 + (level * 16);
+
+                        return (
+                          <tr
+                            key={p.id}
+                            onClick={() => handlePartidaCellClick(p)}
+                            onContextMenu={(e) => handlePartidaContextMenu(e, p)}
+                            style={{
+                              background: isSelected ? 'rgba(0, 240, 255, 0.05)' : p.esTitulo ? 'rgba(139, 92, 246, 0.02)' : 'transparent',
+                              borderBottom: '1px solid var(--border-color)',
+                              cursor: 'pointer',
+                              fontWeight: p.esTitulo ? 'bold' : 'normal'
+                            }}
+                          >
+                            {/* Index Row */}
+                            <td style={{ padding: '6px 8px', color: 'var(--text-muted)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{idx + 1}</td>
+                            {/* Description (with hierarchy offset) */}
+                            <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span 
+                                onClick={(e) => {
+                                  if (p.esTitulo) {
+                                    e.stopPropagation();
+                                    toggleCollapse(p.item);
+                                  }
+                                }}
+                                style={{ 
+                                  marginRight: '6px', 
+                                  cursor: p.esTitulo ? 'pointer' : 'default',
+                                  userSelect: 'none',
+                                  display: 'inline-block',
+                                  transition: 'transform 0.15s ease'
+                                }}
+                              >
+                                {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
+                              </span>
+                              <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
+                                {p.item} {p.nombre}
+                              </span>
+                            </td>
+                            {/* Cantidad / Metrado */}
+                            <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                              {!p.esTitulo && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>{p.unidad}</span>}
+                            </td>
+                            {/* Precio */}
+                            <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.esTitulo ? '' : price.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </td>
+                            {/* Total */}
+                            <td style={{ padding: '6px 8px', textAlign: 'right', color: p.esTitulo ? '#ef4444' : 'var(--color-primary)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              S/ {totalVal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
           </div>
 
