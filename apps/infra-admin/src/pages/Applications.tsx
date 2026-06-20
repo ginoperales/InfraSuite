@@ -193,7 +193,7 @@ export const Applications: React.FC<ApplicationsProps> = ({ onModulesChanged }) 
       if (!dbCodes.has(code)) {
         displayList.push({
           codigo: code,
-          nombre: code === 'INFRACOST' ? 'InfraCost Lite' : (code === 'INFRACOST_PRO' ? 'InfraCost' : code.charAt(0) + code.slice(1).toLowerCase()),
+          nombre: code === 'INFRACOST' ? 'InfraCost Lite' : (code === 'INFRACOST_PRO' ? 'InfraCost Pro' : code.charAt(0) + code.slice(1).toLowerCase()),
           ficticio: true
         });
       }
@@ -299,7 +299,7 @@ export const Applications: React.FC<ApplicationsProps> = ({ onModulesChanged }) 
 
                   <div>
                     <h3 style={{ margin: '0 0 6px 0', color: isInstalled ? meta.color : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo))}
+                      {modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost Pro' : modulo.codigo))}
                       {modulo.ficticio && (
                         <span style={{ fontSize: '0.65rem', padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', color: 'var(--text-muted)' }}>
                           Catálogo
@@ -333,7 +333,7 @@ export const Applications: React.FC<ApplicationsProps> = ({ onModulesChanged }) 
                           isOpen: true,
                           type: 'uninstall',
                           moduloCodigo: modulo.codigo,
-                          displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo)),
+                          displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost Pro' : modulo.codigo)),
                           isExecuting: false
                         })}
                         style={{ flex: 1, padding: '10px 0' }}
@@ -347,7 +347,7 @@ export const Applications: React.FC<ApplicationsProps> = ({ onModulesChanged }) 
                         isOpen: true,
                         type: 'install',
                         moduloCodigo: modulo.codigo,
-                        displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost' : modulo.codigo)),
+                        displayName: modulo.nombre || (modulo.codigo === 'INFRACOST' ? 'InfraCost Lite' : (modulo.codigo === 'INFRACOST_PRO' ? 'InfraCost Pro' : modulo.codigo)),
                         isExecuting: false
                       })}
                       style={{

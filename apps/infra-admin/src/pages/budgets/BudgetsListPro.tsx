@@ -125,8 +125,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         {/* Right: Brand logo/Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost</span>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>Pro 2026</div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Pro</span>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>2026</div>
           </div>
           <div style={{ fontSize: '1.8rem', animation: 'pulse 2s infinite' }}>📊</div>
         </div>

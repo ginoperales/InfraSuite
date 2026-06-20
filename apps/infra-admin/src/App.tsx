@@ -938,14 +938,14 @@ const AppContent: React.FC = () => {
                   <button
                     className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
                     onClick={() => setActiveTab('budgets_pro')}
-                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    title={isSidebarCollapsed ? "InfraCost Pro" : undefined}
                     style={{
                       justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
                     <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                    {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
                 <button
@@ -1007,14 +1007,14 @@ const AppContent: React.FC = () => {
                   <button
                     className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
                     onClick={() => setActiveTab('budgets_pro')}
-                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    title={isSidebarCollapsed ? "InfraCost Pro" : undefined}
                     style={{
                       justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
                     <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                    {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
 
@@ -1124,14 +1124,14 @@ const AppContent: React.FC = () => {
                   <button
                     className={`menu-item ${activeTab === 'budgets_pro' ? 'active' : ''}`}
                     onClick={() => setActiveTab('budgets_pro')}
-                    title={isSidebarCollapsed ? "InfraCost" : undefined}
+                    title={isSidebarCollapsed ? "InfraCost Pro" : undefined}
                     style={{
                       justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
                     <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                    {!isSidebarCollapsed && <span>InfraCost</span>}
+                    {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
                 <button
@@ -1341,7 +1341,7 @@ const AppContent: React.FC = () => {
                     {activeTab === 'sync' && 'Motor de Sincronización Local'}
                     {activeTab === 'landing' && 'Configuración de Inicio'}
                     {activeTab === 'budgets_lite' && 'InfraCost Lite'}
-                    {activeTab === 'budgets_pro' && 'InfraCost'}
+                    {activeTab === 'budgets_pro' && 'InfraCost Pro'}
                     {activeTab === 'applications' && 'Aplicaciones Disponibles'}
                     {activeTab === 'profile-settings' && 'Perfil y Configuración de Cuenta'}
                   </h1>

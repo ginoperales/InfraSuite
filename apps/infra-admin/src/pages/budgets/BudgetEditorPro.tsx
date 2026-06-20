@@ -432,7 +432,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                 <div style={{ position: 'absolute', bottom: '10px', left: '10px', opacity: 0.12, pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '1.2rem' }}>📊</span>
                   <div>
-                    <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-primary)' }}>InfraCost</div>
+                    <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-primary)' }}>InfraCost Pro</div>
                     <div style={{ fontSize: '0.45rem', color: 'var(--color-primary)' }}>2026</div>
                   </div>
                 </div>
@@ -643,7 +643,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                     whiteSpace: 'pre-wrap',
                     fontFamily: 'var(--font-sans)'
                   }}>
-                    <strong>InfraCost 2026 - Respuesta generada por Gemini:</strong>
+                    <strong>InfraCost Pro 2026 - Respuesta generada por Gemini:</strong>
                     <p style={{ margin: '4px 0 0 0' }}>{geminiResponse}</p>
                   </div>
                 )}
