@@ -5,7 +5,7 @@ import { db } from '@infrasuite/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HomeUserProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, budgetId?: string) => void;
   installedModules: string[];
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
@@ -232,7 +232,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
     if (isTemplate) {
       onNavigate('applications');
     } else if (file.tabNavigate) {
-      onNavigate(file.tabNavigate);
+      onNavigate(file.tabNavigate, file.id);
     } else {
       alert(`Abriendo el archivo "${file.name}" de la aplicación ${file.type}...`);
     }

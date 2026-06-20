@@ -50,4 +50,5 @@ export interface BudgetsProps {
   companies: any[];
   mode?: 'lite' | 'pro';
   onNavigate?: (tab: string) => void;
+  initialOpenBudgetId?: string | null;
 }

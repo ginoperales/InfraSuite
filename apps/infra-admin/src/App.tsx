@@ -28,6 +28,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [installedModules, setInstalledModules] = useState<string[]>([]);
+  const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
   
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
@@ -1378,8 +1379,22 @@ const AppContent: React.FC = () => {
 
             {/* Tab router views */}
             <React.Fragment>
-              {activeTab === 'home' && <HomeUser onNavigate={(tab) => setActiveTab(tab)} installedModules={installedModules} theme={theme} onToggleTheme={toggleTheme} />}
-              {activeTab === 'dashboard' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Dashboard onNavigate={(tab) => setActiveTab(tab)} />}
+              {activeTab === 'home' && (
+                <HomeUser 
+                  onNavigate={(tab, budgetId) => {
+                    if (budgetId) {
+                      setOpenBudgetId(budgetId);
+                    } else {
+                      setOpenBudgetId(null);
+                    }
+                    setActiveTab(tab);
+                  }} 
+                  installedModules={installedModules} 
+                  theme={theme} 
+                  onToggleTheme={toggleTheme} 
+                />
+              )}
+              {activeTab === 'dashboard' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Dashboard onNavigate={(tab) => { setOpenBudgetId(null); setActiveTab(tab); }} />}
               {activeTab === 'companies' && user.role === 'SUPER_ADMIN' && <Companies />}
               {activeTab === 'landing' && user.role === 'SUPER_ADMIN' && <LandingAdmin />}
               {activeTab === 'users' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Users />}
@@ -1387,8 +1402,26 @@ const AppContent: React.FC = () => {
               {activeTab === 'contacts' && <Contacts />}
               {activeTab === 'trash' && <RecycleBin />}
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
-              {activeTab === 'budgets_lite' && <Budgets mode="lite" theme={theme} toggleTheme={toggleTheme} companies={companies} onNavigate={(tab) => setActiveTab(tab)} />}
-              {activeTab === 'budgets_pro' && <Budgets mode="pro" theme={theme} toggleTheme={toggleTheme} companies={companies} onNavigate={(tab) => setActiveTab(tab)} />}
+              {activeTab === 'budgets_lite' && (
+                <Budgets 
+                  mode="lite" 
+                  theme={theme} 
+                  toggleTheme={toggleTheme} 
+                  companies={companies} 
+                  onNavigate={(tab) => { setOpenBudgetId(null); setActiveTab(tab); }} 
+                  initialOpenBudgetId={openBudgetId}
+                />
+              )}
+              {activeTab === 'budgets_pro' && (
+                <Budgets 
+                  mode="pro" 
+                  theme={theme} 
+                  toggleTheme={toggleTheme} 
+                  companies={companies} 
+                  onNavigate={(tab) => { setOpenBudgetId(null); setActiveTab(tab); }} 
+                  initialOpenBudgetId={openBudgetId}
+                />
+              )}
               {activeTab === 'applications' && <Applications onModulesChanged={loadInstalledModules} />}
               {activeTab === 'profile-settings' && <ProfileSettings />}
               

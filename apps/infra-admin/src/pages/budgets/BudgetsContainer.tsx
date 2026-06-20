@@ -163,6 +163,128 @@ const INITIAL_BUDGETS: Budget[] = [
     partidas: [
       { id: 'p2_1', item: '1', nombre: 'ESTRUCTURAS COMPLETA', unidad: 'GLB', metrado: 1, esTitulo: false, rendimiento: 1, insumos: [{ id: 'i2_1', nombre: 'SOPORTE', unidad: 'GLB', cuadrilla: 1, pu: 5000, tipo: 'SC' }] }
     ]
+  },
+  // === User-created InfraCost Pro files (synced with HomeUser) ===
+  {
+    id: 'u_pro_1',
+    nombre: '0. RESUMEN DE PRESUP. SEDE GOREU I ETAPA',
+    cliente: 'SELVAVIVACONSTRUCCIONES',
+    fechaBase: '2026-05-22',
+    grupo: 'EDIFICACIONES',
+    categoria: 'Recientes',
+    direccion: 'Sede Goreu',
+    distrito: 'Ucayali',
+    provincia: 'Coronel Portillo',
+    departamento: 'Ucayali',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['SUB PRESUPUESTO 1'],
+    partidas: [
+      { id: 'up1_1', item: '1', nombre: 'OBRAS PRELIMINARES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'up1_2', item: '1.1', nombre: 'Movilización y desmovilización de equipos', unidad: 'GLB', metrado: 1, esTitulo: false, rendimiento: 1, insumos: [{ id: 'up1_i1', nombre: 'MOVILIZACION Y DESMOVILIZACION', unidad: 'GLB', cuadrilla: 1, pu: 2500, tipo: 'SC' }] },
+      { id: 'up1_3', item: '2', nombre: 'ESTRUCTURAS', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'up1_4', item: '2.1', nombre: 'Concreto en zapatas f\'c=210 kg/cm²', unidad: 'M3', metrado: 45.60, esTitulo: false, rendimiento: 12, insumos: [{ id: 'up1_i2', nombre: 'CONCRETO PREMEZCLADO F\'C=210 KG/CM2', unidad: 'M3', cuadrilla: 1, pu: 380, tipo: 'SC' }, { id: 'up1_i3', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 2, pu: 28.10, tipo: 'MO' }] },
+      { id: 'up1_5', item: '2.2', nombre: 'Acero de refuerzo fy=4200 kg/cm²', unidad: 'KG', metrado: 8420, esTitulo: false, rendimiento: 250, insumos: [{ id: 'up1_i4', nombre: 'ACERO CORRUGADO fy=4200', unidad: 'KG', cuadrilla: 0, pu: 4.20, tipo: 'MT' }, { id: 'up1_i5', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1, pu: 28.10, tipo: 'MO' }] },
+    ]
+  },
+  {
+    id: 'u_pro_2',
+    nombre: 'ESTRUCTURAS SEDE PUCALLPA',
+    cliente: 'SELVAVIVACONSTRUCCIONES',
+    fechaBase: '2026-04-06',
+    grupo: 'EDIFICACIONES',
+    categoria: 'Recientes',
+    direccion: 'Pucallpa',
+    distrito: 'Callería',
+    provincia: 'Coronel Portillo',
+    departamento: 'Ucayali',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['ESTRUCTURAS'],
+    partidas: [
+      { id: 'up2_1', item: '1', nombre: 'CONCRETO ARMADO', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'up2_2', item: '1.1', nombre: 'Columnas de concreto f\'c=210 kg/cm²', unidad: 'M3', metrado: 28.40, esTitulo: false, rendimiento: 10, insumos: [{ id: 'up2_i1', nombre: 'CONCRETO PREMEZCLADO F\'C=210 KG/CM2', unidad: 'M3', cuadrilla: 1, pu: 380, tipo: 'SC' }, { id: 'up2_i2', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 2, pu: 28.10, tipo: 'MO' }] },
+      { id: 'up2_3', item: '1.2', nombre: 'Vigas de concreto armado', unidad: 'M3', metrado: 18.60, esTitulo: false, rendimiento: 8, insumos: [{ id: 'up2_i3', nombre: 'CONCRETO PREMEZCLADO F\'C=210 KG/CM2', unidad: 'M3', cuadrilla: 1, pu: 380, tipo: 'SC' }] }
+    ]
+  },
+  {
+    id: 'u_pro_3',
+    nombre: 'PRESUPUESTO INSTALACIONES SANITARIAS FINAL',
+    cliente: 'SELVAVIVACONSTRUCCIONES',
+    fechaBase: '2026-04-02',
+    grupo: 'SANEAMIENTO',
+    categoria: 'Recientes',
+    direccion: 'Sede Principal',
+    distrito: 'Callería',
+    provincia: 'Coronel Portillo',
+    departamento: 'Ucayali',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['AGUA FRÍA', 'DESAGUE'],
+    partidas: [
+      { id: 'up3_1', item: '1', nombre: 'INSTALACIONES DE AGUA FRÍA', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'up3_2', item: '1.1', nombre: 'Tubería PVC-U de 1/2" para agua fría', unidad: 'ML', metrado: 145.20, esTitulo: false, rendimiento: 20, insumos: [{ id: 'up3_i1', nombre: 'TUBERIA PVC-U 1/2"', unidad: 'ML', cuadrilla: 0, pu: 8.50, tipo: 'MT' }, { id: 'up3_i2', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1, pu: 28.10, tipo: 'MO' }] },
+      { id: 'up3_3', item: '2', nombre: 'INSTALACIONES DE DESAGUE', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'up3_4', item: '2.1', nombre: 'Tubería PVC-SAP de 4" para desagüe', unidad: 'ML', metrado: 88.60, esTitulo: false, rendimiento: 15, insumos: [{ id: 'up3_i3', nombre: 'TUBERIA PVC-SAP 4"', unidad: 'ML', cuadrilla: 0, pu: 22.00, tipo: 'MT' }] }
+    ]
+  },
+  // === Templates InfraCost Pro (synced with HomeUser) ===
+  {
+    id: 't_pro_1',
+    nombre: 'PRESUPUESTO HOSPITAL DE COMPLEJIDAD II - PLANTILLA PRO',
+    cliente: 'PLANTILLA',
+    fechaBase: '2026-05-18',
+    grupo: 'EDIFICACIONES',
+    categoria: 'Recientes',
+    direccion: 'NN',
+    distrito: 'NN',
+    provincia: 'NN',
+    departamento: 'NN',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['ARQUITECTURA', 'ESTRUCTURA', 'INSTALACIONES'],
+    partidas: [
+      { id: 'tp1_1', item: '1', nombre: 'OBRAS CIVILES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'tp1_2', item: '1.1', nombre: 'Movimiento de tierras y excavación masiva', unidad: 'M3', metrado: 520.00, esTitulo: false, rendimiento: 40, insumos: [{ id: 'tp1_i1', nombre: 'EXCAVADORA SOBRE ORUGAS', unidad: 'HM', cuadrilla: 1, pu: 350, tipo: 'EQ' }] }
+    ]
+  },
+  {
+    id: 't_pro_2',
+    nombre: 'PRESUPUESTO EDIFICIO RESIDENCIAL 15 PISOS - PLANTILLA PRO',
+    cliente: 'PLANTILLA',
+    fechaBase: '2026-05-14',
+    grupo: 'EDIFICACIONES',
+    categoria: 'Recientes',
+    direccion: 'NN',
+    distrito: 'NN',
+    provincia: 'NN',
+    departamento: 'NN',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['ESTRUCTURAS', 'ARQUITECTURA'],
+    partidas: [
+      { id: 'tp2_1', item: '1', nombre: 'CIMENTACIÓN', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'tp2_2', item: '1.1', nombre: 'Pilotes de concreto armado diámetro 60cm', unidad: 'ML', metrado: 1200.00, esTitulo: false, rendimiento: 8, insumos: [{ id: 'tp2_i1', nombre: 'CONCRETO PREMEZCLADO F\'C=280 KG/CM2', unidad: 'M3', cuadrilla: 1, pu: 450, tipo: 'SC' }] }
+    ]
+  },
+  {
+    id: 't_pro_3',
+    nombre: 'PRESUPUESTO PAVIMENTACIÓN VIAL URBANA - PLANTILLA PRO',
+    cliente: 'PLANTILLA',
+    fechaBase: '2026-05-12',
+    grupo: 'CARRETERAS',
+    categoria: 'Recientes',
+    direccion: 'NN',
+    distrito: 'NN',
+    provincia: 'NN',
+    departamento: 'NN',
+    jornada: 8,
+    moneda: 'SOLES',
+    subPresupuestos: ['SUB BASE', 'BASE', 'CARPETA ASFALTICA'],
+    partidas: [
+      { id: 'tp3_1', item: '1', nombre: 'TRABAJOS PRELIMINARES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+      { id: 'tp3_2', item: '1.1', nombre: 'Trazo y replanteo en vías', unidad: 'M2', metrado: 8500.00, esTitulo: false, rendimiento: 300, insumos: [{ id: 'tp3_i1', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1, pu: 28.10, tipo: 'MO' }, { id: 'tp3_i2', nombre: 'PEON', unidad: 'HH', cuadrilla: 2, pu: 20.20, tipo: 'MO' }] }
+    ]
   }
 ];
 
@@ -239,37 +361,26 @@ const DEFAULT_APU_COLUMN_WIDTHS: Record<ApuColumnKey, number> = {
   tipo: 110
 };
 
-export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies, mode = 'lite', onNavigate }) => {
+export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies, mode = 'lite', onNavigate, initialOpenBudgetId }) => {
   const { user } = useAuth();
   
-  // Budgets state
+  // Budgets state — merge saved data with INITIAL_BUDGETS so new entries always appear
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem('infrasuite_budgets_v3');
-    if (!saved) return INITIAL_BUDGETS;
-    try {
-      return JSON.parse(saved) as Budget[];
-    } catch {
-      return INITIAL_BUDGETS;
+    let base = INITIAL_BUDGETS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Budget[];
+        // Merge: keep saved entries, add any INITIAL_BUDGETS entries not yet in saved
+        const savedIds = new Set(parsed.map(b => b.id));
+        const missing = INITIAL_BUDGETS.filter(b => !savedIds.has(b.id));
+        base = [...parsed, ...missing];
+      } catch {
+        base = INITIAL_BUDGETS;
+      }
     }
+    return base;
   });
-
-  const [catalogoInsumos, setCatalogoInsumos] = useState<any[]>(() => {
-    const saved = localStorage.getItem('infrasuite_catalogo_insumos');
-    if (!saved) return MOCK_CATALOGO_INSUMOS;
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return MOCK_CATALOGO_INSUMOS;
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('infrasuite_budgets_v3', JSON.stringify(budgets));
-  }, [budgets]);
-
-  useEffect(() => {
-    localStorage.setItem('infrasuite_catalogo_insumos', JSON.stringify(catalogoInsumos));
-  }, [catalogoInsumos]);
 
   // UI State
   const [viewState, setViewState] = useState<'list' | 'editor'>('list');
@@ -280,6 +391,33 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
   const [isInfraCostSidebarCollapsed, setIsInfraCostSidebarCollapsed] = useState(false);
   const [partidaColumnWidths, setPartidaColumnWidths] = useState<Record<PartidaColumnKey, number>>(DEFAULT_PARTIDA_COLUMN_WIDTHS);
   const [apuColumnWidths, setApuColumnWidths] = useState<Record<ApuColumnKey, number>>(DEFAULT_APU_COLUMN_WIDTHS);
+
+  // Persist budgets to localStorage
+  useEffect(() => {
+    localStorage.setItem('infrasuite_budgets_v3', JSON.stringify(budgets));
+  }, [budgets]);
+
+  const [catalogoInsumos, setCatalogoInsumos] = useState<any[]>(() => {
+    const saved = localStorage.getItem('infrasuite_catalogo_insumos');
+    if (!saved) return MOCK_CATALOGO_INSUMOS;
+    try { return JSON.parse(saved); } catch { return MOCK_CATALOGO_INSUMOS; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('infrasuite_catalogo_insumos', JSON.stringify(catalogoInsumos));
+  }, [catalogoInsumos]);
+
+  // Open specific budget directly (from HomeUser file click)
+  useEffect(() => {
+    if (initialOpenBudgetId && budgets.length > 0) {
+      const target = budgets.find(b => b.id === initialOpenBudgetId);
+      if (target) {
+        setActiveBudget(target);
+        setOpenBudgetIds(prev => prev.includes(target.id) ? prev : [...prev, target.id]);
+        setViewState('editor');
+      }
+    }
+  }, [initialOpenBudgetId]);
 
   // Resize functions
   const startPartidaColumnResize = (key: PartidaColumnKey, e: React.MouseEvent) => {
