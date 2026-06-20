@@ -863,7 +863,10 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                           zIndex: 99999,
                           color: 'var(--text-primary)',
                           fontFamily: 'var(--font-sans)',
-                          overflow: 'hidden'
+                          resize: 'both',
+                          overflow: 'auto',
+                          minWidth: '280px',
+                          minHeight: '260px'
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -932,9 +935,42 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Ítem Código</span>
-                              <span style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 'bold' }}>{popupRow.partida.item}</span>
-                            </div>
+                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Ítem Código</span>
+                               <input
+                                 type="text"
+                                 defaultValue={popupRow.partida.item}
+                                 key={popupRow.partida.id + '_' + (activeBudget.partidas.find(p => p.id === popupRow.partida.id)?.item || '')}
+                                 onBlur={(e) => {
+                                   const newCode = e.target.value.trim();
+                                   const currentActual = activeBudget.partidas.find(p => p.id === popupRow.partida.id)?.item;
+                                   if (newCode && newCode !== currentActual) {
+                                     handleItemCodeChange(popupRow.partida.id, currentActual || popupRow.partida.item, newCode);
+                                   }
+                                 }}
+                                 onKeyDown={(e) => {
+                                   if (e.key === 'Enter') {
+                                     const newCode = e.currentTarget.value.trim();
+                                     const currentActual = activeBudget.partidas.find(p => p.id === popupRow.partida.id)?.item;
+                                     if (newCode && newCode !== currentActual) {
+                                       handleItemCodeChange(popupRow.partida.id, currentActual || popupRow.partida.item, newCode);
+                                     }
+                                     e.currentTarget.blur();
+                                   }
+                                 }}
+                                 style={{
+                                   width: '100%',
+                                   background: 'rgba(255, 255, 255, 0.05)',
+                                   border: '1px solid var(--border-color)',
+                                   color: 'var(--text-primary)',
+                                   padding: '6px 10px',
+                                   borderRadius: '4px',
+                                   fontSize: '0.82rem',
+                                   fontFamily: 'monospace',
+                                   outline: 'none',
+                                   boxSizing: 'border-box'
+                                 }}
+                               />
+                             </div>
                             <div>
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Tipo Elemento</span>
                               <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: popupRow.partida.esTitulo ? 'var(--color-secondary)' : '#107c41' }}>
