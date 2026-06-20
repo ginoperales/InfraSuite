@@ -38,6 +38,19 @@ const popupBtnStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 };
 
+const getHierarchyColor = (level: number) => {
+  const colors = [
+    '#ef4444', // Level 0 (Red)
+    '#3b82f6', // Level 1 (Blue)
+    '#10b981', // Level 2 (Green)
+    '#f59e0b', // Level 3 (Amber/Orange)
+    '#8b5cf6', // Level 4 (Purple)
+    '#06b6d4', // Level 5 (Cyan)
+    '#ec4899'  // Level 6+ (Pink)
+  ];
+  return colors[level % colors.length];
+};
+
 function regenerateItemCodes(itemsWithLevels: { partida: Partida; level: number }[]): Partida[] {
   const counters: number[] = [];
   return itemsWithLevels.map(item => {
@@ -64,7 +77,7 @@ function regenerateItemCodes(itemsWithLevels: { partida: Partida; level: number 
 const adjustHierarchy = (
   partidas: Partida[],
   targetId: string,
-  action: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete'
+  action: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete' | 'addPartida' | 'addTitle'
 ): Partida[] => {
   const itemsWithLevels = partidas.map(p => ({
     partida: { ...p },
@@ -175,6 +188,22 @@ const adjustHierarchy = (
         itemsWithLevels.splice(targetIdx + nextDescCount + 1, 0, ...targetBlock);
       }
     }
+  } else if (action === 'addPartida' || action === 'addTitle') {
+    const isTitle = action === 'addTitle';
+    const newP: Partida = {
+      id: 'p_' + Math.random().toString(36).substring(2, 9),
+      item: '',
+      nombre: isTitle ? 'NUEVO TÍTULO' : 'NUEVA PARTIDA',
+      unidad: isTitle ? '' : 'GLB',
+      metrado: isTitle ? 0 : 1,
+      esTitulo: isTitle,
+      rendimiento: 1,
+      insumos: []
+    };
+    itemsWithLevels.splice(targetIdx + 1, 0, {
+      partida: newP,
+      level: targetItem.level
+    });
   }
 
   return regenerateItemCodes(itemsWithLevels);
@@ -520,7 +549,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                 };
 
                 const handleAction = (action: string, p: Partida) => {
-                  let actionType: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete' | null = null;
+                  let actionType: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete' | 'addPartida' | 'addTitle' | null = null;
                   
                   if (action === 'Cambiar Jerarquía' || action === 'Convertir a Título' || action === 'Convertir a Partida') {
                     actionType = 'toggleType';
@@ -536,6 +565,10 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                     actionType = 'duplicate';
                   } else if (action === 'Eliminar') {
                     actionType = 'delete';
+                  } else if (action === 'Agregar Partida') {
+                    actionType = 'addPartida';
+                  } else if (action === 'Agregar Título') {
+                    actionType = 'addTitle';
                   }
 
                   if (actionType && updatePartidasList) {
@@ -723,7 +756,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                     width: '100%',
                                     background: 'transparent',
                                     border: 'none',
-                                    color: p.esTitulo ? '#ef4444' : 'var(--text-primary)',
+                                    color: getHierarchyColor(level),
                                     fontWeight: p.esTitulo ? 'bold' : 'normal',
                                     fontFamily: 'monospace',
                                     fontSize: '0.8rem',
@@ -734,7 +767,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                               </td>
 
                               {/* Description (with hierarchy offset) */}
-                              <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, color: p.esTitulo ? '#ef4444' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <td style={{ padding: '6px 8px', paddingLeft: `${paddingLeft}px`, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 <span 
                                   onClick={(e) => {
                                     if (p.esTitulo) {
@@ -747,12 +780,13 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                     cursor: p.esTitulo ? 'pointer' : 'default',
                                     userSelect: 'none',
                                     display: 'inline-block',
-                                    transition: 'transform 0.15s ease'
+                                    transition: 'transform 0.15s ease',
+                                    color: getHierarchyColor(level)
                                   }}
                                 >
                                   {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
                                 </span>
-                                <span style={{ color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
+                                <span style={{ color: getHierarchyColor(level), fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: p.esTitulo ? 'bold' : 'normal' }}>
                                   {p.nombre}
                                 </span>
                               </td>
@@ -802,6 +836,8 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                           📐 Convertir a {contextMenuRow.partida.esTitulo ? 'Partida' : 'Título'}
                         </button>
                         <button onClick={() => handleAction('Duplicar', contextMenuRow.partida)} style={contextMenuItemStyle}>👯 Duplicar</button>
+                        <button onClick={() => handleAction('Agregar Partida', contextMenuRow.partida)} style={contextMenuItemStyle}>➕ Agregar Partida</button>
+                        <button onClick={() => handleAction('Agregar Título', contextMenuRow.partida)} style={contextMenuItemStyle}>➕ Agregar Título</button>
                         <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
                         <button onClick={() => handleAction('Mover Arriba', contextMenuRow.partida)} style={contextMenuItemStyle}>⬆️ Mover Arriba</button>
                         <button onClick={() => handleAction('Mover Abajo', contextMenuRow.partida)} style={contextMenuItemStyle}>⬇️ Mover Abajo</button>
