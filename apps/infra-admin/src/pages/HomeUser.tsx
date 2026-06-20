@@ -82,14 +82,23 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'infracost_lite' | 'infracost_pro' | 'infrageo' | 'infraplan'>('all');
   const [showBanner, setShowBanner] = useState(true);
   const [recentBudgets, setRecentBudgets] = useState<any[]>([]);
-  const [promotions, setPromotions] = useState<any[]>(() => {
-    try {
-      const plans = db.getCollection('plans');
-      return plans.filter((p: any) => p.promo) || [];
-    } catch {
-      return [];
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+  const [isPromoLoaded, setIsPromoLoaded] = useState(false);
+
+  useEffect(() => {
+    if (promotions.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentPromoIndex((prev) => (prev + 1) % promotions.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [promotions]);
+
+  useEffect(() => {
+    if (currentPromoIndex >= promotions.length) {
+      setCurrentPromoIndex(0);
     }
-  });
+  }, [promotions, currentPromoIndex]);
 
   useEffect(() => {
     try {
@@ -106,9 +115,16 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
     const fetchPromotions = async () => {
       try {
         const plans = await db.getDocs('plans');
-        setPromotions(plans.filter((p: any) => p.promo));
+        setPromotions(plans.filter((p: any) => p.promo) || []);
       } catch {
-        // Already initialized synchronously
+        try {
+          const plans = db.getCollection('plans');
+          setPromotions(plans.filter((p: any) => p.promo) || []);
+        } catch {
+          setPromotions([]);
+        }
+      } finally {
+        setIsPromoLoaded(true);
       }
     };
     fetchPromotions();
@@ -229,7 +245,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
         backgroundColor: 'var(--bg-main)',
         color: 'var(--text-primary)',
         fontFamily: '"Segoe UI", var(--font-sans), sans-serif',
-        overflowY: 'auto',
+        overflow: 'hidden',
       }}
     >
       {/* ── TOP HEADER / TOOLBAR ── */}
@@ -242,7 +258,10 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
           borderBottom: '1px solid var(--border-color)',
           background: 'var(--bg-surface)',
           gap: '16px',
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100
         }}
       >
         {/* Left: Spacer to help balance search bar center layout (using width of right menu) */}
@@ -319,9 +338,11 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
         </div>
       </div>
 
-      <div style={{ padding: '24px 32px', maxWidth: '1400px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Scrollable Content Container */}
+      <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '24px 32px', maxWidth: '1400px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* ── GREETING TITLE ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800 }}>
               {getGreeting()}, {user?.nombre?.split(' ')[0] || 'SELVAVIVACONSTRUCCIONES'} 👋
@@ -334,7 +355,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
 
         {/* ── PROMO BANNER ── */}
         <AnimatePresence>
-          {showBanner && (
+          {showBanner && isPromoLoaded && promotions.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -355,11 +376,22 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '1.5rem' }}>🎁</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4 }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4, display: 'inline-flex', alignItems: 'center' }}>
                   {promotions.length > 0 ? (
-                    <span>
-                      <strong>Promociones:</strong>{' '}
-                      {promotions.map((p) => `${p.title} (${p.promo})`).join(' • ')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      <strong>Promoción:</strong>&nbsp;
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={currentPromoIndex}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.3 }}
+                          style={{ display: 'inline-block' }}
+                        >
+                          {promotions[currentPromoIndex]?.title} ({promotions[currentPromoIndex]?.promo})
+                        </motion.span>
+                      </AnimatePresence>
                     </span>
                   ) : (
                     <span>No hay promociones activas en este momento. Revisa más tarde para ofertas especiales de suscripción.</span>
@@ -756,6 +788,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

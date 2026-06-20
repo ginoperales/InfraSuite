@@ -179,7 +179,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '20px',
-          background: 'rgba(12, 14, 21, 0.4)',
+          background: theme === 'light' ? '#ffffff' : 'rgba(12, 14, 21, 0.4)',
           padding: '20px 24px',
           borderRadius: 'var(--radius-md)',
           border: '1px solid var(--border-color)',

@@ -741,8 +741,9 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
       rendimiento: partidaEsTitulo ? 1 : parseFloat(partidaRendimiento) || 1,
       insumos: []
     };
-    const updatedPartidas = [...activeBudget.partidas, newP];
-    handlePartidaCellChange(newP.id, 'partidas', updatedPartidas);
+    const updatedBudget = { ...activeBudget, partidas: [...activeBudget.partidas, newP] };
+    setActiveBudget(updatedBudget);
+    setBudgets(budgets.map(b => b.id === activeBudget.id ? updatedBudget : b));
     setIsAddPartidaOpen(false);
   };
 
@@ -983,7 +984,9 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
           }} />
           <Modals.CatalogoPartidasModal isOpen={isCatalogoPartidasOpen} onClose={() => setIsCatalogoPartidasOpen(false)} catalogoPartidas={MOCK_CATALOGO_PARTIDAS} cpSearchTerm={cpSearchTerm} setCpSearchTerm={setCpSearchTerm} cpSelectedPartidaIndex={cpSelectedPartidaIndex} setCpSelectedPartidaIndex={setCpSelectedPartidaIndex} onAddPartidaFromCatalog={(item) => {
             const newP: Partida = { id: 'p_' + Math.random().toString(36).substring(2, 9), item: String(activeBudget.partidas.length + 1), nombre: item.nombre, unidad: item.unidad, metrado: 1, esTitulo: false, rendimiento: item.rendimiento, insumos: item.insumos.map((x: any) => ({ id: 'i_' + Math.random().toString(36).substring(2, 9), nombre: x.nombre, unidad: x.unidad, cuadrilla: x.cuadrilla, pu: x.pu, tipo: x.tipo })) };
-            handlePartidaCellChange(newP.id, 'partidas', [...activeBudget.partidas, newP]);
+            const updatedBudget = { ...activeBudget, partidas: [...activeBudget.partidas, newP] };
+            setActiveBudget(updatedBudget);
+            setBudgets(budgets.map(b => b.id === activeBudget.id ? updatedBudget : b));
             setIsCatalogoPartidasOpen(false);
           }} />
           <Modals.ListaInsumosModal isOpen={isListaInsumosOpen} onClose={() => setIsListaInsumosOpen(false)} activeBudget={activeBudget} />
@@ -1056,7 +1059,9 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
         }} />
         <Modals.CatalogoPartidasModal isOpen={isCatalogoPartidasOpen} onClose={() => setIsCatalogoPartidasOpen(false)} catalogoPartidas={MOCK_CATALOGO_PARTIDAS} cpSearchTerm={cpSearchTerm} setCpSearchTerm={setCpSearchTerm} cpSelectedPartidaIndex={cpSelectedPartidaIndex} setCpSelectedPartidaIndex={setCpSelectedPartidaIndex} onAddPartidaFromCatalog={(item) => {
           const newP: Partida = { id: 'p_' + Math.random().toString(36).substring(2, 9), item: String(activeBudget.partidas.length + 1), nombre: item.nombre, unidad: item.unidad, metrado: 1, esTitulo: false, rendimiento: item.rendimiento, insumos: item.insumos.map((x: any) => ({ id: 'i_' + Math.random().toString(36).substring(2, 9), nombre: x.nombre, unidad: x.unidad, cuadrilla: x.cuadrilla, pu: x.pu, tipo: x.tipo })) };
-          handlePartidaCellChange(newP.id, 'partidas', [...activeBudget.partidas, newP]);
+          const updatedBudget = { ...activeBudget, partidas: [...activeBudget.partidas, newP] };
+          setActiveBudget(updatedBudget);
+          setBudgets(budgets.map(b => b.id === activeBudget.id ? updatedBudget : b));
           setIsCatalogoPartidasOpen(false);
         }} />
         <Modals.ListaInsumosModal isOpen={isListaInsumosOpen} onClose={() => setIsListaInsumosOpen(false)} activeBudget={activeBudget} />

@@ -1,6 +1,18 @@
 import React from 'react';
 import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey } from './types';
 
+const tableInputStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'inherit',
+  width: '100%',
+  textAlign: 'right',
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  outline: 'none',
+  padding: 0
+};
+
 interface BudgetEditorLiteProps {
   activeBudget: Budget;
   openBudgets: Budget[];

@@ -18,6 +18,9 @@ import { Budgets } from './pages/budgets/BudgetsContainer';
 import { Applications } from './pages/Applications';
 import { ProfileSettings } from './pages/ProfileSettings';
 import { HomeUser } from './pages/HomeUser';
+import { SharedItems } from './pages/SharedItems';
+import { Contacts } from './pages/Contacts';
+import { RecycleBin } from './pages/RecycleBin';
 
 // App Inner Layout
 const AppContent: React.FC = () => {
@@ -858,16 +861,40 @@ const AppContent: React.FC = () => {
                   {!isSidebarCollapsed && <span>Configuración Landing</span>}
                 </button>
                 <button
-                  className={`menu-item ${activeTab === 'users' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('users')}
-                  title={isSidebarCollapsed ? "Directorio de Usuarios" : undefined}
+                  className={`menu-item ${activeTab === 'shared' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('shared')}
+                  title={isSidebarCollapsed ? "Compartido" : undefined}
+                  style={{
+                    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                    padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📁</span>
+                  {!isSidebarCollapsed && <span>Compartido</span>}
+                </button>
+                <button
+                  className={`menu-item ${activeTab === 'contacts' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('contacts')}
+                  title={isSidebarCollapsed ? "Contactos" : undefined}
                   style={{
                     justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
                   <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>👥</span>
-                  {!isSidebarCollapsed && <span>Directorio de Usuarios</span>}
+                  {!isSidebarCollapsed && <span>Contactos</span>}
+                </button>
+                <button
+                  className={`menu-item ${activeTab === 'trash' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('trash')}
+                  title={isSidebarCollapsed ? "Papelera de reciclaje" : undefined}
+                  style={{
+                    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                    padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</span>
+                  {!isSidebarCollapsed && <span>Papelera de reciclaje</span>}
                 </button>
                 <button
                   className={`menu-item ${activeTab === 'logs' ? 'active' : ''}`}
@@ -1005,16 +1032,40 @@ const AppContent: React.FC = () => {
                 )}
 
                 <button
-                  className={`menu-item ${activeTab === 'users' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('users')}
-                  title={isSidebarCollapsed ? "Directorio de Usuarios" : undefined}
+                  className={`menu-item ${activeTab === 'shared' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('shared')}
+                  title={isSidebarCollapsed ? "Compartido" : undefined}
+                  style={{
+                    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                    padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📁</span>
+                  {!isSidebarCollapsed && <span>Compartido</span>}
+                </button>
+                <button
+                  className={`menu-item ${activeTab === 'contacts' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('contacts')}
+                  title={isSidebarCollapsed ? "Contactos" : undefined}
                   style={{
                     justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
                   <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>👥</span>
-                  {!isSidebarCollapsed && <span>Directorio de Usuarios</span>}
+                  {!isSidebarCollapsed && <span>Contactos</span>}
+                </button>
+                <button
+                  className={`menu-item ${activeTab === 'trash' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('trash')}
+                  title={isSidebarCollapsed ? "Papelera de reciclaje" : undefined}
+                  style={{
+                    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+                    padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</span>
+                  {!isSidebarCollapsed && <span>Papelera de reciclaje</span>}
                 </button>
                 <button
                   className={`menu-item ${activeTab === 'sync' ? 'active' : ''}`}
@@ -1283,6 +1334,9 @@ const AppContent: React.FC = () => {
                     {activeTab === 'dashboard' && 'Panel de Control Principal'}
                     {activeTab === 'companies' && 'Administración de Empresas'}
                     {activeTab === 'users' && 'Administración de Usuarios'}
+                    {activeTab === 'shared' && 'Archivos Compartidos'}
+                    {activeTab === 'contacts' && 'Contactos de Trabajo'}
+                    {activeTab === 'trash' && 'Papelera de reciclaje'}
                     {activeTab === 'logs' && 'Auditoría del Ecosistema'}
                     {activeTab === 'sync' && 'Motor de Sincronización Local'}
                     {activeTab === 'landing' && 'Configuración de Inicio'}
@@ -1329,6 +1383,9 @@ const AppContent: React.FC = () => {
               {activeTab === 'companies' && user.role === 'SUPER_ADMIN' && <Companies />}
               {activeTab === 'landing' && user.role === 'SUPER_ADMIN' && <LandingAdmin />}
               {activeTab === 'users' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Users />}
+              {activeTab === 'shared' && <SharedItems />}
+              {activeTab === 'contacts' && <Contacts />}
+              {activeTab === 'trash' && <RecycleBin />}
               {activeTab === 'logs' && user.role === 'SUPER_ADMIN' && <Logs />}
               {activeTab === 'budgets_lite' && <Budgets mode="lite" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
               {activeTab === 'budgets_pro' && <Budgets mode="pro" theme={theme} toggleTheme={toggleTheme} companies={companies} />}
