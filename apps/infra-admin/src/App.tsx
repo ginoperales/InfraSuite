@@ -644,18 +644,33 @@ const AppContent: React.FC = () => {
                   border: 'none',
                   color: 'var(--text-secondary)',
                   cursor: 'pointer',
-                  fontSize: '1rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: '6px',
-                  borderRadius: 'var(--radius-sm)',
-                  transition: 'background 0.2s',
+                  borderRadius: '6px',
+                  transition: 'background 0.2s, color 0.2s',
                   alignSelf: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--bg-surface-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
                 }}
                 title={isSidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
               >
-                {isSidebarCollapsed ? '➡️' : '⬅️'}
+                {isSidebarCollapsed ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                )}
               </button>
             </div>
 
@@ -1164,7 +1179,7 @@ const AppContent: React.FC = () => {
 
             {/* Tab router views */}
             <React.Fragment>
-              {activeTab === 'home' && <HomeUser onNavigate={(tab) => setActiveTab(tab)} installedModules={installedModules} theme={theme} />}
+              {activeTab === 'home' && <HomeUser onNavigate={(tab) => setActiveTab(tab)} installedModules={installedModules} theme={theme} onToggleTheme={toggleTheme} />}
               {activeTab === 'dashboard' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') && <Dashboard onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'companies' && user.role === 'SUPER_ADMIN' && <Companies />}
               {activeTab === 'landing' && user.role === 'SUPER_ADMIN' && <LandingAdmin />}
