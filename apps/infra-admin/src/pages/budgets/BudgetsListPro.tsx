@@ -57,8 +57,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
       {/* Delphin Express Inspired Ribbon Menu */}
       <div style={{
-        background: theme === 'dark' ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)' : 'linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)',
-        borderBottom: theme === 'dark' ? '2px solid var(--color-primary-glow)' : '1px solid var(--border-color)',
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-color)',
         padding: '10px 24px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -105,7 +105,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
 
       {/* Actions sub-bar ribbon */}
       <div style={{
-        background: theme === 'dark' ? 'rgba(15, 23, 42, 0.95)' : 'var(--bg-surface)',
+        background: 'var(--bg-surface-elevated)',
         padding: '8px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -116,9 +116,9 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         <button
           onClick={() => { resetBudgetForm(); setIsCreateOpen(true); }}
           style={{
-            background: 'rgba(0, 240, 255, 0.1)',
-            border: '1px solid rgba(0, 240, 255, 0.25)',
-            color: '#00f0ff',
+            background: 'var(--color-primary-glow)',
+            border: '1px solid rgba(15, 82, 186, 0.25)',
+            color: 'var(--color-primary)',
             padding: '6px 16px',
             borderRadius: '4px',
             cursor: 'pointer',
@@ -177,7 +177,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         <div style={{
           width: '280px',
           borderRight: '1px solid var(--border-color)',
-          background: theme === 'dark' ? 'rgba(15, 23, 42, 0.3)' : 'rgba(0, 0, 0, 0.02)',
+          background: 'var(--bg-surface)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0
@@ -257,7 +257,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(10, 12, 18, 0.15)'
+          background: 'var(--bg-main)'
         }}>
           {/* Search project bar */}
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '12px' }}>
@@ -302,7 +302,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
                     onClick={() => handleOpenBudgetEditor(b)}
                     style={{
                       padding: '16px 20px',
-                      background: 'rgba(255, 255, 255, 0.02)',
+                      background: 'var(--bg-surface)',
                       border: '1px solid var(--border-color)',
                       borderRadius: '6px',
                       cursor: 'pointer',
@@ -352,7 +352,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         <div style={{
           width: '320px',
           borderLeft: '1px solid var(--border-color)',
-          background: theme === 'dark' ? 'rgba(15, 23, 42, 0.3)' : 'rgba(0, 0, 0, 0.02)',
+          background: 'var(--bg-surface)',
           padding: '20px',
           display: 'flex',
           flexDirection: 'column',

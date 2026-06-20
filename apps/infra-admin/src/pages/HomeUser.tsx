@@ -82,7 +82,14 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'infracost_lite' | 'infracost_pro' | 'infrageo' | 'infraplan'>('all');
   const [showBanner, setShowBanner] = useState(true);
   const [recentBudgets, setRecentBudgets] = useState<any[]>([]);
-  const [promotions, setPromotions] = useState<any[]>([]);
+  const [promotions, setPromotions] = useState<any[]>(() => {
+    try {
+      const plans = db.getCollection('plans');
+      return plans.filter((p: any) => p.promo) || [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     try {
@@ -101,8 +108,7 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
         const plans = await db.getDocs('plans');
         setPromotions(plans.filter((p: any) => p.promo));
       } catch {
-        const plans = db.getCollection('plans');
-        setPromotions(plans.filter((p: any) => p.promo));
+        // Already initialized synchronously
       }
     };
     fetchPromotions();
@@ -111,14 +117,15 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
   const ownerName = user?.nombre || 'Gino Harold Perales Guerra';
 
   // Base mockup files mapped to InfraSuite apps
-  const mockFiles: DashboardFile[] = [
+  const mockFiles: (DashboardFile & { isTemplate?: boolean })[] = [
     {
       id: 'f_1',
       name: 'PLAN ANUAL DE SEGURIDAD Y SALUD EN EL TRABAJO - CONSORCIO SEDE PUCALLPA',
       type: 'infraplan',
       modified: '22 may.',
       owner: ownerName,
-      category: 'Plan de Obra'
+      category: 'Plan de Obra',
+      isTemplate: true
     },
     {
       id: 'f_2',
@@ -127,7 +134,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       modified: '22 may.',
       owner: ownerName,
       category: 'Presupuestos Pro',
-      tabNavigate: 'budgets_pro'
+      tabNavigate: 'budgets_pro',
+      isTemplate: false // infracost_pro is installed
     },
     {
       id: 'f_3',
@@ -135,7 +143,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       type: 'infraplan',
       modified: '22 may.',
       owner: ownerName,
-      category: 'Plan de Obra'
+      category: 'Plan de Obra',
+      isTemplate: true
     },
     {
       id: 'f_4',
@@ -144,7 +153,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       modified: '20 abr.',
       owner: ownerName,
       category: 'Presupuestos Lite',
-      tabNavigate: 'budgets_lite'
+      tabNavigate: 'budgets_lite',
+      isTemplate: true // infracost_lite is not installed
     },
     {
       id: 'f_5',
@@ -153,7 +163,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       modified: '6 abr.',
       owner: ownerName,
       category: 'Presupuestos Pro',
-      tabNavigate: 'budgets_pro'
+      tabNavigate: 'budgets_pro',
+      isTemplate: false // infracost_pro is installed
     },
     {
       id: 'f_6',
@@ -161,7 +172,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       type: 'infrageo',
       modified: '25 mar.',
       owner: ownerName,
-      category: 'Sondeos Geológicos'
+      category: 'Sondeos Geológicos',
+      isTemplate: true
     },
     {
       id: 'f_7',
@@ -170,7 +182,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       modified: '10 mar.',
       owner: ownerName,
       category: 'Presupuestos Lite',
-      tabNavigate: 'budgets_lite'
+      tabNavigate: 'budgets_lite',
+      isTemplate: true // infracost_lite is not installed
     },
     {
       id: 'f_8',
@@ -179,7 +192,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
       modified: '7 mar.',
       owner: ownerName,
       category: 'Presupuestos Lite',
-      tabNavigate: 'budgets_lite'
+      tabNavigate: 'budgets_lite',
+      isTemplate: true // infracost_lite is not installed
     }
   ];
 
@@ -344,11 +358,11 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                 <span style={{ fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.4 }}>
                   {promotions.length > 0 ? (
                     <span>
-                      <strong>Promociones del Superadministrador:</strong>{' '}
+                      <strong>Promociones:</strong>{' '}
                       {promotions.map((p) => `${p.title} (${p.promo})`).join(' • ')}
                     </span>
                   ) : (
-                    <span>Obtenga 100 GB gratis durante un mes. Comience ya la prueba para obtener más almacenamiento para todos sus archivos y fotos.</span>
+                    <span>No hay promociones activas en este momento. Revisa más tarde para ofertas especiales de suscripción.</span>
                   )}
                 </span>
               </div>
@@ -402,7 +416,13 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             {/* InfraCost Lite Card */}
             <div
-              onClick={() => onNavigate('budgets_lite')}
+              onClick={() => {
+                if (installedModules.includes('INFRACOST')) {
+                  onNavigate('budgets_lite');
+                } else {
+                  onNavigate('applications');
+                }
+              }}
               style={{
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
@@ -412,20 +432,32 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                 display: 'flex',
                 alignItems: 'center',
                 gap: '14px',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                opacity: installedModules.includes('INFRACOST') ? 1 : 0.85
               }}
               className="hover-card"
             >
               <InfraCostLiteIcon />
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>InfraCost Lite</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  InfraCost Lite
+                  {!installedModules.includes('INFRACOST') && (
+                    <span style={{ fontSize: '0.62rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>INSTALAR</span>
+                  )}
+                </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Gestión de presupuestos rápida</div>
               </div>
             </div>
 
             {/* InfraCost Pro Card */}
             <div
-              onClick={() => onNavigate('budgets_pro')}
+              onClick={() => {
+                if (installedModules.includes('INFRACOST_PRO')) {
+                  onNavigate('budgets_pro');
+                } else {
+                  onNavigate('applications');
+                }
+              }}
               style={{
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
@@ -435,13 +467,19 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                 display: 'flex',
                 alignItems: 'center',
                 gap: '14px',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                opacity: installedModules.includes('INFRACOST_PRO') ? 1 : 0.85
               }}
               className="hover-card"
             >
               <InfraCostProIcon />
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>InfraCost Pro</div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  InfraCost Pro
+                  {!installedModules.includes('INFRACOST_PRO') && (
+                    <span style={{ fontSize: '0.62rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>INSTALAR</span>
+                  )}
+                </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Análisis completo y APUs</div>
               </div>
             </div>
@@ -642,54 +680,77 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
                     </td>
                   </tr>
                 ) : (
-                  filteredFiles.map((file) => (
-                    <tr
-                      key={file.id}
-                      onClick={() => file.tabNavigate && onNavigate(file.tabNavigate)}
-                      style={{
-                        borderBottom: '1px solid var(--border-color)',
-                        cursor: file.tabNavigate ? 'pointer' : 'default',
-                        transition: 'background-color 0.15s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      {/* Name / File Info */}
-                      <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <FileIcon type={file.type} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                          <span
-                            style={{
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {file.name}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            {file.category}
-                          </span>
-                        </div>
-                      </td>
+                  filteredFiles.map((file: any) => {
+                    const isModuleInstalled = 
+                      (file.type === 'infracost_lite' && installedModules.includes('INFRACOST')) ||
+                      (file.type === 'infracost_pro' && installedModules.includes('INFRACOST_PRO')) ||
+                      (file.type === 'infrageo' && installedModules.includes('INFRAENG')) || // mock geo check
+                      (file.type === 'infraplan' && installedModules.includes('INFRAPLAN'));
 
-                      {/* Date */}
-                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', verticalAlign: 'middle' }}>
-                        {file.modified}
-                      </td>
+                    const isTemplate = file.isTemplate !== false && (!isModuleInstalled || file.isTemplate);
 
-                      {/* Owner */}
-                      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', verticalAlign: 'middle' }}>
-                        {file.owner}
-                      </td>
-                    </tr>
-                  ))
+                    return (
+                      <tr
+                        key={file.id}
+                        onClick={() => {
+                          if (isTemplate) {
+                            onNavigate('applications');
+                          } else if (file.tabNavigate) {
+                            onNavigate(file.tabNavigate);
+                          }
+                        }}
+                        style={{
+                          borderBottom: '1px solid var(--border-color)',
+                          cursor: (file.tabNavigate || isTemplate) ? 'pointer' : 'default',
+                          transition: 'background-color 0.15s',
+                          opacity: isTemplate ? 0.8 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        {/* Name / File Info */}
+                        <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <FileIcon type={file.type} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                            <span
+                              style={{
+                                fontWeight: 600,
+                                color: 'var(--text-primary)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                              }}
+                            >
+                              {file.name}
+                              {isTemplate && (
+                                <span style={{ fontSize: '0.62rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>PLANTILLA</span>
+                              )}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              {file.category}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Date */}
+                        <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', verticalAlign: 'middle' }}>
+                          {file.modified}
+                        </td>
+
+                        {/* Owner */}
+                        <td style={{ padding: '12px 16px', color: 'var(--text-secondary)', verticalAlign: 'middle' }}>
+                          {file.owner}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

@@ -49,6 +49,7 @@ const AppContent: React.FC = () => {
   const [successProgress, setSuccessProgress] = useState(0);
   const [successMessage, setSuccessMessage] = useState('Iniciando carga segura...');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -303,9 +304,6 @@ const AppContent: React.FC = () => {
           exit={{ opacity: 0, y: -40, scale: 0.97 }}
           transition={{ duration: 0.45, ease: 'easeInOut' }}
         >
-          {/* Cyber scanline */}
-          <div className="cyber-scanline" />
-          
           <motion.div 
             className="success-card"
             initial={{ scale: 0.9, opacity: 0, y: 30 }}
@@ -672,6 +670,153 @@ const AppContent: React.FC = () => {
                   </svg>
                 )}
               </button>
+            </div>
+
+            {/* + Crear o cargar Button matching the screenshot styling */}
+            <div style={{ padding: isSidebarCollapsed ? '4px 12px' : '4px 16px 16px 16px', position: 'relative' }}>
+              <button
+                onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #0f52ba 0%, #1e3a8a 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '24px',
+                  padding: isSidebarCollapsed ? '10px 0' : '10px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(15, 82, 186, 0.25)',
+                  transition: 'all 0.2s',
+                  minHeight: '40px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.9';
+                  e.currentTarget.style.transform = 'scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>+</span>
+                {!isSidebarCollapsed && <span>Crear o cargar</span>}
+              </button>
+
+              {isCreateMenuOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: isSidebarCollapsed ? '12px' : '16px',
+                  width: '240px',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  boxShadow: 'var(--shadow-lg), 0 8px 30px rgba(0,0,0,0.3)',
+                  zIndex: 2000,
+                  padding: '8px 0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  animation: 'fadeIn var(--transition-fast) forwards'
+                }}>
+                  {/* Folders & Uploads */}
+                  <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '4px', marginBottom: '4px' }}>
+                    <button
+                      onClick={() => { setIsCreateMenuOpen(false); alert('Crear nueva carpeta...'); }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span>📁</span> Carpeta
+                    </button>
+                    <button
+                      onClick={() => { setIsCreateMenuOpen(false); alert('Cargar archivos...'); }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span>📤</span> Carga de archivos
+                    </button>
+                  </div>
+
+                  {/* Application documents */}
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {/* InfraCost Lite */}
+                    <button
+                      onClick={() => {
+                        setIsCreateMenuOpen(false);
+                        if (installedModules.includes('INFRACOST')) {
+                          setActiveTab('budgets_lite');
+                        } else {
+                          setActiveTab('applications');
+                        }
+                      }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>💰</span> Presupuesto Lite
+                      </span>
+                      {!installedModules.includes('INFRACOST') && (
+                        <span style={{ fontSize: '0.58rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 4px', borderRadius: '3px' }}>Instalar</span>
+                      )}
+                    </button>
+
+                    {/* InfraCost Pro */}
+                    <button
+                      onClick={() => {
+                        setIsCreateMenuOpen(false);
+                        if (installedModules.includes('INFRACOST_PRO')) {
+                          setActiveTab('budgets_pro');
+                        } else {
+                          setActiveTab('applications');
+                        }
+                      }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>📊</span> Presupuesto Pro
+                      </span>
+                      {!installedModules.includes('INFRACOST_PRO') && (
+                        <span style={{ fontSize: '0.58rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 4px', borderRadius: '3px' }}>Instalar</span>
+                      )}
+                    </button>
+
+                    {/* InfraGeo */}
+                    <button
+                      onClick={() => { setIsCreateMenuOpen(false); setActiveTab('applications'); }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', opacity: 0.7 }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>🌏</span> Sondeo Geotécnico
+                      </span>
+                      <span style={{ fontSize: '0.58rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '1px 4px', borderRadius: '3px' }}>Plantilla</span>
+                    </button>
+
+                    {/* InfraPlan */}
+                    <button
+                      onClick={() => { setIsCreateMenuOpen(false); setActiveTab('applications'); }}
+                      style={{ width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', opacity: 0.7 }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>📅</span> Cronograma de Obra
+                      </span>
+                      <span style={{ fontSize: '0.58rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '1px 4px', borderRadius: '3px' }}>Plantilla</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {user.role === 'SUPER_ADMIN' ? (

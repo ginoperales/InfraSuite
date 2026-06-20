@@ -190,7 +190,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
       {/* 1. TOP HEADER / RIBBON MENU (InfraCost 2026 layout) */}
       <div style={{
         background: 'var(--bg-surface)',
-        borderBottom: '2px solid var(--color-primary-glow)',
+        borderBottom: '1px solid var(--border-color)',
         padding: '8px 16px',
         display: 'flex',
         justifyContent: 'space-between',
