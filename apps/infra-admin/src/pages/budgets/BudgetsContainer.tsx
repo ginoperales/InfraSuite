@@ -1175,6 +1175,11 @@ export const Budgets: React.FC<BudgetsProps> = ({ theme, toggleTheme, companies,
           partidaColumnWidths={partidaColumnWidths}
           partidaTableWidth={partidaTableWidth}
           handlePartidaCellChange={handlePartidaCellChange}
+          updatePartidasList={(updatedPartidas) => {
+            const updatedBudget = { ...activeBudget, partidas: updatedPartidas };
+            setActiveBudget(updatedBudget);
+            setBudgets(budgets.map(b => b.id === activeBudget.id ? updatedBudget : b));
+          }}
           handleUpdateInsumoField={handleUpdateInsumoField}
           handleDeleteInsumo={handleDeleteInsumo}
           setSelectedSpecPartidaId={setSelectedPartidaId}

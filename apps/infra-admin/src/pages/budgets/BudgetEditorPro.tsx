@@ -38,6 +38,148 @@ const popupBtnStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 };
 
+function regenerateItemCodes(itemsWithLevels: { partida: Partida; level: number }[]): Partida[] {
+  const counters: number[] = [];
+  return itemsWithLevels.map(item => {
+    const L = item.level;
+    if (counters[L] === undefined) {
+      counters[L] = 1;
+    } else {
+      counters[L]++;
+    }
+    counters.length = L + 1;
+    for (let i = 0; i <= L; i++) {
+      if (counters[i] === undefined || isNaN(counters[i])) {
+        counters[i] = 1;
+      }
+    }
+    const itemCode = counters.join('.');
+    return {
+      ...item.partida,
+      item: itemCode
+    };
+  });
+}
+
+const adjustHierarchy = (
+  partidas: Partida[],
+  targetId: string,
+  action: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete'
+): Partida[] => {
+  const itemsWithLevels = partidas.map(p => ({
+    partida: { ...p },
+    level: Math.max(0, p.item.split('.').length - 1)
+  }));
+
+  const targetIdx = itemsWithLevels.findIndex(item => item.partida.id === targetId);
+  if (targetIdx === -1) return partidas;
+
+  const targetItem = itemsWithLevels[targetIdx];
+
+  const getDescendantsRange = (startIndex: number, level: number) => {
+    let count = 0;
+    for (let i = startIndex + 1; i < itemsWithLevels.length; i++) {
+      if (itemsWithLevels[i].level > level) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  };
+
+  if (action === 'indent') {
+    if (targetIdx > 0) {
+      const prevItem = itemsWithLevels[targetIdx - 1];
+      if (targetItem.level <= prevItem.level) {
+        const descCount = getDescendantsRange(targetIdx, targetItem.level);
+        for (let i = targetIdx; i <= targetIdx + descCount; i++) {
+          itemsWithLevels[i].level += 1;
+        }
+      }
+    }
+  } else if (action === 'outdent') {
+    if (targetItem.level > 0) {
+      const descCount = getDescendantsRange(targetIdx, targetItem.level);
+      for (let i = targetIdx; i <= targetIdx + descCount; i++) {
+        itemsWithLevels[i].level = Math.max(0, itemsWithLevels[i].level - 1);
+      }
+    }
+  } else if (action === 'toggleType') {
+    targetItem.partida.esTitulo = !targetItem.partida.esTitulo;
+  } else if (action === 'delete') {
+    const descCount = getDescendantsRange(targetIdx, targetItem.level);
+    itemsWithLevels.splice(targetIdx, 1 + descCount);
+  } else if (action === 'duplicate') {
+    const descCount = getDescendantsRange(targetIdx, targetItem.level);
+    const toDuplicate = itemsWithLevels.slice(targetIdx, targetIdx + 1 + descCount).map(item => ({
+      partida: {
+        ...item.partida,
+        id: 'p_' + Math.random().toString(36).substring(2, 9),
+        nombre: item.partida.nombre + ' (Copia)',
+        insumos: item.partida.insumos.map(ins => ({ ...ins, id: 'i_' + Math.random().toString(36).substring(2, 9) }))
+      },
+      level: item.level
+    }));
+    itemsWithLevels.splice(targetIdx + 1 + descCount, 0, ...toDuplicate);
+  } else if (action === 'moveUp') {
+    let siblingIdx = -1;
+    for (let i = targetIdx - 1; i >= 0; i--) {
+      if (itemsWithLevels[i].level < targetItem.level) {
+        break;
+      }
+      if (itemsWithLevels[i].level === targetItem.level) {
+        siblingIdx = i;
+        break;
+      }
+    }
+
+    if (siblingIdx !== -1) {
+      const targetDescCount = getDescendantsRange(targetIdx, targetItem.level);
+      const targetBlock = itemsWithLevels.splice(targetIdx, 1 + targetDescCount);
+      itemsWithLevels.splice(siblingIdx, 0, ...targetBlock);
+    } else if (targetIdx > 0) {
+      const prevItem = itemsWithLevels[targetIdx - 1];
+      if (prevItem.level >= targetItem.level) {
+        const targetDescCount = getDescendantsRange(targetIdx, targetItem.level);
+        const targetBlock = itemsWithLevels.splice(targetIdx, 1 + targetDescCount);
+        itemsWithLevels.splice(targetIdx - 1, 0, ...targetBlock);
+      }
+    }
+  } else if (action === 'moveDown') {
+    let siblingIdx = -1;
+    const targetDescCount = getDescendantsRange(targetIdx, targetItem.level);
+    const targetBlockEnd = targetIdx + targetDescCount;
+
+    for (let i = targetBlockEnd + 1; i < itemsWithLevels.length; i++) {
+      if (itemsWithLevels[i].level < targetItem.level) {
+        break;
+      }
+      if (itemsWithLevels[i].level === targetItem.level) {
+        siblingIdx = i;
+        break;
+      }
+    }
+
+    if (siblingIdx !== -1) {
+      const siblingDescCount = getDescendantsRange(siblingIdx, itemsWithLevels[siblingIdx].level);
+      const insertAt = siblingIdx + siblingDescCount;
+      const targetBlock = itemsWithLevels.splice(targetIdx, 1 + targetDescCount);
+      const adjustedInsertAt = insertAt - targetBlock.length;
+      itemsWithLevels.splice(adjustedInsertAt + 1, 0, ...targetBlock);
+    } else if (targetBlockEnd + 1 < itemsWithLevels.length) {
+      const nextItem = itemsWithLevels[targetBlockEnd + 1];
+      if (nextItem.level >= targetItem.level) {
+        const nextDescCount = getDescendantsRange(targetBlockEnd + 1, nextItem.level);
+        const targetBlock = itemsWithLevels.splice(targetIdx, 1 + targetDescCount);
+        itemsWithLevels.splice(targetIdx + nextDescCount + 1, 0, ...targetBlock);
+      }
+    }
+  }
+
+  return regenerateItemCodes(itemsWithLevels);
+};
+
 interface BudgetEditorProProps {
   activeBudget: Budget;
   openBudgets: Budget[];
@@ -91,6 +233,7 @@ interface BudgetEditorProProps {
   setIsAddInsumoOpen: (v: boolean) => void;
   getInsumoCantidad: (ins: Insumo, rend: number) => number;
   getInsumoParcial: (ins: Insumo, rend: number) => number;
+  updatePartidasList?: (partidas: Partida[]) => void;
 }
 
 export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
@@ -141,7 +284,8 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   setSelectedSpecPartidaId,
   setIsAddInsumoOpen,
   getInsumoCantidad,
-  getInsumoParcial
+  getInsumoParcial,
+  updatePartidasList
 }) => {
   const cd = getBudgetCD(activeBudget);
   const gg = cd * 0.0624; // matches screenshot 6.24%
@@ -375,7 +519,31 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                 };
 
                 const handleAction = (action: string, p: Partida) => {
-                  alert(`Acción "${action}" seleccionada para el elemento: ${p.item} ${p.nombre}`);
+                  let actionType: 'indent' | 'outdent' | 'moveUp' | 'moveDown' | 'toggleType' | 'duplicate' | 'delete' | null = null;
+                  
+                  if (action === 'Cambiar Jerarquía' || action === 'Convertir a Título' || action === 'Convertir a Partida') {
+                    actionType = 'toggleType';
+                  } else if (action === 'Mover Derecha' || action === 'Degradar Título') {
+                    actionType = 'indent';
+                  } else if (action === 'Mover Izquierda' || action === 'Promover Título') {
+                    actionType = 'outdent';
+                  } else if (action === 'Mover Arriba') {
+                    actionType = 'moveUp';
+                  } else if (action === 'Mover Abajo') {
+                    actionType = 'moveDown';
+                  } else if (action === 'Duplicar') {
+                    actionType = 'duplicate';
+                  } else if (action === 'Eliminar') {
+                    actionType = 'delete';
+                  }
+
+                  if (actionType && updatePartidasList) {
+                    const nextPartidas = adjustHierarchy(activeBudget.partidas, p.id, actionType);
+                    updatePartidasList(nextPartidas);
+                  } else {
+                    alert(`Acción "${action}" seleccionada para el elemento: ${p.item} ${p.nombre}`);
+                  }
+                  
                   setContextMenuRow(null);
                   setPopupRow(null);
                 };
@@ -548,7 +716,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                           borderRadius: '8px',
                           padding: '6px',
                           zIndex: 99999,
-                          minWidth: '170px',
+                          minWidth: '220px',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '2px'
@@ -558,9 +726,15 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                         <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', padding: '4px 8px', borderBottom: '1px solid var(--border-color)', marginBottom: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                           {contextMenuRow.partida.esTitulo ? '📂 Título' : '📄 Partida'}: {contextMenuRow.partida.item}
                         </div>
-                        <button onClick={() => handleAction('Cambiar Jerarquía', contextMenuRow.partida)} style={contextMenuItemStyle}>📐 Cambiar Jerarquía</button>
+                        <button onClick={() => handleAction('Cambiar Jerarquía', contextMenuRow.partida)} style={contextMenuItemStyle}>
+                          📐 Convertir a {contextMenuRow.partida.esTitulo ? 'Partida' : 'Título'}
+                        </button>
                         <button onClick={() => handleAction('Duplicar', contextMenuRow.partida)} style={contextMenuItemStyle}>👯 Duplicar</button>
-                        <button onClick={() => handleAction('Mover', contextMenuRow.partida)} style={contextMenuItemStyle}>🔃 Mover</button>
+                        <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
+                        <button onClick={() => handleAction('Mover Arriba', contextMenuRow.partida)} style={contextMenuItemStyle}>⬆️ Mover Arriba</button>
+                        <button onClick={() => handleAction('Mover Abajo', contextMenuRow.partida)} style={contextMenuItemStyle}>⬇️ Mover Abajo</button>
+                        <button onClick={() => handleAction('Mover Derecha', contextMenuRow.partida)} style={contextMenuItemStyle}>➡️ Mover Derecha (Indentar)</button>
+                        <button onClick={() => handleAction('Mover Izquierda', contextMenuRow.partida)} style={contextMenuItemStyle}>⬅️ Mover Izquierda (Desindentar)</button>
                         <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
                         <button onClick={() => handleAction('Eliminar', contextMenuRow.partida)} style={{ ...contextMenuItemStyle, color: '#ef4444' }}>🗑️ Eliminar</button>
                       </div>
@@ -640,9 +814,22 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }}>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: 600 }}>Operaciones Rápidas</span>
                             {popupRow.partida.esTitulo ? (
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <button onClick={() => handleAction('Degradar Título', popupRow.partida)} style={popupBtnStyle}>📉 Degradar</button>
-                                <button onClick={() => handleAction('Promover Título', popupRow.partida)} style={popupBtnStyle}>📈 Promover</button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                  <button onClick={() => handleAction('Degradar Título', popupRow.partida)} style={popupBtnStyle}>📉 Degradar</button>
+                                  <button onClick={() => handleAction('Promover Título', popupRow.partida)} style={popupBtnStyle}>📈 Promover</button>
+                                </div>
+                                <button 
+                                  onClick={() => handleAction('Convertir a Partida', popupRow.partida)}
+                                  style={{
+                                    ...popupBtnStyle,
+                                    background: 'rgba(16, 124, 65, 0.1)',
+                                    borderColor: 'rgba(16, 124, 65, 0.3)',
+                                    color: '#107c41'
+                                  }}
+                                >
+                                  📄 Convertir a Partida
+                                </button>
                               </div>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
