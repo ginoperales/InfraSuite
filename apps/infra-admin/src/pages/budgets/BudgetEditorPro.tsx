@@ -265,6 +265,151 @@ interface BudgetEditorProProps {
   updatePartidasList?: (partidas: Partida[]) => void;
 }
 
+interface FloatingWindowProps {
+  title: string;
+  isOpen: boolean;
+  isMinimized: boolean;
+  onClose: () => void;
+  onMinimize: () => void;
+  onExternalOpen: () => void;
+  onDock?: () => void;
+  children: React.ReactNode;
+  defaultPosition: { x: number; y: number };
+  width?: string | number;
+  height?: string | number;
+}
+
+const FloatingWindow: React.FC<FloatingWindowProps> = ({
+  title,
+  isOpen,
+  isMinimized,
+  onClose,
+  onMinimize,
+  onExternalOpen,
+  onDock,
+  children,
+  defaultPosition,
+  width = '750px',
+  height = '530px'
+}) => {
+  const [position, setPosition] = React.useState(defaultPosition);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const dragStart = React.useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (
+      (e.target as HTMLElement).closest('button') ||
+      (e.target as HTMLElement).closest('input') ||
+      (e.target as HTMLElement).closest('textarea') ||
+      (e.target as HTMLElement).closest('select')
+    ) {
+      return;
+    }
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    };
+  };
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setPosition({
+        x: e.clientX - dragStart.current.x,
+        y: e.clientY - dragStart.current.y
+      });
+    };
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        display: isMinimized ? 'none' : 'flex',
+        flexDirection: 'column',
+        position: 'absolute',
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: typeof width === 'number' ? `${width}px` : width,
+        height: typeof height === 'number' ? `${height}px` : height,
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '8px',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+        zIndex: 999,
+        overflow: 'hidden'
+      }}
+    >
+      {/* Header */}
+      <div
+        onMouseDown={handleMouseDown}
+        style={{
+          padding: '10px 16px',
+          background: 'rgba(0, 0, 0, 0.25)',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'move',
+          userSelect: 'none',
+          flexShrink: 0
+        }}
+      >
+        <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            title="Desprender ventana (nueva ventana del navegador)"
+            onClick={(e) => { e.stopPropagation(); onExternalOpen(); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: '2px', color: 'var(--text-secondary)' }}
+          >
+            ↗️
+          </button>
+          {onDock && (
+            <button
+              title="Acoplar al panel derecho"
+              onClick={(e) => { e.stopPropagation(); onDock(); }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.85rem', padding: '2px', color: 'var(--text-secondary)' }}
+            >
+              📌
+            </button>
+          )}
+          <button
+            title="Minimizar"
+            onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: '2px', color: 'var(--text-secondary)', fontWeight: 'bold' }}
+          >
+            ➖
+          </button>
+          <button
+            title="Cerrar"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', padding: '2px', color: 'var(--text-secondary)' }}
+          >
+            ❌
+          </button>
+        </div>
+      </div>
+      {/* Body */}
+      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
 export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   activeBudget,
   openBudgets,
@@ -326,6 +471,594 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   const specValue = specKey ? (specifications[specKey] || `${selectedPartida?.nombre || ''} (unidad de medida: ${selectedPartida?.unidad || 'm²'})\n\nDESCRIPCIÓN - Procesando...`) : '';
 
   const [activeBottomTab, setActiveBottomTab] = useState<'apu' | 'specs' | 'bim' | 'metrado' | 'xls' | 'consol'>('specs');
+  const [floatingWindows, setFloatingWindows] = useState<Record<string, { isOpen: boolean; isMinimized: boolean; x: number; y: number }>>({
+    apu: { isOpen: false, isMinimized: false, x: 200, y: 80 },
+    specs: { isOpen: false, isMinimized: false, x: 250, y: 120 },
+    bim: { isOpen: false, isMinimized: false, x: 300, y: 160 },
+    metrado: { isOpen: false, isMinimized: false, x: 350, y: 200 },
+    xls: { isOpen: false, isMinimized: false, x: 400, y: 240 },
+    consol: { isOpen: false, isMinimized: false, x: 450, y: 280 }
+  });
+
+  // Which tab (if any) is currently docked to the right split panel
+  const [dockedTab, setDockedTab] = useState<string | null>(null);
+
+  const handleToggleTab = (tabId: string) => {
+    // If already docked, undock it (make it float)
+    if (dockedTab === tabId) {
+      setDockedTab(null);
+      setFloatingWindows(prev => ({
+        ...prev,
+        [tabId]: { ...prev[tabId], isOpen: true, isMinimized: false }
+      }));
+      return;
+    }
+    setFloatingWindows(prev => {
+      const current = prev[tabId];
+      if (!current.isOpen) {
+        return {
+          ...prev,
+          [tabId]: { ...current, isOpen: true, isMinimized: false }
+        };
+      } else if (current.isMinimized) {
+        return {
+          ...prev,
+          [tabId]: { ...current, isMinimized: false }
+        };
+      } else {
+        return {
+          ...prev,
+          [tabId]: { ...current, isMinimized: true }
+        };
+      }
+    });
+  };
+
+  const handleCloseWindow = (tabId: string) => {
+    if (dockedTab === tabId) setDockedTab(null);
+    setFloatingWindows(prev => ({
+      ...prev,
+      [tabId]: { ...prev[tabId], isOpen: false, isMinimized: false }
+    }));
+  };
+
+  const handleMinimizeWindow = (tabId: string) => {
+    setFloatingWindows(prev => ({
+      ...prev,
+      [tabId]: { ...prev[tabId], isMinimized: true }
+    }));
+  };
+
+  // Dock a floating window to the right panel
+  const handleDockWindow = (tabId: string) => {
+    setDockedTab(tabId);
+    // Close the floating version
+    setFloatingWindows(prev => ({
+      ...prev,
+      [tabId]: { ...prev[tabId], isOpen: false, isMinimized: false }
+    }));
+  };
+
+  // Undock: move back to floating
+  const handleUndockWindow = () => {
+    if (!dockedTab) return;
+    const tabId = dockedTab;
+    setDockedTab(null);
+    setFloatingWindows(prev => ({
+      ...prev,
+      [tabId]: { ...prev[tabId], isOpen: true, isMinimized: false }
+    }));
+  };
+
+  const renderPanelContent = (tabId: string): React.ReactNode => {
+    switch (tabId) {
+      case 'apu':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            {/* APU Header bar */}
+            <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid var(--border-color)', fontSize: '0.76rem', color: 'var(--text-muted)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Presupuesto: <strong style={{ color: 'var(--text-secondary)' }}>{activeBudget.nombre}</strong></span>
+              <div style={{ background: theme === 'dark' ? '#1e293b' : '#f1f5f9', border: '1px solid var(--border-color)', padding: '4px 10px', borderRadius: '4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Duración Fija</div>
+                <div style={{ background: '#fef08a', color: '#854d0e', fontSize: '0.72rem', fontWeight: 'bold', padding: '1px 6px', borderRadius: '3px', marginTop: '2px' }}>1.000 días</div>
+              </div>
+            </div>
+            {/* Options bar */}
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', padding: '8px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)', fontSize: '0.76rem', flexShrink: 0 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}><input type="checkbox" /> Por Rendimiento</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}><input type="checkbox" defaultChecked /> Por Asignación</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Cant. Prog.:</span>
+                <input type="text" value="1.00" readOnly style={{ width: '42px', background: '#fef08a', border: '1px solid var(--border-color)', color: '#854d0e', textAlign: 'center', borderRadius: '3px', fontWeight: 'bold', padding: '2px 4px', fontSize: '0.75rem' }} />
+                <span style={{ color: 'var(--text-muted)' }}>und</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Jornada:</span>
+                <input type="text" value="8.00" readOnly style={{ width: '38px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', textAlign: 'center', borderRadius: '3px', padding: '2px 4px', fontSize: '0.75rem' }} />
+                <span style={{ color: 'var(--text-muted)' }}>h/día</span>
+              </div>
+            </div>
+            {/* APU Table */}
+            <div style={{ flexGrow: 1, overflow: 'auto', background: 'var(--bg-main)' }}>
+              {selectedPartida ? (
+                selectedPartida.esTitulo ? (
+                  <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>Los títulos no contienen APU.</div>
+                ) : (
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                      <tr>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.desc}px` }}>Descripción</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.unidad}px` }}>Und.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cuadrilla}px`, textAlign: 'right' }}>Horas/Cant.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cantidad}px`, textAlign: 'right' }}>% Desp.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.pu}px`, textAlign: 'right' }}>Precio</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.parcial}px`, textAlign: 'right' }}>Parcial</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {['MO', 'MT', 'EQ', 'SC', 'SP'].map(type => {
+                        const itemsOfType = selectedPartida.insumos.filter(ins => ins.tipo === type);
+                        const breakdown = getAPUBreakdown(selectedPartida);
+                        const subtotal = type === 'MO' ? breakdown.MO : type === 'MT' ? breakdown.MT : type === 'EQ' ? breakdown.EQ : type === 'SC' ? breakdown.SC : breakdown.SP || 0;
+                        const groupName = type === 'MO' ? 'MANO DE OBRA' : type === 'MT' ? 'MATERIALES' : type === 'EQ' ? 'EQUIPO' : type === 'SC' ? 'SUB-CONTRATOS' : 'SUB-PARTIDAS';
+                        return (
+                          <React.Fragment key={type}>
+                            <tr style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.03)', fontWeight: 'bold' }}>
+                              <td colSpan={5} style={{ padding: '8px 12px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{groupName}</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.74rem' }}>{subtotal.toFixed(2)}</td>
+                            </tr>
+                            {itemsOfType.map(ins => {
+                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+                              return (
+                                <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                  <td style={{ padding: '6px 12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginRight: '6px' }}>{ins.id.substring(2, 6)}</span>{ins.nombre}
+                                  </td>
+                                  <td style={{ padding: '6px 12px', color: 'var(--text-muted)' }}>{ins.unidad}</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>
+                                    <input type="number" step="0.0001" value={ins.cuadrilla} onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                  </td>
+                                  <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>0%</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>
+                                    <input type="number" step="0.01" value={ins.pu} onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                  </td>
+                                  <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{insParcial.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )
+              ) : (
+                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>Seleccione una partida para ver su APU.</div>
+              )}
+            </div>
+            {/* APU Footer */}
+            <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <span>Fecha: <strong style={{ color: 'var(--text-secondary)' }}>27/12/2020</strong></span>
+                <span>Hecho por: <strong style={{ color: 'var(--text-secondary)' }}>Administrador</strong></span>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>
+                Costo total: <span style={{ color: 'var(--color-primary)', fontSize: '1.05rem', fontFamily: 'monospace' }}>{cdTotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        );
+      case 'specs':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', padding: '0 12px', gap: '2px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {['Fichero', 'Inicio', 'Insertar', 'Vista'].map(tab => (
+                    <button key={tab} onClick={() => setWordTab(tab.toLowerCase() as any)} style={{ background: 'transparent', border: 'none', color: wordTab === tab.toLowerCase() ? 'var(--color-primary)' : 'var(--text-secondary)', padding: '8px 10px', fontSize: '0.76rem', fontWeight: 'bold', cursor: 'pointer', borderBottom: wordTab === tab.toLowerCase() ? '2px solid var(--color-primary)' : '2px solid transparent' }}>{tab}</button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', width: '28px', height: '24px', cursor: 'pointer', fontSize: '0.72rem' }}>W</button>
+                  <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', width: '32px', height: '24px', cursor: 'pointer', fontSize: '0.72rem' }}>PDF</button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)' }}>
+                <div style={{ display: 'flex', gap: '6px', fontSize: '0.75rem' }}>
+                  <span style={{ cursor: 'pointer' }}>📋</span>
+                  <span style={{ cursor: 'pointer' }}>✂️</span>
+                  <span style={{ cursor: 'pointer' }}>📄</span>
+                </div>
+                <div style={{ height: '14px', width: '1px', background: 'var(--border-color)' }} />
+                <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.72rem', padding: '2px 4px', borderRadius: '3px' }}>
+                  <option>Arial Narrow</option><option>Calibri</option>
+                </select>
+                <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.72rem', padding: '2px 4px', borderRadius: '3px' }}>
+                  <option>11</option><option>12</option><option>14</option>
+                </select>
+                <div style={{ display: 'flex', gap: '5px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                  <span style={{ fontWeight: 'bold', cursor: 'pointer' }}>B</span>
+                  <span style={{ fontStyle: 'italic', cursor: 'pointer' }}>I</span>
+                  <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>U</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ flexGrow: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.15)', padding: '16px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: '600px', minHeight: '260px', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', borderRadius: '2px', padding: '28px', color: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
+                <textarea
+                  value={specValue}
+                  onChange={(e) => { if (!selectedPartida) return; setSpecifications(prev => ({ ...prev, [selectedPartida.id]: e.target.value })); }}
+                  style={{ width: '100%', flexGrow: 1, border: 'none', outline: 'none', resize: 'none', fontSize: '0.88rem', lineHeight: '1.6', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', background: 'transparent', minHeight: '220px' }}
+                />
+              </div>
+            </div>
+            <div style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-color)', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.76rem', fontWeight: 'bold', color: '#38bdf8' }}>🧠 Asistente IA (Gemini 2.5 Flash)</span>
+                {geminiIsLoading && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Procesando...</span>}
+              </div>
+              {geminiResponse && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.74rem', color: '#e2e8f0', maxHeight: '70px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                  <strong>Respuesta Gemini:</strong><p style={{ margin: '3px 0 0 0' }}>{geminiResponse}</p>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input type="text" value={geminiPrompt} onChange={(e) => setGeminiPrompt(e.target.value)} placeholder="Instrucción para Gemini..." style={{ flexGrow: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-primary)', padding: '5px 10px', borderRadius: '4px', fontSize: '0.76rem', outline: 'none' }} />
+                <Button onClick={handleAskGemini} disabled={geminiIsLoading || !geminiPrompt.trim()} style={{ background: '#0284c7', border: 'none', color: '#fff', padding: '5px 12px', fontSize: '0.76rem', fontWeight: 'bold', cursor: 'pointer' }}>Generar</Button>
+                <Button onClick={() => { if (!selectedPartida) return; setSpecifications(prev => ({ ...prev, [selectedPartida.id]: geminiResponse })); }} disabled={!geminiResponse || !selectedPartida} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '5px 10px', fontSize: '0.76rem', cursor: 'pointer' }}>Reemplazar</Button>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div style={{ display: 'flex', flexGrow: 1, alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', flexDirection: 'column', gap: '12px', height: '100%' }}>
+            <span style={{ fontSize: '2rem' }}>🚧</span>
+            <span style={{ fontWeight: 'bold' }}>{tabId.toUpperCase()}</span>
+            <span style={{ fontSize: '0.78rem' }}>Esta sección se encuentra en desarrollo activo.</span>
+          </div>
+        );
+    }
+  };
+
+  const handleOpenApuExternal = () => {
+    if (!selectedPartida) return;
+    const title = `Análisis de Costo Unitario - Item ${selectedPartida.item} ${selectedPartida.nombre}`;
+    const newWindow = window.open('', '_blank', 'width=1000,height=750,resizable=yes');
+    if (!newWindow) {
+      alert('Por favor permita las ventanas emergentes (popups) para este sitio.');
+      return;
+    }
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const breakdown = getAPUBreakdown(selectedPartida);
+
+    const groupsHtml = ['MO', 'MT', 'EQ', 'SC', 'SP'].map(type => {
+      const itemsOfType = selectedPartida.insumos.filter(ins => ins.tipo === type);
+      if (itemsOfType.length === 0) return '';
+      const subtotal = type === 'MO' ? breakdown.MO : type === 'MT' ? breakdown.MT : type === 'EQ' ? breakdown.EQ : type === 'SC' ? breakdown.SC : breakdown.SP || 0;
+      const groupName = type === 'MO' ? 'MANO DE OBRA' : type === 'MT' ? 'MATERIALES' : type === 'EQ' ? 'EQUIPO' : type === 'SC' ? 'SUB-CONTRATOS' : 'SUB-PARTIDAS';
+
+      const rowsHtmlStr = itemsOfType.map(ins => {
+        const insQty = getInsumoCantidad(ins, selectedPartida.rendimiento);
+        const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+        return `
+          <tr>
+            <td style="padding: 8px 12px; font-weight: 600;">${ins.nombre}</td>
+            <td style="padding: 8px 12px; color: #64748b;">${ins.unidad}</td>
+            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${ins.cuadrilla.toFixed(4)}</td>
+            <td style="padding: 8px 12px; text-align: right; color: #64748b;">0%</td>
+            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${ins.pu.toFixed(2)}</td>
+            <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: #0284c7; font-family: monospace;">${insParcial.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <tr style="background: rgba(0,0,0,0.03); font-weight: bold;">
+          <td colspan="5" style="padding: 8px 12px; font-size: 0.75rem; color: #475569;">${groupName}</td>
+          <td style="padding: 8px 12px; text-align: right; font-family: monospace; font-size: 0.75rem;">${subtotal.toFixed(2)}</td>
+        </tr>
+        ${rowsHtmlStr}
+      `;
+    }).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es" data-theme="${currentTheme}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+        <style>
+          :root {
+            --bg-main: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --color-primary: #0284c7;
+          }
+          [data-theme="dark"] {
+            --bg-main: #0b0f19;
+            --bg-surface: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --color-primary: #38bdf8;
+          }
+          body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+          }
+          .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+          }
+          .header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid var(--border-color);
+          }
+          .header-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--color-primary);
+          }
+          .header-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+          }
+          .table-container {
+            padding: 20px;
+            overflow-x: auto;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+          }
+          th {
+            background: rgba(0, 0, 0, 0.02);
+            padding: 10px 12px;
+            text-align: left;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+          }
+          td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+          }
+          .footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .cost-total {
+            font-size: 1.1rem;
+            font-weight: bold;
+          }
+          .cost-val {
+            color: var(--color-primary);
+            font-family: monospace;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="header-title">Análisis de Costo Unitario</div>
+            <div class="header-subtitle">
+              Presupuesto: <strong>${activeBudget.nombre}</strong><br>
+              Item: <strong>${selectedPartida.item}</strong> &middot; Partida: <strong>${selectedPartida.nombre}</strong> &middot; Rendimiento: <strong>${selectedPartida.rendimiento} und/día</strong>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Descripción del Recurso</th>
+                  <th>Unidad</th>
+                  <th style="text-align: right;">Horas/Cant.</th>
+                  <th style="text-align: right;">% Desp.</th>
+                  <th style="text-align: right;">Precio S/.</th>
+                  <th style="text-align: right;">Parcial S/.</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${groupsHtml}
+              </tbody>
+            </table>
+          </div>
+          <div class="footer">
+            <div>Rendimiento: <strong>${selectedPartida.rendimiento} und/día</strong></div>
+            <div class="cost-total">Costo Unitario Total: <span class="cost-val">S/. ${cdTotal.toFixed(2)}</span></div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    newWindow.document.open();
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+  };
+
+  const handleOpenSpecsExternal = () => {
+    if (!selectedPartida) return;
+    const title = `Especificaciones Técnicas - Item ${selectedPartida.item} ${selectedPartida.nombre}`;
+    const newWindow = window.open('', '_blank', 'width=1000,height=750,resizable=yes');
+    if (!newWindow) {
+      alert('Por favor permita las ventanas emergentes (popups) para este sitio.');
+      return;
+    }
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es" data-theme="${currentTheme}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+        <style>
+          :root {
+            --bg-main: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --color-primary: #0284c7;
+          }
+          [data-theme="dark"] {
+            --bg-main: #0b0f19;
+            --bg-surface: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --color-primary: #38bdf8;
+          }
+          body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+          }
+          .paper {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            color: #1a1a1a;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-radius: 4px;
+            padding: 40px;
+            box-sizing: border-box;
+            min-height: 90vh;
+            border: 1px solid var(--border-color);
+          }
+          .title-section {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+          }
+          .title-section h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: #0f172a;
+          }
+          .title-section p {
+            font-size: 0.85rem;
+            color: #475569;
+            margin: 6px 0 0 0;
+          }
+          .content-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: Arial, sans-serif;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="paper">
+          <div class="title-section">
+            <h1>ESPECIFICACIONES TÉCNICAS</h1>
+            <p><strong>Presupuesto:</strong> ${activeBudget.nombre} &middot; <strong>Partida:</strong> ${selectedPartida.item} ${selectedPartida.nombre}</p>
+          </div>
+          <div class="content-text">${specValue}</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    newWindow.document.open();
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+  };
+
+  const handleOpenExternalGeneric = (tabId: string, label: string) => {
+    const title = `${label} - ${activeBudget.nombre}`;
+    const newWindow = window.open('', '_blank', 'width=1000,height=750,resizable=yes');
+    if (!newWindow) {
+      alert('Por favor permita las ventanas emergentes (popups) para este sitio.');
+      return;
+    }
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es" data-theme="${currentTheme}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+        <style>
+          :root {
+            --bg-main: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --color-primary: #0284c7;
+          }
+          [data-theme="dark"] {
+            --bg-main: #0b0f19;
+            --bg-surface: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --color-primary: #38bdf8;
+          }
+          body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+          }
+          .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 32px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1 style="color: var(--color-primary); margin: 0 0 12px 0;">${label}</h1>
+          <p style="color: var(--text-secondary); margin: 0;">Presupuesto: ${activeBudget.nombre}</p>
+          <p style="color: var(--text-secondary); margin: 8px 0 0 0; font-size: 0.88rem; opacity: 0.8;">Esta sección se encuentra en desarrollo activo.</p>
+        </div>
+      </body>
+      </html>
+    `;
+    newWindow.document.open();
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+  };
+
   const [wordTab, setWordTab] = useState<'fichero' | 'inicio' | 'insertar' | 'diseno' | 'vista'>('inicio');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -334,6 +1067,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
     index: 35,
     item: 70,
     desc: 280,
+    und: 55,
     cant: 80,
     price: 85,
     total: 95
@@ -479,11 +1213,11 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
         </div>
       </div>
 
-      {/* 2. MAIN SPLIT PANE WORKSPACE */}
-      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+      {/* 2. MAIN WORKSPACE */}
+      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
         
         {/* LEFT COLUMN: Spreadsheet hierarchical table + Incidencia bottom pane */}
-        <div style={{ width: `${leftWidthPercent}%`, borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div style={{ width: dockedTab ? `${leftWidthPercent}%` : '100%', borderRight: dockedTab ? '1px solid var(--border-color)' : 'none', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', flexShrink: 0 }}>
           
           {/* Left Top: Ingrese el texto para buscar + hierarchical table */}
           <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -681,6 +1415,13 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                               style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
                             />
                           </th>
+                          <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.und}px`, position: 'relative' }}>
+                            Und.
+                            <div
+                              onMouseDown={(e) => { e.preventDefault(); handleColumnResize('und', e.clientX, columnWidths.und); }}
+                              style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
+                            />
+                          </th>
                           <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${columnWidths.cant}px`, textAlign: 'right', position: 'relative' }}>
                             Cantidad
                             <div
@@ -790,10 +1531,13 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                   {p.nombre}
                                 </span>
                               </td>
+                              {/* Unidad */}
+                              <td style={{ padding: '6px 8px', color: getHierarchyColor(level), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.esTitulo ? '' : p.unidad}
+                              </td>
                               {/* Cantidad / Metrado */}
                               <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                                {!p.esTitulo && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '4px' }}>{p.unidad}</span>}
                               </td>
                               {/* Precio */}
                               <td style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -979,6 +1723,39 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                             </div>
                           </div>
 
+                          {!popupRow.partida.esTitulo && (
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Unidad</span>
+                              <input
+                                type="text"
+                                value={popupRow.partida.unidad}
+                                onChange={(e) => {
+                                  const newUnidad = e.target.value;
+                                  setPopupRow({
+                                    ...popupRow,
+                                    partida: {
+                                      ...popupRow.partida,
+                                      unidad: newUnidad
+                                    }
+                                  });
+                                  handlePartidaCellChange(popupRow.partida.id, 'unidad', newUnidad);
+                                }}
+                                style={{
+                                  width: '100%',
+                                  background: 'rgba(255, 255, 255, 0.05)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--text-primary)',
+                                  padding: '6px 10px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.82rem',
+                                  outline: 'none',
+                                  fontFamily: 'var(--font-sans)',
+                                  boxSizing: 'border-box'
+                                }}
+                              />
+                            </div>
+                          )}
+
                           {/* Conditional Options */}
                           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }}>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontWeight: 600 }}>Operaciones Rápidas</span>
@@ -1105,513 +1882,347 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>  {/* end left column */}
 
-        {/* Vertical Resize Handle */}
-        <div
-          onMouseDown={(e) => {
-            e.preventDefault();
-            const startX = e.clientX;
-            const startWidth = leftWidthPercent;
-            const onMouseMove = (moveEvent: MouseEvent) => {
-              const deltaX = moveEvent.clientX - startX;
-              const newPercent = Math.max(25, Math.min(75, startWidth + (deltaX / window.innerWidth) * 100));
-              setLeftWidthPercent(newPercent);
-            };
-            const onMouseUp = () => {
-              document.removeEventListener('mousemove', onMouseMove);
-              document.removeEventListener('mouseup', onMouseUp);
-            };
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-          }}
-          style={{
-            width: '6px',
-            background: 'var(--border-color)',
-            cursor: 'col-resize',
-            zIndex: 10,
-            transition: 'background 0.2s',
-            position: 'relative'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-primary)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'var(--border-color)'}
-        />
+        {/* === RESIZE HANDLE (only when a tab is docked) === */}
+        {dockedTab && (
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX;
+              const startWidth = leftWidthPercent;
+              const onMouseMove = (moveEvent: MouseEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                const newPercent = Math.max(25, Math.min(75, startWidth + (deltaX / window.innerWidth) * 100));
+                setLeftWidthPercent(newPercent);
+              };
+              const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+              };
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            }}
+            style={{ width: '6px', background: 'var(--border-color)', cursor: 'col-resize', zIndex: 10, transition: 'background 0.2s', flexShrink: 0 }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--border-color)'}
+          />
+        )}
 
-        {/* RIGHT COLUMN: dynamic panel depending on activeBottomTab */}
-        <div style={{ width: `${100 - leftWidthPercent}%`, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          {activeBottomTab === 'specs' ? (
-            <>
-              {/* Word-like Editor Header Info */}
-              <div style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.15)', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Especificaciones técnicas</span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      Presupuesto: {activeBudget.nombre.substring(0, 30)}... · Partida: {selectedPartida?.item} {selectedPartida?.nombre}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button title="Exportar a Word" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#ffffff', borderRadius: '4px', width: '28px', height: '24px', cursor: 'pointer', fontSize: '0.75rem' }}>W</button>
-                    <button title="Exportar a PDF" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#ffffff', borderRadius: '4px', width: '28px', height: '24px', cursor: 'pointer', fontSize: '0.75rem' }}>PDF</button>
-                  </div>
-                </div>
+        {/* === RIGHT DOCKED PANEL === */}
+        {dockedTab && (
+          <div style={{ width: `${100 - leftWidthPercent}%`, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', flexShrink: 0 }}>
+            {/* Docked panel header */}
+            <div style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, userSelect: 'none' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                {dockedTab === 'apu' ? '📐 Análisis de Costo Unitario' :
+                 dockedTab === 'specs' ? '📝 Especificaciones Técnicas' :
+                 dockedTab === 'bim' ? '🏗️ Metrado BIM' :
+                 dockedTab === 'metrado' ? '📏 Metrado' :
+                 dockedTab === 'xls' ? '📊 Metrado Xls' : '📋 Consol. de Partida'}
+                {selectedPartida && ` · ${selectedPartida.item} ${selectedPartida.nombre}`}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  title="Desprender a nueva ventana del navegador"
+                  onClick={() => {
+                    if (dockedTab === 'apu') { handleOpenApuExternal(); }
+                    else if (dockedTab === 'specs') { handleOpenSpecsExternal(); }
+                    else { handleOpenExternalGeneric(dockedTab, dockedTab); }
+                    setDockedTab(null);
+                  }}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-secondary)' }}
+                >↗️</button>
+                <button
+                  title="Desacoplar (convertir a ventana flotante)"
+                  onClick={handleUndockWindow}
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: 'var(--text-secondary)', padding: '2px 8px', fontWeight: 'bold' }}
+                >□ Desacoplar</button>
+                <button
+                  title="Cerrar panel"
+                  onClick={() => setDockedTab(null)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-secondary)' }}
+                >❌</button>
               </div>
+            </div>
+            {/* Docked panel body */}
+            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {renderPanelContent(dockedTab)}
+            </div>
+          </div>
+        )}
 
-              {/* Word-like Ribbon Tabs (Fichero, Inicio, Insertar, etc.) */}
-              <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', padding: '0 16px', gap: '4px' }}>
-                  {['Fichero', 'Inicio', 'Insertar', 'Distribución de Página', 'Vista'].map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setWordTab(tab.toLowerCase() as any)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: wordTab === tab.toLowerCase() ? 'var(--color-primary)' : 'var(--text-secondary)',
-                        padding: '8px 12px',
-                        fontSize: '0.78rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        borderBottom: wordTab === tab.toLowerCase() ? '2px solid var(--color-primary)' : '2px solid transparent'
-                      }}
-                    >
-                      {tab}
-                    </button>
+        {/* === FLOATING WINDOWS OVERLAY LAYER === */}
+
+        {/* APU Floating Window */}
+        <FloatingWindow
+          title={`📐 Análisis de Costo Unitario${selectedPartida ? ` · ${selectedPartida.item} ${selectedPartida.nombre}` : ''}`}
+          isOpen={floatingWindows.apu.isOpen && dockedTab !== 'apu'}
+          isMinimized={floatingWindows.apu.isMinimized}
+          onClose={() => handleCloseWindow('apu')}
+          onMinimize={() => handleMinimizeWindow('apu')}
+          onExternalOpen={() => { handleOpenApuExternal(); handleCloseWindow('apu'); }}
+          onDock={() => handleDockWindow('apu')}
+          defaultPosition={{ x: floatingWindows.apu.x, y: floatingWindows.apu.y }}
+          width="860px"
+          height="580px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            {/* APU Header bar */}
+            <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid var(--border-color)', fontSize: '0.76rem', color: 'var(--text-muted)', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Presupuesto: <strong style={{ color: 'var(--text-secondary)' }}>{activeBudget.nombre}</strong></span>
+              <div style={{ background: theme === 'dark' ? '#1e293b' : '#f1f5f9', border: '1px solid var(--border-color)', padding: '4px 10px', borderRadius: '4px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Duración Fija</div>
+                <div style={{ background: '#fef08a', color: '#854d0e', fontSize: '0.72rem', fontWeight: 'bold', padding: '1px 6px', borderRadius: '3px', marginTop: '2px' }}>1.000 días</div>
+              </div>
+            </div>
+            {/* Options bar */}
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px', padding: '8px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)', fontSize: '0.76rem', flexShrink: 0 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}><input type="checkbox" /> Por Rendimiento</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}><input type="checkbox" defaultChecked /> Por Asignación</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Cant. Prog.:</span>
+                <input type="text" value="1.00" readOnly style={{ width: '42px', background: '#fef08a', border: '1px solid var(--border-color)', color: '#854d0e', textAlign: 'center', borderRadius: '3px', fontWeight: 'bold', padding: '2px 4px', fontSize: '0.75rem' }} />
+                <span style={{ color: 'var(--text-muted)' }}>und</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Jornada:</span>
+                <input type="text" value="8.00" readOnly style={{ width: '38px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', textAlign: 'center', borderRadius: '3px', padding: '2px 4px', fontSize: '0.75rem' }} />
+                <span style={{ color: 'var(--text-muted)' }}>h/día</span>
+              </div>
+            </div>
+            {/* APU Table */}
+            <div style={{ flexGrow: 1, overflow: 'auto', background: 'var(--bg-main)' }}>
+              {selectedPartida ? (
+                selectedPartida.esTitulo ? (
+                  <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>Los títulos no contienen APU.</div>
+                ) : (
+                  <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.82rem', fontFamily: 'monospace' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                      <tr>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.desc}px`, position: 'relative' }}>Descripción</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.unidad}px` }}>Und.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cuadrilla}px`, textAlign: 'right' }}>Horas/Cant.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cantidad}px`, textAlign: 'right' }}>% Desp.</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.pu}px`, textAlign: 'right' }}>Precio</th>
+                        <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.parcial}px`, textAlign: 'right' }}>Parcial Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {['MO', 'MT', 'EQ', 'SC', 'SP'].map(type => {
+                        const itemsOfType = selectedPartida.insumos.filter(ins => ins.tipo === type);
+                        const breakdown = getAPUBreakdown(selectedPartida);
+                        const subtotal = type === 'MO' ? breakdown.MO : type === 'MT' ? breakdown.MT : type === 'EQ' ? breakdown.EQ : type === 'SC' ? breakdown.SC : breakdown.SP || 0;
+                        const groupName = type === 'MO' ? 'MANO DE OBRA' : type === 'MT' ? 'MATERIALES' : type === 'EQ' ? 'EQUIPO' : type === 'SC' ? 'SUB-CONTRATOS' : 'SUB-PARTIDAS';
+                        return (
+                          <React.Fragment key={type}>
+                            <tr style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.03)', fontWeight: 'bold' }}>
+                              <td colSpan={5} style={{ padding: '8px 12px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{groupName}</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.74rem' }}>{subtotal.toFixed(2)}</td>
+                            </tr>
+                            {itemsOfType.map(ins => {
+                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+                              return (
+                                <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                  <td style={{ padding: '6px 12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginRight: '6px' }}>{ins.id.substring(2, 6)}</span>
+                                    {ins.nombre}
+                                  </td>
+                                  <td style={{ padding: '6px 12px', color: 'var(--text-muted)' }}>{ins.unidad}</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>
+                                    <input type="number" step="0.0001" value={ins.cuadrilla} onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                  </td>
+                                  <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>0%</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>
+                                    <input type="number" step="0.01" value={ins.pu} onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                  </td>
+                                  <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{insParcial.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )
+              ) : (
+                <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>Seleccione una partida para ver su APU.</div>
+              )}
+            </div>
+            {/* APU Footer */}
+            <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <span>Fecha: <strong style={{ color: 'var(--text-secondary)' }}>27/12/2020</strong></span>
+                <span>Hecho por: <strong style={{ color: 'var(--text-secondary)' }}>Administrador</strong></span>
+              </div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>
+                Costo total: <span style={{ color: 'var(--color-primary)', fontSize: '1.05rem', fontFamily: 'monospace' }}>{cdTotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        </FloatingWindow>
+
+        {/* Specs Floating Window */}
+        <FloatingWindow
+          title={`📝 Especificaciones Técnicas${selectedPartida ? ` · ${selectedPartida.item} ${selectedPartida.nombre}` : ''}`}
+          isOpen={floatingWindows.specs.isOpen && dockedTab !== 'specs'}
+          isMinimized={floatingWindows.specs.isMinimized}
+          onClose={() => handleCloseWindow('specs')}
+          onMinimize={() => handleMinimizeWindow('specs')}
+          onExternalOpen={() => { handleOpenSpecsExternal(); handleCloseWindow('specs'); }}
+          onDock={() => handleDockWindow('specs')}
+          defaultPosition={{ x: floatingWindows.specs.x, y: floatingWindows.specs.y }}
+          width="720px"
+          height="560px"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            {/* Specs Ribbon Tabs */}
+            <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', padding: '0 12px', gap: '2px', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {['Fichero', 'Inicio', 'Insertar', 'Vista'].map(tab => (
+                    <button key={tab} onClick={() => setWordTab(tab.toLowerCase() as any)} style={{ background: 'transparent', border: 'none', color: wordTab === tab.toLowerCase() ? 'var(--color-primary)' : 'var(--text-secondary)', padding: '8px 10px', fontSize: '0.76rem', fontWeight: 'bold', cursor: 'pointer', borderBottom: wordTab === tab.toLowerCase() ? '2px solid var(--color-primary)' : '2px solid transparent' }}>{tab}</button>
                   ))}
                 </div>
-
-                {/* Word Font & Style options toolbar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '0.75rem', cursor: 'pointer' }} title="Pegar">📋</span>
-                    <span style={{ fontSize: '0.75rem', cursor: 'pointer' }} title="Cortar">✂️</span>
-                    <span style={{ fontSize: '0.75rem', cursor: 'pointer' }} title="Copiar">📄</span>
-                  </div>
-                  <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#ffffff', fontSize: '0.74rem', padding: '2px 4px', borderRadius: '3px' }}>
-                      <option>Arial Narrow</option>
-                      <option>Calibri</option>
-                      <option>Times New Roman</option>
-                    </select>
-                    <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#ffffff', fontSize: '0.74rem', padding: '2px 4px', borderRadius: '3px' }}>
-                      <option>11</option>
-                      <option>12</option>
-                      <option>14</option>
-                    </select>
-                  </div>
-                  <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <div style={{ display: 'flex', gap: '6px', fontSize: '0.75rem' }}>
-                    <span style={{ fontWeight: 'bold', cursor: 'pointer' }}>B</span>
-                    <span style={{ fontStyle: 'italic', cursor: 'pointer' }}>I</span>
-                    <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>U</span>
-                    <span style={{ textDecoration: 'line-through', cursor: 'pointer' }}>S</span>
-                  </div>
-                  <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', padding: '2px 8px', borderRadius: '3px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    AaBbCcDd Normal
-                  </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button title="Exportar a Word" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', width: '28px', height: '24px', cursor: 'pointer', fontSize: '0.72rem' }}>W</button>
+                  <button title="Exportar a PDF" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', width: '32px', height: '24px', cursor: 'pointer', fontSize: '0.72rem' }}>PDF</button>
                 </div>
               </div>
-
-              {/* Text Editor Container (Styled like a real paper sheet) */}
-              <div style={{ flexGrow: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '24px', display: 'flex', justifyContent: 'center' }}>
-                <div style={{
-                  width: '100%',
-                  maxWidth: '650px',
-                  minHeight: '400px',
-                  background: '#ffffff',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                  borderRadius: '2px',
-                  padding: '40px',
-                  color: '#1a1a1a',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <textarea
-                    value={specValue}
-                    onChange={(e) => {
-                      if (!selectedPartida) return;
-                      setSpecifications(prev => ({
-                        ...prev,
-                        [selectedPartida.id]: e.target.value
-                      }));
-                    }}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      border: 'none',
-                      outline: 'none',
-                      resize: 'none',
-                      fontSize: '0.88rem',
-                      lineHeight: '1.6',
-                      color: '#1a1a1a',
-                      fontFamily: 'Arial, sans-serif',
-                      flexGrow: 1,
-                      background: 'transparent'
-                    }}
-                  />
+              {/* Formatting bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 12px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)' }}>
+                <div style={{ display: 'flex', gap: '6px', fontSize: '0.75rem' }}>
+                  <span style={{ cursor: 'pointer' }} title="Pegar">📋</span>
+                  <span style={{ cursor: 'pointer' }} title="Cortar">✂️</span>
+                  <span style={{ cursor: 'pointer' }} title="Copiar">📄</span>
+                </div>
+                <div style={{ height: '14px', width: '1px', background: 'var(--border-color)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.72rem', padding: '2px 4px', borderRadius: '3px' }}>
+                    <option>Arial Narrow</option><option>Calibri</option><option>Times New Roman</option>
+                  </select>
+                  <select style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.72rem', padding: '2px 4px', borderRadius: '3px' }}>
+                    <option>11</option><option>12</option><option>14</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                  <span style={{ fontWeight: 'bold', cursor: 'pointer' }}>B</span>
+                  <span style={{ fontStyle: 'italic', cursor: 'pointer' }}>I</span>
+                  <span style={{ textDecoration: 'underline', cursor: 'pointer' }}>U</span>
                 </div>
               </div>
-
-              {/* Gemini AI Assistant Console Panel */}
-              <div style={{
-                background: 'var(--bg-surface)',
-                borderTop: '1px solid var(--border-color)',
-                padding: '12px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                flexShrink: 0
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🧠 Asistente IA (Gemini 2.5 Flash)
-                  </span>
-                  {geminiIsLoading && <span style={{ fontSize: '0.7rem', color: '#94a3b8', animation: 'pulse 1s infinite' }}>Procesando con IA...</span>}
-                </div>
-
-                {geminiResponse && (
-                  <div style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    fontSize: '0.76rem',
-                    lineHeight: '1.4',
-                    color: '#e2e8f0',
-                    maxHeight: '100px',
-                    overflowY: 'auto',
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'var(--font-sans)'
-                  }}>
-                    <strong>InfraCost Pro 2026 - Respuesta generada por Gemini:</strong>
-                    <p style={{ margin: '4px 0 0 0' }}>{geminiResponse}</p>
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={geminiPrompt}
-                    onChange={(e) => setGeminiPrompt(e.target.value)}
-                    placeholder="Instrucción para Gemini (ej: escribe la descripción detallada)..."
-                    style={{
-                      flexGrow: 1,
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: 'var(--text-primary)',
-                      padding: '6px 12px',
-                      borderRadius: '4px',
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  />
-                  <Button
-                    onClick={handleAskGemini}
-                    disabled={geminiIsLoading || !geminiPrompt.trim()}
-                    style={{
-                      background: '#0284c7',
-                      border: 'none',
-                      color: '#ffffff',
-                      padding: '6px 14px',
-                      fontSize: '0.78rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Generar respuesta
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (!selectedPartida) return;
-                      setSpecifications(prev => ({
-                        ...prev,
-                        [selectedPartida.id]: geminiResponse
-                      }));
-                      alert('Especificación técnica reemplazada.');
-                    }}
-                    disabled={!geminiResponse || !selectedPartida}
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      color: '#ffffff',
-                      padding: '6px 12px',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Reemplazar
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : activeBottomTab === 'apu' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-              {/* Header Title exactly like screenshot */}
-              <div style={{ padding: '12px 16px', background: 'rgba(0,0,0,0.15)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                <div>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>Análisis de costo unitario</span>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Presupuesto: <strong style={{ color: 'var(--text-secondary)' }}>{activeBudget.nombre}</strong> · Item: <strong style={{ color: 'var(--text-secondary)' }}>{selectedPartida?.item || '—'}</strong> · Partida: <strong style={{ color: 'var(--text-secondary)' }}>{selectedPartida?.nombre || '—'}</strong>
-                  </div>
-                </div>
-                {/* Right side box: Duración Fija */}
-                <div style={{ background: theme === 'dark' ? '#1e293b' : '#f1f5f9', border: '1px solid var(--border-color)', padding: '6px 12px', borderRadius: '4px', textAlign: 'center', minWidth: '120px', flexShrink: 0 }}>
-                  <div style={{ fontSize: '0.62rem', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Duración Fija</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '2px' }}>programada para ejecutar 1.00 und</div>
-                  <div style={{ background: '#fef08a', color: '#854d0e', fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '3px', marginTop: '4px', border: '1px solid #fef08a' }}>1.000 días</div>
-                </div>
-              </div>
-
-              {/* Options bar checkbox */}
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '16px', padding: '10px 16px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-surface-elevated)', fontSize: '0.76rem', flexShrink: 0 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                  <input type="checkbox" /> Por Rendimiento
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                  <input type="checkbox" defaultChecked /> Por Asignación
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Cant. Prog.:</span>
-                  <input type="text" value="1.00" readOnly style={{ width: '45px', background: '#fef08a', border: '1px solid var(--border-color)', color: '#854d0e', textAlign: 'center', borderRadius: '3px', fontWeight: 'bold', padding: '2px 4px' }} />
-                  <span style={{ color: 'var(--text-muted)' }}>und</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Prod. Est.:</span>
-                  <input type="text" value="1.00" readOnly style={{ width: '45px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', textAlign: 'center', borderRadius: '3px', padding: '2px 4px' }} />
-                  <span style={{ color: 'var(--text-muted)' }}>und</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Jornada:</span>
-                  <input type="text" value="8.00" readOnly style={{ width: '40px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', textAlign: 'center', borderRadius: '3px', padding: '2px 4px' }} />
-                  <span style={{ color: 'var(--text-muted)' }}>h/día</span>
-                </div>
-              </div>
-
-              {/* APU Table spreadsheet grid */}
-              <div style={{ flexGrow: 1, overflow: 'auto', background: 'var(--bg-main)' }}>
-                {selectedPartida ? (
-                  selectedPartida.esTitulo ? (
-                    <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                      Los elementos de tipo Título no contienen un Análisis de Precios Unitarios.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px' }}>
-                      
-                      {/* APU Table */}
-                      <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem', fontFamily: 'monospace' }}>
-                        <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
-                          <tr>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.desc}px`, position: 'relative' }}>
-                              Descripción
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('desc', e.clientX, apuColumnWidthsState.desc); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.unidad}px`, position: 'relative' }}>
-                              Und. Asig.
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('unidad', e.clientX, apuColumnWidthsState.unidad); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cuadrilla}px`, textAlign: 'right', position: 'relative' }}>
-                              Horas asig./Cant.
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('cuadrilla', e.clientX, apuColumnWidthsState.cuadrilla); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.cantidad}px`, textAlign: 'right', position: 'relative' }}>
-                              % Desp.
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('cantidad', e.clientX, apuColumnWidthsState.cantidad); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.pu}px`, textAlign: 'right', position: 'relative' }}>
-                              Precio
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('pu', e.clientX, apuColumnWidthsState.pu); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                            <th style={{ padding: '6px 8px', color: 'var(--text-secondary)', width: `${apuColumnWidthsState.parcial}px`, textAlign: 'right', position: 'relative' }}>
-                              Parcial Total
-                              <div
-                                onMouseDown={(e) => { e.preventDefault(); handleApuColumnResize('parcial', e.clientX, apuColumnWidthsState.parcial); }}
-                                style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 11 }}
-                              />
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* We group by type: MO, MT, EQ, SC, SP */}
-                          {['MO', 'MT', 'EQ', 'SC', 'SP'].map(type => {
-                            const itemsOfType = selectedPartida.insumos.filter(ins => ins.tipo === type);
-                            const breakdown = getAPUBreakdown(selectedPartida);
-                            const subtotal = type === 'MO' ? breakdown.MO : type === 'MT' ? breakdown.MT : type === 'EQ' ? breakdown.EQ : type === 'SC' ? breakdown.SC : breakdown.SP || 0;
-                            const groupName = type === 'MO' ? 'MANO DE OBRA' : type === 'MT' ? 'MATERIALES' : type === 'EQ' ? 'EQUIPO' : type === 'SC' ? 'SUB-CONTRATOS' : 'SUB-PARTIDAS';
-
-                            return (
-                              <React.Fragment key={type}>
-                                {/* Group row header */}
-                                <tr style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.03)', fontWeight: 'bold' }}>
-                                  <td colSpan={5} style={{ padding: '8px 12px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
-                                    {groupName}
-                                  </td>
-                                  <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.74rem' }}>
-                                    {subtotal.toFixed(2)}
-                                  </td>
-                                </tr>
-                                {/* Items of type */}
-                                {itemsOfType.map(ins => {
-                                  const insQty = getInsumoCantidad(ins, selectedPartida.rendimiento);
-                                  const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
-
-                                  return (
-                                    <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                      <td style={{ padding: '6px 12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginRight: '6px' }}>{ins.id.substring(2, 6)}</span>
-                                        {ins.nombre}
-                                      </td>
-                                      <td style={{ padding: '6px 12px', color: 'var(--text-muted)' }}>{ins.unidad}</td>
-                                      <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                        <input
-                                          type="number"
-                                          step="0.0001"
-                                          value={ins.cuadrilla}
-                                          onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)}
-                                          style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }}
-                                        />
-                                      </td>
-                                      <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>0%</td>
-                                      <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                        <input
-                                          type="number"
-                                          step="0.01"
-                                          value={ins.pu}
-                                          onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)}
-                                          style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }}
-                                        />
-                                      </td>
-                                      <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                                        {insParcial.toFixed(2)}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </React.Fragment>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-
-                      {/* Add resource action */}
-                      <div style={{ padding: '16px', display: 'flex', gap: '8px' }}>
-                        <Button
-                          onClick={() => {
-                            setSelectedSpecPartidaId(selectedPartida.id);
-                            setIsAddInsumoOpen(true);
-                          }}
-                          style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                            padding: '6px 14px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: 600
-                          }}
-                        >
-                          ➕ Agregar Recurso
-                        </Button>
-                      </div>
-
-                    </div>
-                  )
-                ) : (
-                  <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                    Seleccione una partida en la grilla superior para editar sus análisis.
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom status exactly like screenshot */}
-              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  <span>Fecha: <strong style={{ color: 'var(--text-secondary)' }}>27/12/2020</strong></span>
-                  <span>Hecho por: <strong style={{ color: 'var(--text-secondary)' }}>Administrador</strong></span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>
-                    Costo total: <span style={{ color: 'var(--color-primary)', fontSize: '1.05rem', fontFamily: 'monospace' }}>{cdTotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <Button variant="secondary" style={{ fontSize: '0.76rem', padding: '6px 12px' }}>
-                    ACU (Inc. Pie Presupuesto)
-                  </Button>
-                </div>
-              </div>
-
             </div>
-          ) : (
-            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-              Sección activa: {activeBottomTab.toUpperCase()} (Desarrollo en progreso)
+            {/* Paper text area */}
+            <div style={{ flexGrow: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.15)', padding: '20px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: '600px', minHeight: '300px', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.5)', borderRadius: '2px', padding: '32px', color: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
+                <textarea
+                  value={specValue}
+                  onChange={(e) => { if (!selectedPartida) return; setSpecifications(prev => ({ ...prev, [selectedPartida.id]: e.target.value })); }}
+                  style={{ width: '100%', height: '100%', border: 'none', outline: 'none', resize: 'none', fontSize: '0.88rem', lineHeight: '1.6', color: '#1a1a1a', fontFamily: 'Arial, sans-serif', flexGrow: 1, background: 'transparent', minHeight: '280px' }}
+                />
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+            {/* Gemini AI Panel */}
+            <div style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-color)', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.76rem', fontWeight: 'bold', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>🧠 Asistente IA (Gemini 2.5 Flash)</span>
+                {geminiIsLoading && <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Procesando...</span>}
+              </div>
+              {geminiResponse && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '6px 10px', fontSize: '0.74rem', lineHeight: '1.4', color: '#e2e8f0', maxHeight: '80px', overflowY: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-sans)' }}>
+                  <strong>Respuesta Gemini:</strong><p style={{ margin: '3px 0 0 0' }}>{geminiResponse}</p>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input type="text" value={geminiPrompt} onChange={(e) => setGeminiPrompt(e.target.value)} placeholder="Instrucción para Gemini..." style={{ flexGrow: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-primary)', padding: '5px 10px', borderRadius: '4px', fontSize: '0.76rem', outline: 'none' }} />
+                <Button onClick={handleAskGemini} disabled={geminiIsLoading || !geminiPrompt.trim()} style={{ background: '#0284c7', border: 'none', color: '#fff', padding: '5px 12px', fontSize: '0.76rem', fontWeight: 'bold', cursor: 'pointer' }}>Generar</Button>
+                <Button onClick={() => { if (!selectedPartida) return; setSpecifications(prev => ({ ...prev, [selectedPartida.id]: geminiResponse })); }} disabled={!geminiResponse || !selectedPartida} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '5px 10px', fontSize: '0.76rem', cursor: 'pointer' }}>Reemplazar</Button>
+              </div>
+            </div>
+          </div>
+        </FloatingWindow>
+
+        {/* Generic floating windows for other tabs */}
+        {[{ id: 'bim', label: '🏗️ Metrado BIM' }, { id: 'metrado', label: '📏 Metrado' }, { id: 'xls', label: '📊 Metrado Xls' }, { id: 'consol', label: '📋 Consol. de Partida' }].map(({ id, label }) => (
+          <FloatingWindow
+            key={id}
+            title={`${label} · ${activeBudget.nombre.substring(0, 30)}`}
+            isOpen={floatingWindows[id].isOpen && dockedTab !== id}
+            isMinimized={floatingWindows[id].isMinimized}
+            onClose={() => handleCloseWindow(id)}
+            onMinimize={() => handleMinimizeWindow(id)}
+            onExternalOpen={() => { handleOpenExternalGeneric(id, label); handleCloseWindow(id); }}
+            onDock={() => handleDockWindow(id)}
+            defaultPosition={{ x: floatingWindows[id].x, y: floatingWindows[id].y }}
+            width="700px"
+            height="480px"
+          >
+            <div style={{ display: 'flex', flexGrow: 1, alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.88rem', flexDirection: 'column', gap: '12px' }}>
+              <span style={{ fontSize: '2rem' }}>🚧</span>
+              <span style={{ fontWeight: 'bold' }}>{label}</span>
+              <span style={{ fontSize: '0.78rem' }}>Esta sección se encuentra en desarrollo activo.</span>
+            </div>
+          </FloatingWindow>
+        ))}
+      </div> {/* end MAIN WORKSPACE */}
 
       {/* 3. FOOTER NAVIGATION TABS */}
+
       <div style={{
-        height: '36px',
         background: 'var(--bg-surface)',
         borderTop: '1px solid var(--border-color)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 16px',
-        flexShrink: 0
+        flexDirection: 'column',
+        padding: '4px 16px',
+        flexShrink: 0,
+        gap: '4px'
       }}>
-        <div style={{ display: 'flex', gap: '2px', height: '100%' }}>
+        {/* Navigation Tabs (Top Row) - now open floating windows */}
+        <div style={{ display: 'flex', gap: '2px', height: '28px', justifyContent: 'flex-start', alignItems: 'center' }}>
           {[
-            { id: 'apu', label: 'Análisis de C.U' },
-            { id: 'specs', label: 'Especif. técnicas' },
-            { id: 'bim', label: 'Metrado BIM' },
-            { id: 'metrado', label: 'Metrado' },
-            { id: 'xls', label: 'Metrado Xls' },
-            { id: 'consol', label: 'Consol. de Partida' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveBottomTab(tab.id as any);
-                if (tab.id === 'apu') {
-                  alert('Abriendo análisis de costos unitarios (APU).');
-                }
-              }}
-              style={{
-                height: '100%',
-                border: 'none',
-                background: activeBottomTab === tab.id ? 'var(--bg-main)' : 'transparent',
-                color: activeBottomTab === tab.id ? 'var(--color-primary)' : 'var(--text-secondary)',
-                fontSize: '0.72rem',
-                fontWeight: 'bold',
-                padding: '0 14px',
-                cursor: 'pointer',
-                borderTop: activeBottomTab === tab.id ? '2px solid var(--color-primary)' : '2px solid transparent'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { id: 'apu', label: 'Análisis de C.U', icon: '📐' },
+            { id: 'specs', label: 'Especif. técnicas', icon: '📝' },
+            { id: 'bim', label: 'Metrado BIM', icon: '🏗️' },
+            { id: 'metrado', label: 'Metrado', icon: '📏' },
+            { id: 'xls', label: 'Metrado Xls', icon: '📊' },
+            { id: 'consol', label: 'Consol. de Partida', icon: '📋' }
+          ].map(tab => {
+            const fw = floatingWindows[tab.id];
+            const isActive = fw.isOpen && !fw.isMinimized;
+            const isMinimized = fw.isOpen && fw.isMinimized;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleToggleTab(tab.id)}
+                title={isActive ? 'Minimizar ventana' : isMinimized ? 'Restaurar ventana' : 'Abrir ventana flotante'}
+                style={{
+                  height: '100%',
+                  border: 'none',
+                  background: isActive ? 'var(--bg-main)' : isMinimized ? 'rgba(255,255,255,0.04)' : 'transparent',
+                  color: isActive ? 'var(--color-primary)' : isMinimized ? 'var(--text-secondary)' : 'var(--text-secondary)',
+                  fontSize: '0.72rem',
+                  fontWeight: 'bold',
+                  padding: '0 12px',
+                  cursor: 'pointer',
+                  borderTop: isActive ? '2px solid var(--color-primary)' : isMinimized ? '2px solid rgba(255,165,0,0.6)' : '2px solid transparent',
+                  borderRadius: '4px 4px 0 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+                {isMinimized && <span style={{ fontSize: '0.6rem', background: 'rgba(255,165,0,0.2)', borderRadius: '3px', padding: '1px 4px', color: '#f59e0b' }}>MIN</span>}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Open Budgets Tabs (Excel sheet style) */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '100%', overflowX: 'auto' }}>
+        {/* Open Budgets Tabs (Bottom Row - Left aligned) */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', gap: '2px', height: '32px', overflowX: 'auto' }}>
           {openBudgets.map(budget => {
             const isActive = budget.id === activeBudget.id;
             return (

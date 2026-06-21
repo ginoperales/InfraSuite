@@ -5,13 +5,15 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  onExternalOpen?: () => void;
 }
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
-  children
+  children,
+  onExternalOpen
 }) => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -73,9 +75,24 @@ export const Modal: React.FC<ModalProps> = ({
           style={{ cursor: 'move', userSelect: 'none' }}
         >
           <h2 className="modal-title">{title}</h2>
-          <button className="modal-close" onClick={onClose}>
-            &times;
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onExternalOpen && (
+              <button 
+                title="Abrir en ventana independiente"
+                className="modal-close" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExternalOpen();
+                }}
+                style={{ fontSize: '0.85rem' }}
+              >
+                ↗️
+              </button>
+            )}
+            <button className="modal-close" onClick={onClose}>
+              &times;
+            </button>
+          </div>
         </div>
         <div className="modal-body">{children}</div>
       </div>

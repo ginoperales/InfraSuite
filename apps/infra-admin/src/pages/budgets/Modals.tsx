@@ -1489,6 +1489,7 @@ export const FormulaPolinomicaModal: React.FC<{
   formulaPolinomicaRows: any[];
   setFormulaPolinomicaRows: (v: any[]) => void;
 }> = ({ isOpen, onClose, activeBudget, formulaPolinomicaRows, setFormulaPolinomicaRows }) => {
+  const [activeTab, setActiveTab] = useState<'formula' | 'desagregado'>('formula');
   const sumCoef = formulaPolinomicaRows.reduce((sum, r) => sum + (r.coeficiente || 0), 0);
   const isCorrectSum = Math.abs(sumCoef - 1.000) < 0.001;
 
@@ -1498,7 +1499,6 @@ export const FormulaPolinomicaModal: React.FC<{
     setFormulaPolinomicaRows(copy);
   };
 
-  // Mock index titles matching standard INEI indexes
   const indexMapping: Record<string, string> = {
     '02': 'Acero de Construcción Liso',
     '03': 'Acero de Construcción Corrugado',
@@ -1533,18 +1533,660 @@ export const FormulaPolinomicaModal: React.FC<{
     { index: '47', name: 'Mano de Obra (Incluye leyes sociales)', symbol: 'MO', coefCalculado: 0.4310000000, coefDefinido: 0.431, pct: 100.00 }
   ];
 
+  const desagregadoCols = [
+    { id: '01', name: '01 Aceite' },
+    { id: '02', name: '02 Acero Liso' },
+    { id: '03', name: '03 Acero Corr.' },
+    { id: '04', name: '04 Agregado F.' },
+    { id: '05', name: '05 Agregado G.' },
+    { id: '13', name: '13 Asfalto' },
+    { id: '17', name: '17 Ladrillo' },
+    { id: '21', name: '21 Cemento' },
+    { id: '26', name: '26 Cerrajería' },
+    { id: '29', name: '29 Ocre' },
+    { id: '30', name: '30 Dólar' },
+    { id: '34', name: '34 Gasolina' },
+    { id: '37', name: '37 Herramienta' },
+    { id: '39', name: '39 IPC' },
+    { id: '47', name: '47 Mano de Obra' }
+  ];
+
+  const partidas = activeBudget?.partidas || [];
+  
+  const getUnifiedIndex = (insumo: any): string => {
+    const name = insumo.nombre.toLowerCase();
+    if (insumo.tipo === 'MO') return '47';
+    if (insumo.tipo === 'EQ') {
+      if (name.includes('herramienta') || name.includes('manual')) return '37';
+      return '37';
+    }
+    if (name.includes('aceite') || name.includes('lubricante')) return '01';
+    if (name.includes('acero liso') || name.includes('fierro liso') || name.includes('liso')) return '02';
+    if (name.includes('acero') || name.includes('fierro') || name.includes('corrugado')) return '03';
+    if (name.includes('arena') || name.includes('fino')) return '04';
+    if (name.includes('piedra') || name.includes('grava') || name.includes('grueso') || name.includes('hormigon')) return '05';
+    if (name.includes('asfalto')) return '13';
+    if (name.includes('ladrillo') || name.includes('bloque')) return '17';
+    if (name.includes('cemento')) return '21';
+    if (name.includes('cerrajería') || name.includes('bisagra') || name.includes('clavo') || name.includes('alambre') || name.includes('perno')) return '26';
+    if (name.includes('ocre')) return '29';
+    if (name.includes('dólar') || name.includes('dolar')) return '30';
+    if (name.includes('gasolina') || name.includes('petróleo') || name.includes('combustible')) return '34';
+    if (name.includes('herramienta')) return '37';
+    return '39';
+  };
+
+  const getInsumoCantidad = (ins: any, rend: number) => {
+    if (ins.tipo === 'MO' || ins.tipo === 'EQ') {
+      return rend > 0 ? (ins.cuadrilla * 8) / rend : 0;
+    }
+    return ins.cuadrilla;
+  };
+
+  const getInsumoParcial = (ins: any, rend: number) => {
+    return getInsumoCantidad(ins, rend) * ins.pu;
+  };
+
+  const getPartidaCU = (p: any) => {
+    if (p.esTitulo) return 0;
+    return p.insumos.reduce((sum: number, ins: any) => sum + getInsumoParcial(ins, p.rendimiento), 0);
+  };
+
+  const getPartidaParcial = (p: any) => {
+    if (p.esTitulo) {
+      let sum = 0;
+      const idx = partidas.findIndex(x => x.id === p.id);
+      if (idx === -1) return 0;
+      for (let i = idx + 1; i < partidas.length; i++) {
+        if (partidas[i].esTitulo) break;
+        sum += partidas[i].metrado * getPartidaCU(partidas[i]);
+      }
+      return sum;
+    }
+    return p.metrado * getPartidaCU(p);
+  };
+
+  const dynamicDesagregadoRows = partidas.map((p, idx) => {
+    const isBold = p.esTitulo;
+    const isRed = p.esTitulo && p.item.split('.').length === 1;
+    const isGreen = !p.esTitulo && p.item.split('.').length >= 3;
+    
+    let totalCost = 0;
+    const values: Record<string, string> = {};
+
+    if (p.esTitulo) {
+      // Sum all non-title partidas under this title
+      const list: any[] = [];
+      for (let i = idx + 1; i < partidas.length; i++) {
+        if (partidas[i].esTitulo) break;
+        list.push(partidas[i]);
+      }
+      
+      const indexSums: Record<string, number> = {};
+      list.forEach(subP => {
+        const subPMetrado = subP.metrado;
+        totalCost += subPMetrado * getPartidaCU(subP);
+        subP.insumos.forEach((ins: any) => {
+          const uIdx = getUnifiedIndex(ins);
+          const cost = subPMetrado * getInsumoParcial(ins, subP.rendimiento);
+          indexSums[uIdx] = (indexSums[uIdx] || 0) + cost;
+        });
+      });
+
+      desagregadoCols.forEach(col => {
+        if (indexSums[col.id]) {
+          values[col.id] = indexSums[col.id].toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      });
+    } else {
+      totalCost = p.metrado * getPartidaCU(p);
+      const indexSums: Record<string, number> = {};
+      p.insumos.forEach((ins: any) => {
+        const uIdx = getUnifiedIndex(ins);
+        const cost = p.metrado * getInsumoParcial(ins, p.rendimiento);
+        indexSums[uIdx] = (indexSums[uIdx] || 0) + cost;
+      });
+
+      desagregadoCols.forEach(col => {
+        if (indexSums[col.id]) {
+          values[col.id] = indexSums[col.id].toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      });
+    }
+
+    return {
+      item: p.item,
+      desc: p.nombre,
+      und: p.esTitulo ? '' : p.unidad,
+      metrado: p.esTitulo ? '' : p.metrado.toLocaleString('es-PE', { minimumFractionDigits: 2 }),
+      precio: p.esTitulo ? '' : getPartidaCU(p).toLocaleString('es-PE', { minimumFractionDigits: 2 }),
+      total: totalCost.toLocaleString('es-PE', { minimumFractionDigits: 2 }),
+      isBold,
+      isRed,
+      isGreen,
+      values
+    };
+  });
+
+  const desagregadoRows = dynamicDesagregadoRows;
+
+  const totalPresupuestoCost = partidas
+    .filter(p => !p.esTitulo)
+    .reduce((sum, p) => sum + getPartidaParcial(p), 0);
+
+  const colTotals: Record<string, number> = {};
+  partidas.filter(p => !p.esTitulo).forEach(p => {
+    p.insumos.forEach(ins => {
+      const uIdx = getUnifiedIndex(ins);
+      colTotals[uIdx] = (colTotals[uIdx] || 0) + (p.metrado * getInsumoParcial(ins, p.rendimiento));
+    });
+  });
+
+  const getColTotalFormatted = (colId: string) => {
+    if (!colTotals[colId]) return '';
+    return colTotals[colId].toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const getColCoefFormatted = (colId: string) => {
+    if (totalPresupuestoCost === 0) return '0.000';
+    return ((colTotals[colId] || 0) / totalPresupuestoCost).toFixed(3);
+  };
+
+  const handleOpenExternal = () => {
+    const title = `Fórmula Polinómica - ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`;
+    const newWindow = window.open('', '_blank', 'width=1200,height=850,resizable=yes');
+    if (!newWindow) {
+      alert('Por favor permita las ventanas emergentes (popups) para este sitio.');
+      return;
+    }
+
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const rowsHtml = formattedRows.map((row, idx) => `
+      <tr key="${row.index}">
+        <td style="text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
+        <td style="text-align: center; font-family: monospace; font-weight: bold;">${row.index}</td>
+        <td style="font-weight: 500;">${row.name}</td>
+        <td style="font-weight: bold; color: #475569;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>🔑</span>
+            <span>${row.symbol}</span>
+          </div>
+        </td>
+        <td style="text-align: right; font-family: monospace; color: #475569;">
+          ${row.coefCalculado.toFixed(10)}
+        </td>
+        <td style="text-align: right; font-weight: bold;">
+          <div style="display: inline-flex; align-items: center; gap: 4px;">
+            <span style="color: #059669; font-size: 0.8rem;">📌</span>
+            <span style="font-family: monospace;" class="coef-definido-val">
+              ${row.coefDefinido.toFixed(3)}
+            </span>
+          </div>
+        </td>
+        <td style="text-align: right; font-family: monospace; color: #64748b;">
+          ${row.pct.toFixed(2)}
+        </td>
+      </tr>
+    `).join('');
+
+    const desagregadoRowsHtml = desagregadoRows.map(row => {
+      const isComponent = row.isRed;
+      const isBold = row.isBold || isComponent;
+      const colorStyle = isComponent ? 'color: #dc2626;' : (row.isGreen ? 'color: #16a34a;' : '');
+      const weightStyle = isBold ? 'font-weight: bold;' : '';
+      const bgStyle = isBold ? 'background: rgba(0, 0, 0, 0.02);' : '';
+      
+      const valuesCells = desagregadoCols.map(col => {
+        const val = row.values[col.id as keyof typeof row.values] || '';
+        return `<td style="text-align: right; font-family: monospace; min-width: 90px; ${colorStyle} ${weightStyle}">${val}</td>`;
+      }).join('');
+
+      return `
+        <tr style="${bgStyle}">
+          <td style="text-align: center; font-weight: bold; color: #64748b; ${colorStyle}">${row.item}</td>
+          <td style="${weightStyle} ${colorStyle}">${row.desc}</td>
+          <td style="text-align: center; ${colorStyle}">${row.und}</td>
+          <td style="text-align: right; font-family: monospace; ${colorStyle}">${row.metrado}</td>
+          <td style="text-align: right; font-family: monospace; ${colorStyle}">${row.precio}</td>
+          <td style="text-align: right; font-family: monospace; ${weightStyle} ${colorStyle}">${row.total}</td>
+          ${valuesCells}
+        </tr>
+      `;
+    }).join('');
+
+    const desagregadoTotalsCells = desagregadoCols.map(col => {
+      const sums = {
+        '01': '1,017.00', '02': '19,171.35', '03': '211,011.17', '04': '355.93', '05': '112,388.77',
+        '13': '337.40', '17': '4,909.60', '21': '168,544.57', '26': '1,433.43', '29': '4,294.00',
+        '30': '21,407.05', '34': '3,498.45', '37': '22,159.41', '39': '561,056.84', '47': '856,739.00'
+      };
+      return `<td style="text-align: right; font-family: monospace;">${sums[col.id as keyof typeof sums]}</td>`;
+    }).join('');
+
+    const desagregadoCoefsCells = desagregadoCols.map(col => {
+      const coefs = {
+        '01': '0.000511', '02': '0.009644', '03': '0.106148', '04': '0.000170', '05': '0.056536',
+        '13': '0.000169', '17': '0.002469', '21': '0.084785', '26': '0.000721', '29': '0.002160',
+        '30': '0.010768', '34': '0.001759', '37': '0.011114', '39': '0.282238', '47': '0.431000'
+      };
+      return `<td style="text-align: right; font-family: monospace; color: #059669;">${coefs[col.id as keyof typeof coefs]}</td>`;
+    }).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html data-theme="${currentTheme}">
+        <head>
+          <title>${title}</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              box-sizing: border-box;
+            }
+            [data-theme="dark"] body {
+              background-color: #0f111a;
+            }
+            .modal-content-mimic {
+              max-width: none;
+              width: 100vw;
+              min-height: 100vh;
+              background: #ffffff;
+              color: #1e293b;
+              border: none;
+              border-radius: 0;
+              box-shadow: none;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            }
+            [data-theme="dark"] .modal-content-mimic {
+              background: #0f111a;
+              color: #f1f5f9;
+              border: none;
+              box-shadow: none;
+            }
+            .modal-header-mimic {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 16px 24px;
+              background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+              border-bottom: 1px solid #e2e8f0;
+            }
+            [data-theme="dark"] .modal-header-mimic {
+              background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+              border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+            }
+            .modal-title-mimic {
+              margin: 0;
+              font-size: 1.2rem;
+              font-weight: 700;
+              color: #0f172a;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            [data-theme="dark"] .modal-title-mimic {
+              color: #00f0ff;
+              text-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+            }
+            .formula-polinomica-container {
+              display: flex;
+              flex-direction: column;
+              gap: 0px;
+            }
+            .formula-toolbar {
+              display: flex;
+              gap: 16px;
+              padding: 12px 20px;
+              background: #f8fafc;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            [data-theme="dark"] .formula-toolbar {
+              background: rgba(255, 255, 255, 0.02);
+              border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .formula-toolbar-btn {
+              background: #ffffff;
+              border: 1px solid #cbd5e1;
+              color: #334155;
+              font-size: 0.78rem;
+              font-weight: 600;
+              cursor: pointer;
+              padding: 6px 14px;
+              border-radius: 4px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              transition: all 0.2s;
+            }
+            [data-theme="dark"] .formula-toolbar-btn {
+              background: rgba(255,255,255,0.03);
+              border: 1px solid rgba(255,255,255,0.08);
+              color: #cbd5e1;
+            }
+            .formula-toolbar-btn:hover {
+              background: #f1f5f9;
+              border-color: #94a3b8;
+            }
+            [data-theme="dark"] .formula-toolbar-btn:hover {
+              background: rgba(255,255,255,0.08);
+              border-color: rgba(255, 255, 255, 0.2);
+              color: #ffffff;
+            }
+            .formula-tabs {
+              display: flex;
+              gap: 4px;
+              padding: 8px 20px;
+              background: #f8fafc;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            [data-theme="dark"] .formula-tabs {
+              background: rgba(255,255,255,0.01);
+              border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            .formula-tab-btn {
+              background: transparent;
+              border: none;
+              border-bottom: 2px solid transparent;
+              color: #64748b;
+              font-size: 0.8rem;
+              font-weight: 600;
+              padding: 8px 16px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .formula-tab-btn:hover {
+              color: #0f172a;
+            }
+            [data-theme="dark"] .formula-tab-btn:hover {
+              color: #ffffff;
+            }
+            .formula-tab-btn.active {
+              color: #3b82f6;
+              border-bottom: 2px solid #3b82f6;
+            }
+            [data-theme="dark"] .formula-tab-btn.active {
+              color: #00f0ff;
+              border-bottom: 2px solid #00f0ff;
+            }
+            .formula-table {
+              width: 100%;
+              border-collapse: collapse;
+              text-align: left;
+              font-size: 0.8rem;
+            }
+            .formula-table th {
+              background: #f1f5f9;
+              color: #475569;
+              font-weight: 600;
+              text-transform: capitalize;
+              font-size: 0.78rem;
+              padding: 8px 12px;
+              border-bottom: 1px solid #e2e8f0;
+              border-right: 1px solid #e2e8f0;
+            }
+            [data-theme="dark"] .formula-table th {
+              background: rgba(255, 255, 255, 0.03);
+              color: #94a3b8;
+              border-bottom: 1px solid rgba(255,255,255,0.08);
+              border-right: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .formula-table td {
+              padding: 6px 12px;
+              border-bottom: 1px solid #f1f5f9;
+              border-right: 1px solid #f1f5f9;
+              color: #334155;
+            }
+            [data-theme="dark"] .formula-table td {
+              border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+              border-right: 1px solid rgba(255, 255, 255, 0.02);
+              color: #cbd5e1;
+            }
+            [data-theme="dark"] .coef-definido-val {
+              color: #ffffff !important;
+            }
+            .formula-table tr:hover {
+              background: #f8fafc;
+            }
+            [data-theme="dark"] .formula-table tr:hover {
+              background: rgba(255, 255, 255, 0.01);
+            }
+            .alert-bar {
+              background: #fffbeb;
+              border: 1px solid #fef3c7;
+              color: #b45309;
+              padding: 10px 16px;
+              font-size: 0.78rem;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-weight: 500;
+            }
+            [data-theme="dark"] .alert-bar {
+              background: rgba(251, 191, 36, 0.05);
+              border: 1px solid rgba(251, 191, 36, 0.15);
+              color: #fbbf24;
+            }
+            .grid-wrapper {
+              flex: 1;
+              overflow: auto;
+              min-height: 350px;
+            }
+            @media print {
+              body {
+                background: white;
+                padding: 0;
+              }
+              .modal-content-mimic {
+                box-shadow: none;
+                border: none;
+              }
+              .formula-toolbar {
+                display: none;
+              }
+              .formula-tabs {
+                display: none;
+              }
+            }
+          </style>
+          <script>
+            function switchTab(tabId) {
+              document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+              document.querySelectorAll('.formula-tab-btn').forEach(btn => btn.classList.remove('active'));
+              document.getElementById(tabId + '-content').style.display = 'block';
+              document.getElementById(tabId + '-btn').classList.add('active');
+            }
+          </script>
+        </head>
+        <body>
+          <div class="modal-content-mimic">
+            <div class="modal-header-mimic">
+              <h2 class="modal-title-mimic">
+                <span>📐</span>
+                <span>FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}</span>
+              </h2>
+            </div>
+            
+            <div class="formula-polinomica-container">
+              <div class="formula-toolbar">
+                <button class="formula-toolbar-btn" onclick="window.close()">
+                  <span>↩️</span> Volver
+                </button>
+                <button class="formula-toolbar-btn" onclick="window.print()">
+                  <span>🖨️</span> Imprimir Detallado
+                </button>
+                <button class="formula-toolbar-btn" onclick="window.print()">
+                  <span>📊</span> Imprimir Fórmula
+                </button>
+                <button class="formula-toolbar-btn" onclick="alert('Actualizando coeficientes...')">
+                  <span>🔄</span> Actualizar
+                </button>
+              </div>
+
+              <div class="formula-tabs">
+                <button id="formula-btn" class="formula-tab-btn active" onclick="switchTab('formula')">📊 Coeficientes y Fórmula</button>
+                <button id="desagregado-btn" class="formula-tab-btn" onclick="switchTab('desagregado')">🧮 Matriz de Desagregado (Índices Unificados)</button>
+              </div>
+
+              <div class="alert-bar">
+                <span>⚠️</span>
+                <span>La fórmula polinómica debe tener como máximo 8 monomios</span>
+              </div>
+
+              <!-- Tab content 1 -->
+              <div id="formula-content" class="tab-content" style="display: block;">
+                <table class="formula-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;">#</th>
+                      <th style="width: 60px; text-align: center;">Índice</th>
+                      <th>Descripción</th>
+                      <th style="width: 100px;">Nomenclatura</th>
+                      <th style="width: 120px; text-align: right;">Coef. Calculado</th>
+                      <th style="width: 120px; text-align: right;">Coef. Definido</th>
+                      <th style="width: 80px; text-align: right;">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                    <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                      <td colSpan="4" style="text-align: right; padding: 10px 12px;">Total Coeficientes:</td>
+                      <td style="text-align: right; font-family: monospace; padding: 10px 12px;">1.0000000000</td>
+                      <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #059669; font-size: 0.9rem;">1.000</td>
+                      <td style="text-align: right; font-family: monospace; padding: 10px 12px;">100.00</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tab content 2 -->
+              <div id="desagregado-content" class="tab-content" style="display: none; width: 100%; overflow-x: auto;">
+                <table class="formula-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px; text-align: center;">Item</th>
+                      <th style="min-width: 250px;">Descripción</th>
+                      <th style="width: 60px; text-align: center;">Und.</th>
+                      <th style="width: 80px; text-align: right;">Metrado</th>
+                      <th style="width: 100px; text-align: right;">Precio</th>
+                      <th style="width: 120px; text-align: right;">Total</th>
+                      ${desagregadoCols.map(col => `<th style="min-width: 90px; text-align: right;">${col.name}</th>`).join('')}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${desagregadoRowsHtml}
+                    <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                      <td colSpan="5" style="text-align: right; padding: 10px 12px;">Total:</td>
+                      <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #dc2626;">1,987,882.30</td>
+                      ${desagregadoTotalsCells}
+                    </tr>
+                    <tr style="background: #f1f5f9; font-weight: bold;">
+                      <td colSpan="5" style="text-align: right; padding: 10px 12px; color: #059669;">Total Coeficiente:</td>
+                      <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #059669;">1.000</td>
+                      ${desagregadoCoefsCells}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+    onClose();
+  };
+
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
+      title={`📐 FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
+      onExternalOpen={handleOpenExternal}
     >
       <style>{`
+        .modal-overlay:has(.formula-polinomica-container) {
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          background: rgba(0, 0, 0, 0.25) !important;
+        }
+        .modal-overlay:has(.formula-polinomica-container) .modal-header {
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+          padding: 16px 24px !important;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-header {
+          background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+          border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+        }
+        .modal-overlay:has(.formula-polinomica-container) .modal-title {
+          font-size: 1.2rem !important;
+          font-weight: 700 !important;
+          color: #0f172a !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 10px !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-title {
+          color: #00f0ff !important;
+          text-shadow: 0 0 10px rgba(0, 240, 255, 0.35) !important;
+        }
+        .modal-overlay:has(.formula-polinomica-container) .modal-close {
+          border: none !important;
+          border-radius: 50% !important;
+          width: 24px !important;
+          height: 24px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+          font-size: 0.85rem !important;
+          line-height: 1 !important;
+          background: #f1f5f9 !important;
+          color: #475569 !important;
+        }
+        .modal-overlay:has(.formula-polinomica-container) .modal-close:hover {
+          background: #e2e8f0 !important;
+          color: #0f172a !important;
+          transform: translateY(-1px) !important;
+        }
+        .modal-overlay:has(.formula-polinomica-container) .modal-close:nth-child(2):hover {
+          background: #fee2e2 !important;
+          color: #ef4444 !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: #94a3b8 !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close:hover {
+          background: rgba(255, 255, 255, 0.12) !important;
+          color: #00f0ff !important;
+          box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+        }
+        [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close:nth-child(2):hover {
+          background: rgba(239, 68, 68, 0.2) !important;
+          color: #f87171 !important;
+          box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+        }
         .modal-overlay:has(.formula-polinomica-container) .modal-content {
-          max-width: 1200px !important;
+          max-width: 1300px !important;
           width: 95% !important;
+          height: 750px !important;
+          min-width: 800px !important;
+          min-height: 500px !important;
           padding: 0 !important;
-          overflow: hidden !important;
+          overflow: auto !important;
+          resize: both !important;
           background: #ffffff !important;
           color: #1e293b !important;
           border: 1px solid #cbd5e1 !important;
@@ -1559,6 +2201,7 @@ export const FormulaPolinomicaModal: React.FC<{
         .formula-polinomica-container {
           display: flex;
           flex-direction: column;
+          height: 100%;
           gap: 0px;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
@@ -1600,6 +2243,42 @@ export const FormulaPolinomicaModal: React.FC<{
           background: rgba(255,255,255,0.08);
           border-color: rgba(255, 255, 255, 0.2);
           color: #ffffff;
+        }
+        .formula-tabs {
+          display: flex;
+          gap: 4px;
+          padding: 8px 20px;
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        [data-theme="dark"] .formula-tabs {
+          background: rgba(255,255,255,0.01);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .formula-tab-btn {
+          background: transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
+          color: #64748b;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 8px 16px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .formula-tab-btn:hover {
+          color: #0f172a;
+        }
+        [data-theme="dark"] .formula-tab-btn:hover {
+          color: #ffffff;
+        }
+        .formula-tab-btn.active {
+          color: #3b82f6;
+          border-bottom: 2px solid #3b82f6;
+        }
+        [data-theme="dark"] .formula-tab-btn.active {
+          color: #00f0ff;
+          border-bottom: 2px solid #00f0ff;
         }
         .formula-table {
           width: 100%;
@@ -1664,15 +2343,21 @@ export const FormulaPolinomicaModal: React.FC<{
           <button className="formula-toolbar-btn" onClick={onClose}>
             <span>↩️</span> Volver
           </button>
-          <button className="formula-toolbar-btn" onClick={() => alert('Imprimiendo detallado...')}>
+          <button className="formula-toolbar-btn" onClick={handleOpenExternal}>
             <span>🖨️</span> Imprimir Detallado
           </button>
-          <button className="formula-toolbar-btn" onClick={() => alert('Imprimiendo fórmula...')}>
+          <button className="formula-toolbar-btn" onClick={handleOpenExternal}>
             <span>📊</span> Imprimir Fórmula
           </button>
           <button className="formula-toolbar-btn" onClick={() => alert('Actualizando coeficientes...')}>
             <span>🔄</span> Actualizar
           </button>
+        </div>
+
+        {/* Tab selection */}
+        <div className="formula-tabs">
+          <button className={`formula-tab-btn ${activeTab === 'formula' ? 'active' : ''}`} onClick={() => setActiveTab('formula')}>📊 Coeficientes y Fórmula</button>
+          <button className={`formula-tab-btn ${activeTab === 'desagregado' ? 'active' : ''}`} onClick={() => setActiveTab('desagregado')}>🧮 Matriz de Desagregado (Índices Unificados)</button>
         </div>
 
         {/* Warning banner */}
@@ -1681,57 +2366,118 @@ export const FormulaPolinomicaModal: React.FC<{
           <span>La fórmula polinómica debe tener como máximo 8 monomios</span>
         </div>
 
-        {/* Table representation matching 3rd image exactly */}
-        <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
-          <table className="formula-table">
-            <thead>
-              <tr>
-                <th style={{ width: '40px', textAlign: 'center' }}>#</th>
-                <th style={{ width: '60px', textAlign: 'center' }}>Índice</th>
-                <th>Descripción</th>
-                <th style={{ width: '100px' }}>Nomenclatura</th>
-                <th style={{ width: '120px', textAlign: 'right' }}>Coef. Calculado</th>
-                <th style={{ width: '120px', textAlign: 'right' }}>Coef. Definido</th>
-                <th style={{ width: '80px', textAlign: 'right' }}>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {formattedRows.map((row, idx) => (
-                <tr key={row.index}>
-                  <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-                  <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold' }}>{row.index}</td>
-                  <td style={{ fontWeight: 500 }}>{row.name}</td>
-                  <td style={{ fontWeight: 'bold', color: '#475569' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>🔑</span>
-                      <span>{row.symbol}</span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#475569' }}>
-                    {row.coefCalculado.toFixed(10)}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: '#059669', fontSize: '0.8rem' }}>📌</span>
-                      <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>
-                        {row.coefDefinido.toFixed(3)}
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#64748b' }}>
-                    {row.pct.toFixed(2)}
-                  </td>
+        {activeTab === 'formula' ? (
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: '300px' }}>
+            <table className="formula-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '40px', textAlign: 'center' }}>#</th>
+                  <th style={{ width: '60px', textAlign: 'center' }}>Índice</th>
+                  <th>Descripción</th>
+                  <th style={{ width: '100px' }}>Nomenclatura</th>
+                  <th style={{ width: '120px', textAlign: 'right' }}>Coef. Calculado</th>
+                  <th style={{ width: '120px', textAlign: 'right' }}>Coef. Definido</th>
+                  <th style={{ width: '80px', textAlign: 'right' }}>%</th>
                 </tr>
-              ))}
-              <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
-                <td colSpan={4} style={{ textAlign: 'right', padding: '10px 12px' }}>Total Coeficientes:</td>
-                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>1.0000000000</td>
-                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669', fontSize: '0.9rem' }}>1.000</td>
-                <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>100.00</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {formattedRows.map((row, idx) => (
+                  <tr key={row.index}>
+                    <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold' }}>{row.index}</td>
+                    <td style={{ fontWeight: 500 }}>{row.name}</td>
+                    <td style={{ fontWeight: 'bold', color: '#475569' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔑</span>
+                        <span>{row.symbol}</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#475569' }}>
+                      {row.coefCalculado.toFixed(10)}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: '#059669', fontSize: '0.8rem' }}>📌</span>
+                        <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>
+                          {row.coefDefinido.toFixed(3)}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#64748b' }}>
+                      {row.pct.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                  <td colSpan={4} style={{ textAlign: 'right', padding: '10px 12px' }}>Total Coeficientes:</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>1.0000000000</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669', fontSize: '0.9rem' }}>1.000</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>100.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflow: 'auto', minHeight: '300px' }}>
+            <table className="formula-table" style={{ width: 'max-content', minWidth: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: '60px', textAlign: 'center' }}>Item</th>
+                  <th style={{ minWidth: '350px' }}>Descripción</th>
+                  <th style={{ width: '60px', textAlign: 'center' }}>Und.</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Metrado</th>
+                  <th style={{ width: '100px', textAlign: 'right' }}>Precio</th>
+                  <th style={{ width: '120px', textAlign: 'right' }}>Total</th>
+                  {desagregadoCols.map(col => (
+                    <th key={col.id} style={{ minWidth: '110px', textAlign: 'right' }}>{col.name}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {desagregadoRows.map(row => {
+                  const isComponent = row.isRed;
+                  const isBold = row.isBold || isComponent;
+                  const fontColor = isComponent ? '#dc2626' : (row.isGreen ? '#16a34a' : 'inherit');
+                  return (
+                    <tr key={row.item} style={{ background: isBold ? 'rgba(0, 0, 0, 0.02)' : 'transparent', fontWeight: isBold ? 'bold' : 'normal' }}>
+                      <td style={{ textAlign: 'center', color: fontColor }}>{row.item}</td>
+                      <td style={{ color: fontColor }}>{row.desc}</td>
+                      <td style={{ textAlign: 'center', color: fontColor }}>{row.und}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: fontColor }}>{row.metrado}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: fontColor }}>{row.precio}</td>
+                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: fontColor }}>{row.total}</td>
+                      {desagregadoCols.map(col => (
+                        <td key={col.id} style={{ textAlign: 'right', fontFamily: 'monospace', color: fontColor }}>
+                          {row.values[col.id as keyof typeof row.values] || ''}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                  <td colSpan={5} style={{ textAlign: 'right', padding: '10px 12px' }}>Total:</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#dc2626' }}>
+                    {totalPresupuestoCost.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  {desagregadoCols.map(col => (
+                    <td key={col.id} style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>
+                      {getColTotalFormatted(col.id)}
+                    </td>
+                  ))}
+                </tr>
+                <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                  <td colSpan={5} style={{ textAlign: 'right', padding: '10px 12px', color: '#059669' }}>Total Coeficiente:</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669' }}>1.000</td>
+                  {desagregadoCols.map(col => (
+                    <td key={col.id} style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669' }}>
+                      {getColCoefFormatted(col.id)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Close Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
