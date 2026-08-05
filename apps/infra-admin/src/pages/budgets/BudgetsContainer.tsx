@@ -2282,6 +2282,11 @@ export const Budgets: React.FC<BudgetsProps> = ({
       ...sourcePartida,
       id: 'p_' + Math.random().toString(36).substring(2, 9),
       item: sourcePartida.item,
+      isImported: true,
+      importedFrom: sourceBudget.nombre,
+      importedFromBudgetId: sourceBudget.id,
+      importedSourcePartidaId: sourcePartida.id,
+      importedAt: Date.now(),
       insumos: clonedInsumos
     };
 
@@ -2311,6 +2316,9 @@ export const Budgets: React.FC<BudgetsProps> = ({
       metrado: 1,
       esTitulo: false,
       rendimiento: Number(item.rendimiento) || 1,
+      isImported: true,
+      importedFrom: 'Catalogo de partidas',
+      importedAt: Date.now(),
       insumos: (item.insumos || []).map((x: any) => {
         const tipo = normalizeSuggestionTipo(x.tipo);
         return {

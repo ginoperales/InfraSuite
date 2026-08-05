@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
 import type { Budget, Partida, Insumo, PartidaColumnKey } from './types';
+import { LiteIcon } from './BudgetEditorLite';
 
 const contextMenuItemStyle: React.CSSProperties = {
   background: 'transparent',
@@ -36,6 +37,38 @@ const popupBtnStyle: React.CSSProperties = {
   fontWeight: 'bold',
   outline: 'none',
   fontFamily: 'var(--font-sans)',
+};
+
+const ImportedPartidaBadge: React.FC<{ partida: Partida }> = ({ partida }) => {
+  if (!partida.isImported) return null;
+  const source = partida.importedFrom?.trim();
+  const label = source ? `Partida importada desde ${source}` : 'Partida importada';
+
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        flexShrink: 0,
+        padding: '2px 6px',
+        borderRadius: 999,
+        border: '1px solid rgba(14, 165, 233, 0.38)',
+        background: 'rgba(14, 165, 233, 0.12)',
+        color: '#38bdf8',
+        fontSize: '0.66rem',
+        fontWeight: 900,
+        lineHeight: 1,
+        verticalAlign: 'middle',
+        marginRight: 6
+      }}
+    >
+      <LiteIcon name="link" size={12} strokeWidth={2.2} />
+      <span>IMP</span>
+    </span>
+  );
 };
 
 const getHierarchyColor = (level: number) => {
@@ -1565,6 +1598,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                 >
                                   {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
                                 </span>
+                                <ImportedPartidaBadge partida={p} />
                                 <span style={{ color: getHierarchyColor(level), fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: p.esTitulo ? 'bold' : 'normal' }}>
                                   {p.nombre}
                                 </span>

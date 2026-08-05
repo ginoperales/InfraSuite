@@ -22,6 +22,11 @@ export interface Partida {
   esTitulo: boolean;
   rendimiento: number;
   insumos: Insumo[];
+  isImported?: boolean;
+  importedFrom?: string;
+  importedFromBudgetId?: string;
+  importedSourcePartidaId?: string;
+  importedAt?: number;
 }
 
 export interface PiePresupuestoRow {

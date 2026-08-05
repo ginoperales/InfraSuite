@@ -714,6 +714,41 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
     handleEmptyPartidasContextMenu(e);
   };
 
+  const getImportedPartidaTitle = (partida: Partida) => {
+    const source = partida.importedFrom?.trim();
+    return source ? `Partida importada desde ${source}` : 'Partida importada';
+  };
+
+  const renderImportedPartidaBadge = (partida: Partida) => {
+    if (!partida.isImported) return null;
+
+    const label = getImportedPartidaTitle(partida);
+    return (
+      <span
+        title={label}
+        aria-label={label}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          flexShrink: 0,
+          width: 'fit-content',
+          padding: '2px 6px',
+          borderRadius: 999,
+          border: '1px solid rgba(14, 165, 233, 0.38)',
+          background: 'rgba(14, 165, 233, 0.12)',
+          color: '#38bdf8',
+          fontSize: '0.68rem',
+          fontWeight: 900,
+          lineHeight: 1
+        }}
+      >
+        <LiteIcon name="link" size={12} strokeWidth={2.2} />
+        <span>IMP</span>
+      </span>
+    );
+  };
+
   return (
     <div className="budget-editor-lite-shell" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
       <style>{`
@@ -1231,6 +1266,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       }}
                     >
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', flexShrink: 0 }}>{p.item}</span>
+                      {renderImportedPartidaBadge(p)}
                       <span style={{ fontSize: '0.86rem', lineHeight: 1.35 }}>{p.nombre}</span>
                     </div>
                   );
@@ -1267,7 +1303,10 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: 4 }}>{p.item}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span>{p.item}</span>
+                          {renderImportedPartidaBadge(p)}
+                        </div>
                         <div style={{ fontWeight: 850, fontSize: '0.94rem', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{p.nombre}</div>
                       </div>
                       <span style={{ border: '1px solid var(--border-color)', borderRadius: 999, padding: '5px 9px', color: 'var(--color-primary)', fontWeight: 850, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
@@ -1380,7 +1419,12 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       <td style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.02)', color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{p.item}</td>
                       
                       {/* Descripción */}
-                      <td style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.02)', paddingLeft: p.esTitulo ? '16px' : '24px', color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)' }}>{p.nombre}</td>
+                      <td style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.02)', paddingLeft: p.esTitulo ? '16px' : '24px', color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          {renderImportedPartidaBadge(p)}
+                          <span style={{ overflowWrap: 'anywhere' }}>{p.nombre}</span>
+                        </div>
+                      </td>
                       
                       {/* Unidad */}
                       <td style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.02)', color: 'var(--text-secondary)' }}>{p.unidad || '-'}</td>
