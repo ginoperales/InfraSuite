@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
-import type { Budget, Partida, Insumo, PartidaColumnKey } from './types';
+import type { Budget, Partida, Insumo, PartidaColumnKey, SharedPartidaBudgetRef } from './types';
 import { LiteIcon } from './BudgetEditorLite';
 
 const contextMenuItemStyle: React.CSSProperties = {
@@ -39,15 +39,23 @@ const popupBtnStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 };
 
-const ImportedPartidaBadge: React.FC<{ partida: Partida }> = ({ partida }) => {
-  if (!partida.isImported) return null;
-  const source = partida.importedFrom?.trim();
-  const label = source ? `Partida importada desde ${source}` : 'Partida importada';
+const SharedPartidaBadge: React.FC<{ partida: Partida; budgets: SharedPartidaBudgetRef[] }> = ({ partida, budgets }) => {
+  if (budgets.length < 2) return null;
+  const label = `Esta partida esta en ${budgets.length} presupuestos`;
 
   return (
-    <span
+    <button
+      type="button"
       title={label}
       aria-label={label}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.alert(
+          `${partida.nombre}\n\n` +
+          budgets.map(budget => `${budget.budgetName} - item ${budget.item}`).join('\n')
+        );
+      }}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -62,12 +70,13 @@ const ImportedPartidaBadge: React.FC<{ partida: Partida }> = ({ partida }) => {
         fontWeight: 900,
         lineHeight: 1,
         verticalAlign: 'middle',
-        marginRight: 6
+        marginRight: 6,
+        cursor: 'pointer'
       }}
     >
       <LiteIcon name="link" size={12} strokeWidth={2.2} />
-      <span>IMP</span>
-    </span>
+      <span>{budgets.length}</span>
+    </button>
   );
 };
 
@@ -283,12 +292,13 @@ interface BudgetEditorProProps {
   getPartidaCU: (p: Partida) => number;
   getPartidaParcial: (p: Partida) => number;
   getAPUBreakdown: (p: Partida) => any;
+  getPartidaSharedBudgets: (p: Partida) => SharedPartidaBudgetRef[];
   
   // Table widths & resizing
   partidaColumnWidths: Record<PartidaColumnKey, number>;
   partidaTableWidth: number;
 
-  handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => void;
+  handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => boolean | void;
   handleUpdateInsumoField: (pId: string, insId: string, field: keyof Insumo, val: any) => void;
   handleDeleteInsumo: (insId: string) => void;
   setSelectedSpecPartidaId: (id: string | null) => void;
@@ -487,6 +497,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   getPartidaCU,
   getPartidaParcial,
   getAPUBreakdown,
+  getPartidaSharedBudgets,
   partidaColumnWidths,
   partidaTableWidth,
 
@@ -1598,7 +1609,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                 >
                                   {p.esTitulo ? (isCollapsed ? '▶ 📁' : '▼ 📂') : '📄'}
                                 </span>
-                                <ImportedPartidaBadge partida={p} />
+                                <SharedPartidaBadge partida={p} budgets={getPartidaSharedBudgets(p)} />
                                 <span style={{ color: getHierarchyColor(level), fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: p.esTitulo ? 'bold' : 'normal' }}>
                                   {p.nombre}
                                 </span>
@@ -1726,6 +1737,8 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                               value={popupRow.partida.nombre}
                               onChange={(e) => {
                                 const newName = e.target.value;
+                                const accepted = handlePartidaCellChange(popupRow.partida.id, 'nombre', newName);
+                                if (accepted === false) return;
                                 setPopupRow({
                                   ...popupRow,
                                   partida: {
@@ -1733,7 +1746,6 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                     nombre: newName
                                   }
                                 });
-                                handlePartidaCellChange(popupRow.partida.id, 'nombre', newName);
                               }}
                               style={{
                                 width: '100%',

@@ -29,6 +29,15 @@ export interface Partida {
   importedAt?: number;
 }
 
+export interface SharedPartidaBudgetRef {
+  budgetId: string;
+  budgetName: string;
+  partidaId: string;
+  item: string;
+  cliente?: string;
+  matchesInBudget: number;
+}
+
 export interface PiePresupuestoRow {
   variable: string;
   descripcion: string;

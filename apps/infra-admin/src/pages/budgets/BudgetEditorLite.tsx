@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey } from './types';
+import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey, SharedPartidaBudgetRef } from './types';
 import { exportPDF, exportExcel, type ExportOption } from './exportUtils';
 
 const tableInputStyle: React.CSSProperties = {
@@ -401,6 +401,7 @@ interface BudgetEditorLiteProps {
   getPartidaCU: (p: Partida) => number;
   getPartidaParcial: (p: Partida) => number;
   getPartidaBreakdownTotal: (p: Partida) => { MO: number; MT: number; EQ: number; SC: number };
+  getPartidaSharedBudgets: (p: Partida) => SharedPartidaBudgetRef[];
   
   // Handlers
   handlePartidaCellClick: (p: Partida, e?: React.MouseEvent) => void;
@@ -408,7 +409,7 @@ interface BudgetEditorLiteProps {
   handlePartidaDragEnd: () => void;
   handlePartidaContextMenu: (e: React.MouseEvent, p: Partida) => void;
   handleEmptyPartidasContextMenu: (e: React.MouseEvent) => void;
-  handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => void;
+  handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => boolean | void;
   handleUpdateInsumoField: (pId: string, insId: string, field: keyof Insumo, val: any) => void;
   handleDeleteInsumo: (insId: string) => void;
   setSelectedSpecPartidaId: (id: string | null) => void;
@@ -605,6 +606,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   getAPUBreakdown,
   getPartidaCU,
   getPartidaParcial,
+  getPartidaSharedBudgets,
 
   handlePartidaCellClick,
   handlePartidaDragEnter,
@@ -629,6 +631,10 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   const [apuDraftValues, setApuDraftValues] = useState<Record<string, string>>({});
   const [mobileApuPartidaId, setMobileApuPartidaId] = useState<string | null>(null);
   const [isLiteMobileSidebarOpen, setIsLiteMobileSidebarOpen] = useState(false);
+  const [sharedPartidaDialog, setSharedPartidaDialog] = useState<{
+    partida: Partida;
+    budgets: SharedPartidaBudgetRef[];
+  } | null>(null);
 
   const parseApuNumber = (rawValue: string) => {
     const normalized = rawValue.trim().replace(',', '.');
@@ -714,19 +720,21 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
     handleEmptyPartidasContextMenu(e);
   };
 
-  const getImportedPartidaTitle = (partida: Partida) => {
-    const source = partida.importedFrom?.trim();
-    return source ? `Partida importada desde ${source}` : 'Partida importada';
-  };
+  const renderSharedPartidaBadge = (partida: Partida) => {
+    const sharedBudgets = getPartidaSharedBudgets(partida);
+    if (sharedBudgets.length < 2) return null;
 
-  const renderImportedPartidaBadge = (partida: Partida) => {
-    if (!partida.isImported) return null;
-
-    const label = getImportedPartidaTitle(partida);
+    const label = `Esta partida esta en ${sharedBudgets.length} presupuestos`;
     return (
-      <span
+      <button
+        type="button"
         title={label}
         aria-label={label}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setSharedPartidaDialog({ partida, budgets: sharedBudgets });
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -740,12 +748,13 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
           color: '#38bdf8',
           fontSize: '0.68rem',
           fontWeight: 900,
-          lineHeight: 1
+          lineHeight: 1,
+          cursor: 'pointer'
         }}
       >
         <LiteIcon name="link" size={12} strokeWidth={2.2} />
-        <span>IMP</span>
-      </span>
+        <span>{sharedBudgets.length}</span>
+      </button>
     );
   };
 
@@ -1266,7 +1275,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       }}
                     >
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', flexShrink: 0 }}>{p.item}</span>
-                      {renderImportedPartidaBadge(p)}
+                      {renderSharedPartidaBadge(p)}
                       <span style={{ fontSize: '0.86rem', lineHeight: 1.35 }}>{p.nombre}</span>
                     </div>
                   );
@@ -1305,7 +1314,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <span>{p.item}</span>
-                          {renderImportedPartidaBadge(p)}
+                          {renderSharedPartidaBadge(p)}
                         </div>
                         <div style={{ fontWeight: 850, fontSize: '0.94rem', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{p.nombre}</div>
                       </div>
@@ -1421,7 +1430,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       {/* Descripción */}
                       <td style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.02)', paddingLeft: p.esTitulo ? '16px' : '24px', color: p.esTitulo ? 'var(--color-secondary)' : 'var(--text-primary)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                          {renderImportedPartidaBadge(p)}
+                          {renderSharedPartidaBadge(p)}
                           <span style={{ overflowWrap: 'anywhere' }}>{p.nombre}</span>
                         </div>
                       </td>
@@ -2059,6 +2068,101 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sharedPartidaDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Presupuestos con ${sharedPartidaDialog.partida.nombre}`}
+          onClick={() => setSharedPartidaDialog(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10020,
+            background: 'rgba(15, 23, 42, 0.62)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(560px, 100%)',
+              maxHeight: 'min(78vh, 640px)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 12,
+              boxShadow: 'var(--shadow-lg)',
+              overflow: 'hidden',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', background: 'var(--bg-surface-elevated)' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 900, marginBottom: 5 }}>
+                  {sharedPartidaDialog.budgets.length} presupuestos
+                </div>
+                <h2 style={{ margin: 0, fontSize: '0.98rem', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+                  {sharedPartidaDialog.partida.nombre}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSharedPartidaDialog(null)}
+                aria-label="Cerrar"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--modal-panel-bg)',
+                  color: 'var(--text-primary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+              >
+                <LiteIcon name="x" size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: 12, overflowY: 'auto', display: 'grid', gap: 8 }}>
+              {sharedPartidaDialog.budgets.map((budget) => (
+                <div
+                  key={`${budget.budgetId}:${budget.partidaId}`}
+                  style={{
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--modal-panel-bg)',
+                    borderRadius: 8,
+                    padding: '11px 12px',
+                    display: 'grid',
+                    gap: 5
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                    <strong style={{ overflowWrap: 'anywhere' }}>{budget.budgetName}</strong>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: '0.75rem', flexShrink: 0 }}>
+                      {budget.item}
+                    </span>
+                  </div>
+                  {budget.cliente && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem', overflowWrap: 'anywhere' }}>
+                      {budget.cliente}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>

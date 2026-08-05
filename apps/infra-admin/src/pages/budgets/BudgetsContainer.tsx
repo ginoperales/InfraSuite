@@ -3,7 +3,7 @@ import { Card, Button, Input, Select, Modal } from '@infrasuite/shared';
 import { useAuth } from '@infrasuite/auth';
 import { db } from '@infrasuite/firebase';
 
-import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey, BudgetsProps, PiePresupuestoRow } from './types';
+import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey, BudgetsProps, PiePresupuestoRow, SharedPartidaBudgetRef } from './types';
 import { BudgetsListLite } from './BudgetsListLite';
 import { BudgetsListPro } from './BudgetsListPro';
 import { BudgetEditorLite, LiteIcon, type LiteIconName } from './BudgetEditorLite';
@@ -1341,6 +1341,68 @@ export const Budgets: React.FC<BudgetsProps> = ({
     );
   };
 
+  const normalizePartidaRelationName = (value: unknown) =>
+    normalizeInsumoSearchText(value);
+
+  const getBudgetsForPartidaRelation = () => {
+    const active = activeBudgetRef.current ?? activeBudget;
+    const byId = new Map<string, Budget>();
+    budgets.forEach(budget => byId.set(budget.id, budget));
+    if (active) byId.set(active.id, active);
+    return Array.from(byId.values());
+  };
+
+  const getPartidaSharedBudgets = (partida: Partida): SharedPartidaBudgetRef[] => {
+    if (!partida || partida.esTitulo) return [];
+    const targetName = normalizePartidaRelationName(partida.nombre);
+    if (!targetName) return [];
+
+    return getBudgetsForPartidaRelation()
+      .reduce<SharedPartidaBudgetRef[]>((sharedBudgets, budget) => {
+        const matches = budget.partidas.filter(item =>
+          !item.esTitulo && normalizePartidaRelationName(item.nombre) === targetName
+        );
+        const firstMatch = matches[0];
+        if (!firstMatch) return sharedBudgets;
+
+        sharedBudgets.push({
+          budgetId: budget.id,
+          budgetName: budget.nombre,
+          partidaId: firstMatch.id,
+          item: firstMatch.item,
+          cliente: budget.cliente,
+          matchesInBudget: matches.length
+        });
+        return sharedBudgets;
+      }, []);
+  };
+
+  const getPartidaWithDetachedRelation = (partida: Partida): Partida => ({
+    ...partida,
+    isImported: undefined,
+    importedFrom: undefined,
+    importedFromBudgetId: undefined,
+    importedSourcePartidaId: undefined,
+    importedAt: undefined
+  });
+
+  const confirmPartidaNameRelationBreak = (partida: Partida, nextName: string) => {
+    if (partida.esTitulo) return true;
+    const nameChanged = normalizePartidaRelationName(partida.nombre) !== normalizePartidaRelationName(nextName);
+    if (!nameChanged) return true;
+
+    const sharedBudgets = getPartidaSharedBudgets(partida);
+    if (!partida.isImported && sharedBudgets.length < 2) return true;
+
+    const relatedNames = sharedBudgets.map(budget => budget.budgetName).join('\n- ');
+    const detail = relatedNames ? `\n\nPresupuestos relacionados:\n- ${relatedNames}` : '';
+    return window.confirm(
+      `Esta partida esta relacionada con otros presupuestos por su nombre actual.${detail}\n\n` +
+      'Si cambias el nombre, se quitara el indicador de relacion con esa partida en los demas presupuestos, pero se conservara su analisis de insumos en este presupuesto.\n\n' +
+      'Deseas continuar?'
+    );
+  };
+
   // Partida form states
   const [partidaNombre, setPartidaNombre] = useState('');
   const [partidaUnidad, setPartidaUnidad] = useState('M2');
@@ -1963,13 +2025,32 @@ export const Budgets: React.FC<BudgetsProps> = ({
     setContextMenu(prev => ({ ...prev, visible: false }));
   };
 
-  const handlePartidaCellChange = (pId: string, field: keyof Partida, val: any) => {
-    if (publicReadOnly) return;
+  const handlePartidaCellChange = (pId: string, field: keyof Partida, val: any): boolean | void => {
+    if (publicReadOnly) return false;
     const sourceBudget = activeBudgetRef.current ?? activeBudget;
-    if (!sourceBudget) return;
-    const updatedPartidas = sourceBudget.partidas.map(p => p.id === pId ? { ...p, [field]: val } : p);
+    if (!sourceBudget) return false;
+
+    let shouldDetachRelation = false;
+    let nextValue = val;
+
+    if (field === 'nombre') {
+      const targetPartida = sourceBudget.partidas.find(p => p.id === pId);
+      if (targetPartida) {
+        const nextName = String(val ?? '').toUpperCase();
+        shouldDetachRelation = normalizePartidaRelationName(targetPartida.nombre) !== normalizePartidaRelationName(nextName);
+        if (shouldDetachRelation && !confirmPartidaNameRelationBreak(targetPartida, nextName)) return false;
+        nextValue = nextName;
+      }
+    }
+
+    const updatedPartidas = sourceBudget.partidas.map(p => {
+      if (p.id !== pId) return p;
+      const basePartida = shouldDetachRelation ? getPartidaWithDetachedRelation(p) : p;
+      return { ...basePartida, [field]: nextValue };
+    });
     const updatedBudget = { ...sourceBudget, partidas: updatedPartidas };
     setHistoricalActiveBudget(updatedBudget);
+    return true;
   };
 
   const handleUpdateInsumoField = (pId: string, insId: string, field: keyof Insumo, val: any) => {
@@ -2145,16 +2226,28 @@ export const Budgets: React.FC<BudgetsProps> = ({
       if (!sourceBudget) return;
 
       if (editingPartidaId) {
+        const originalPartida = sourceBudget.partidas.find(p => p.id === editingPartidaId);
+        const nextNombre = partidaNombre.toUpperCase();
+        const nameChanged = originalPartida
+          ? normalizePartidaRelationName(originalPartida.nombre) !== normalizePartidaRelationName(nextNombre)
+          : false;
+
+        if (originalPartida && !confirmPartidaNameRelationBreak(originalPartida, nextNombre)) return;
+
         const updatedBudget = {
           ...sourceBudget,
-          partidas: sourceBudget.partidas.map(p => p.id === editingPartidaId ? {
-            ...p,
-            nombre: partidaNombre.toUpperCase(),
-            unidad: partidaEsTitulo ? '' : partidaUnidad.toUpperCase(),
-            metrado: partidaEsTitulo ? 0 : parseFloat(partidaMetrado) || 1,
-            esTitulo: partidaEsTitulo,
-            rendimiento: partidaEsTitulo ? 1 : parseFloat(partidaRendimiento) || 1,
-          } : p)
+          partidas: sourceBudget.partidas.map(p => {
+            if (p.id !== editingPartidaId) return p;
+            const basePartida = nameChanged ? getPartidaWithDetachedRelation(p) : p;
+            return {
+              ...basePartida,
+              nombre: nextNombre,
+              unidad: partidaEsTitulo ? '' : partidaUnidad.toUpperCase(),
+              metrado: partidaEsTitulo ? 0 : parseFloat(partidaMetrado) || 1,
+              esTitulo: partidaEsTitulo,
+              rendimiento: partidaEsTitulo ? 1 : parseFloat(partidaRendimiento) || 1,
+            };
+          })
         };
         setHistoricalActiveBudget(updatedBudget);
         setSelectedPartidaId(editingPartidaId);
@@ -2644,6 +2737,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
             handlePartidaDragEnd={() => setIsPartidaDragSelecting(false)}
             handlePartidaContextMenu={handlePartidaContextMenu}
             handleEmptyPartidasContextMenu={handleEmptyPartidasContextMenu}
+            getPartidaSharedBudgets={getPartidaSharedBudgets}
             handlePartidaCellChange={handlePartidaCellChange}
             handleUpdateInsumoField={handleUpdateInsumoField}
             handleDeleteInsumo={handleDeleteInsumo}
@@ -2865,6 +2959,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
           getAPUBreakdown={getAPUBreakdown}
           partidaColumnWidths={partidaColumnWidths}
           partidaTableWidth={partidaTableWidth}
+          getPartidaSharedBudgets={getPartidaSharedBudgets}
           handlePartidaCellChange={handlePartidaCellChange}
           updatePartidasList={(updatedPartidas) => {
             const updatedBudget = { ...activeBudget, partidas: updatedPartidas };
