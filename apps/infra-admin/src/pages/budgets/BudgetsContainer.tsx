@@ -2316,9 +2316,6 @@ export const Budgets: React.FC<BudgetsProps> = ({
       metrado: 1,
       esTitulo: false,
       rendimiento: Number(item.rendimiento) || 1,
-      isImported: true,
-      importedFrom: 'Catalogo de partidas',
-      importedAt: Date.now(),
       insumos: (item.insumos || []).map((x: any) => {
         const tipo = normalizeSuggestionTipo(x.tipo);
         return {

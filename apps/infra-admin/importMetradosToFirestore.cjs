@@ -252,8 +252,6 @@ function parsePartidas(rows, header, budgetSlug) {
       metrado: esTitulo ? 0 : parseNumber(row[header.totalCol]),
       esTitulo,
       rendimiento: 1,
-      isImported: true,
-      importedFrom: 'Excel de metrados',
       insumos: []
     };
 
@@ -282,10 +280,7 @@ function parseBudgetFromWorkbook(fileName) {
   const fechaLabel = findValueAfterLabel(rawRows, ['FECHA']) || findValueAfterLabel(rows, ['FECHA']);
   const location = parseLocation(projectName);
   const budgetSlug = slug(BUDGET_ID_BY_FILE[fileName] || projectName);
-  const partidas = parsePartidas(rows, header, budgetSlug).map((partida) => ({
-    ...partida,
-    importedFrom: fileName
-  }));
+  const partidas = parsePartidas(rows, header, budgetSlug);
 
   return {
     id: BUDGET_ID_BY_FILE[fileName] || `b_${budgetSlug}`,
