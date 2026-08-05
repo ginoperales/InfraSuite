@@ -11,7 +11,7 @@ import { BudgetEditorPro } from './BudgetEditorPro';
 import { ShareModal } from './ShareModal';
 import * as Modals from './Modals';
 import { firestore } from '@infrasuite/firebase';
-import { collection, onSnapshot, doc, setDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, getDocs, deleteDoc } from 'firebase/firestore';
 
 // Initial Data representing the screenshot data
 const INITIAL_BUDGETS: Budget[] = [
@@ -603,6 +603,57 @@ const DEFAULT_PIE_ROWS: PiePresupuestoRow[] = [
 const clonePieRows = (rows: PiePresupuestoRow[] = DEFAULT_PIE_ROWS): PiePresupuestoRow[] =>
   rows.map(row => ({ ...row, ocultarEnPdf: Boolean(row.ocultarEnPdf) }));
 
+const BUDGETS_LOCAL_STORAGE_KEY = 'infrasuite_budgets_v3';
+
+const getBudgetFreshness = (budget: Budget) =>
+  Number(budget.updatedAt ?? budget.createdAt ?? 0);
+
+const readBudgetsFromLocalStorage = (): Budget[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const saved = window.localStorage.getItem(BUDGETS_LOCAL_STORAGE_KEY);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed.filter((budget): budget is Budget => Boolean(budget?.id)) : [];
+  } catch {
+    return [];
+  }
+};
+
+const mergeBudgetsByFreshness = (...budgetLists: Budget[][]): Budget[] => {
+  const merged: Budget[] = [];
+  const indexById = new Map<string, number>();
+
+  budgetLists.flat().forEach((budget) => {
+    if (!budget?.id) return;
+
+    const existingIndex = indexById.get(budget.id);
+    if (existingIndex === undefined) {
+      indexById.set(budget.id, merged.length);
+      merged.push(budget);
+      return;
+    }
+
+    const existingBudget = merged[existingIndex];
+    if (getBudgetFreshness(budget) >= getBudgetFreshness(existingBudget)) {
+      merged[existingIndex] = budget;
+    }
+  });
+
+  return merged;
+};
+
+const persistBudgetsLocally = (nextBudgets: Budget[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(BUDGETS_LOCAL_STORAGE_KEY, JSON.stringify(nextBudgets));
+  } catch {}
+};
+
+const persistBudgetLocally = (budget: Budget) => {
+  persistBudgetsLocally(mergeBudgetsByFreshness(readBudgetsFromLocalStorage(), [budget]));
+};
+
 export const Budgets: React.FC<BudgetsProps> = ({
   theme,
   toggleTheme,
@@ -615,7 +666,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
 }) => {
   const { user } = useAuth();
   
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>(() => publicReadOnly ? [] : readBudgetsFromLocalStorage());
+  const budgetsRef = useRef<Budget[]>(budgets);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [budgetToShare, setBudgetToShare] = useState<Budget | null>(null);
   const [activeBudget, setActiveBudget] = useState<Budget | null>(null);
@@ -627,6 +679,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const [historyPast, setHistoryPast] = useState<Budget[]>([]);
   const [historyFuture, setHistoryFuture] = useState<Budget[]>([]);
   const activeBudgetRef = useRef<Budget | null>(null);
+  const recoveredBudgetUploadsRef = useRef<Record<string, number>>({});
 
   // Custom setter for activeBudget that records history
   const setHistoricalActiveBudget = (newBudget: Budget, skipHistory = false): Budget => {
@@ -644,6 +697,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
     }
 
     activeBudgetRef.current = stampedBudget;
+    persistBudgetLocally(stampedBudget);
     setActiveBudget(stampedBudget);
     setBudgets(prev => prev.map(b => b.id === stampedBudget.id ? stampedBudget : b));
     return stampedBudget;
@@ -655,6 +709,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
     setHistoryPast(past => past.slice(0, -1));
     setHistoryFuture(future => [activeBudget, ...future]);
     activeBudgetRef.current = previous;
+    persistBudgetLocally(previous);
     setActiveBudget(previous);
     setBudgets(prev => prev.map(b => b.id === previous.id ? previous : b));
   };
@@ -665,6 +720,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
     setHistoryFuture(future => future.slice(1));
     setHistoryPast(past => [...past, activeBudget]);
     activeBudgetRef.current = next;
+    persistBudgetLocally(next);
     setActiveBudget(next);
     setBudgets(prev => prev.map(b => b.id === next.id ? next : b));
   };
@@ -689,6 +745,33 @@ export const Budgets: React.FC<BudgetsProps> = ({
   useEffect(() => {
     activeBudgetRef.current = activeBudget;
   }, [activeBudget]);
+
+  useEffect(() => {
+    budgetsRef.current = budgets;
+  }, [budgets]);
+
+  useEffect(() => {
+    if (publicReadOnly) return;
+
+    const persistActiveDraft = () => {
+      const currentBudget = activeBudgetRef.current;
+      if (currentBudget) persistBudgetLocally(currentBudget);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') persistActiveDraft();
+    };
+
+    window.addEventListener('beforeunload', persistActiveDraft);
+    window.addEventListener('pagehide', persistActiveDraft);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', persistActiveDraft);
+      window.removeEventListener('pagehide', persistActiveDraft);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [publicReadOnly]);
 
   const isKeyboardInputTarget = (target: EventTarget | null) => {
     if (!(target instanceof HTMLElement)) return false;
@@ -888,56 +971,66 @@ export const Budgets: React.FC<BudgetsProps> = ({
       return () => unsubscribe();
     }
 
-    const budgetsRef = collection(firestore, 'budgets');
+    const budgetsCollectionRef = collection(firestore, 'budgets');
     
     // Subscribe to real-time changes
-    const unsubscribe = onSnapshot(budgetsRef, (snapshot) => {
-      const loaded = snapshot.docs.map(doc => doc.data() as Budget);
+    const unsubscribe = onSnapshot(budgetsCollectionRef, (snapshot) => {
+      const loaded = snapshot.docs.map(snapshotDoc => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as Budget));
+      const localStoredBudgets = readBudgetsFromLocalStorage();
       
       if (loaded.length === 0) {
-        if (user && !publicReadOnly) {
+        const localBudgets = mergeBudgetsByFreshness(localStoredBudgets, budgetsRef.current);
+        if (localBudgets.length > 0 && user && !publicReadOnly) {
+          setBudgets(localBudgets);
+          localBudgets.forEach((localBudget) => {
+            const freshness = getBudgetFreshness(localBudget);
+            if (recoveredBudgetUploadsRef.current[localBudget.id] === freshness) return;
+            recoveredBudgetUploadsRef.current[localBudget.id] = freshness;
+            void saveBudgetToCloud(localBudget);
+          });
+        } else if (user && !publicReadOnly) {
           // Seed initial budgets if empty
+          const now = Date.now();
           INITIAL_BUDGETS.forEach(b => {
             setDoc(doc(firestore, 'budgets', b.id), {
               ...b,
               ownerId: user.uid,
               permissions: {},
-              createdAt: Date.now(),
-              updatedAt: Date.now()
+              createdAt: now,
+              updatedAt: now
             });
           });
         } else {
           setBudgets([]);
         }
       } else {
-        setBudgets(prevBudgets => {
-          const localById = new Map(prevBudgets.map(b => [b.id, b]));
-          const remoteIds = new Set(loaded.map(b => b.id));
-          const merged = loaded.map(remoteBudget => {
-            const localBudget = localById.get(remoteBudget.id);
-            if (localBudget && (localBudget.updatedAt || 0) > (remoteBudget.updatedAt || 0)) {
-              return localBudget;
-            }
-            return remoteBudget;
-          });
+        const mergedBudgets = mergeBudgetsByFreshness(loaded, localStoredBudgets, budgetsRef.current);
+        const remoteById = new Map(loaded.map(remoteBudget => [remoteBudget.id, remoteBudget]));
 
-          prevBudgets.forEach(localBudget => {
-            if (!remoteIds.has(localBudget.id)) merged.push(localBudget);
-          });
+        setBudgets(mergedBudgets);
 
-          return merged;
+        mergedBudgets.forEach((mergedBudget) => {
+          const remoteBudget = remoteById.get(mergedBudget.id);
+          const mergedFreshness = getBudgetFreshness(mergedBudget);
+          const remoteFreshness = remoteBudget ? getBudgetFreshness(remoteBudget) : 0;
+          if (mergedFreshness <= remoteFreshness) return;
+
+          if (recoveredBudgetUploadsRef.current[mergedBudget.id] === mergedFreshness) return;
+          recoveredBudgetUploadsRef.current[mergedBudget.id] = mergedFreshness;
+          void saveBudgetToCloud(mergedBudget);
         });
         
         // Update activeBudget safely
         setActiveBudget(prev => {
           if (!prev) return prev;
-          const updatedActive = loaded.find(b => b.id === prev.id);
+          const updatedActive = mergedBudgets.find(b => b.id === prev.id);
           if (updatedActive) {
-            const remoteTime = updatedActive.updatedAt || 0;
-            const localTime = prev.updatedAt || 0;
+            const remoteTime = getBudgetFreshness(updatedActive);
+            const localTime = getBudgetFreshness(prev);
             
             if (remoteTime >= localTime) {
               if (JSON.stringify(updatedActive) !== JSON.stringify(prev)) {
+                activeBudgetRef.current = updatedActive;
                 return updatedActive;
               }
               return prev;
@@ -951,9 +1044,9 @@ export const Budgets: React.FC<BudgetsProps> = ({
     }, (error) => {
       console.error("Error fetching budgets from Firestore:", error);
       // Fallback to localStorage logic if Firestore fails completely (e.g. no IndexedDB)
-      const saved = localStorage.getItem('infrasuite_budgets_v3');
-      if (saved) {
-        try { setBudgets(JSON.parse(saved) as Budget[]); } catch {}
+      const localBudgets = readBudgetsFromLocalStorage();
+      if (localBudgets.length > 0) {
+        setBudgets(localBudgets);
       } else {
         setBudgets(INITIAL_BUDGETS);
       }
@@ -971,8 +1064,14 @@ export const Budgets: React.FC<BudgetsProps> = ({
         ...updatedBudget,
         updatedAt: timestamp
       };
+      persistBudgetLocally(budgetData);
       // Optimistic update of local budgets array to have exact same timestamp
-      setBudgets(prev => prev.map(b => b.id === budgetData.id ? budgetData : b));
+      setBudgets(prev => {
+        const exists = prev.some(b => b.id === budgetData.id);
+        return exists
+          ? prev.map(b => b.id === budgetData.id ? budgetData : b)
+          : [budgetData, ...prev];
+      });
       setActiveBudget(prev => {
         if (prev?.id !== budgetData.id) return prev;
         activeBudgetRef.current = budgetData;
@@ -1000,7 +1099,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
   // Keep a local copy in localStorage as extreme fallback
   useEffect(() => {
     if (budgets.length > 0) {
-      localStorage.setItem('infrasuite_budgets_v3', JSON.stringify(budgets));
+      persistBudgetsLocally(budgets);
     }
   }, [budgets]);
 
@@ -1843,6 +1942,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const handleCreateBudget = (e: React.FormEvent) => {
     e.preventDefault();
     if (publicReadOnly) return;
+    const now = Date.now();
     const newB: Budget = {
       id: 'b_' + Math.random().toString(36).substring(2, 9),
       nombre: nombre.toUpperCase(),
@@ -1858,11 +1958,17 @@ export const Budgets: React.FC<BudgetsProps> = ({
       moneda: 'SOLES',
       subPresupuestos: ['SUB PRESUPUESTO 1'],
       pieRows: clonePieRows(),
-      partidas: []
+      partidas: [],
+      ownerId: user?.uid,
+      permissions: {},
+      createdAt: now,
+      updatedAt: now
     };
-    setBudgets([newB, ...budgets]);
+    persistBudgetLocally(newB);
+    setBudgets(prev => [newB, ...prev]);
     setIsCreateOpen(false);
     handleOpenBudgetEditor(newB);
+    void saveBudgetToCloud(newB);
   };
 
   const startEditBudget = (b: Budget) => {
@@ -1887,31 +1993,50 @@ export const Budgets: React.FC<BudgetsProps> = ({
     e.preventDefault();
     if (publicReadOnly) return;
     if (!activeBudget) return;
-    const updated = budgets.map(b => b.id === activeBudget.id ? { ...b, nombre, cliente, fechaBase, grupo } : b);
+    const updatedBudget = { ...activeBudget, nombre, cliente, fechaBase, grupo, updatedAt: Date.now() };
+    const updated = budgets.map(b => b.id === activeBudget.id ? updatedBudget : b);
+    persistBudgetLocally(updatedBudget);
     setBudgets(updated);
+    setActiveBudget(updatedBudget);
     setIsEditOpen(false);
+    void saveBudgetToCloud(updatedBudget);
   };
 
   const handleDuplicateBudget = (id: string) => {
     if (publicReadOnly) return;
     const target = budgets.find(b => b.id === id);
     if (!target) return;
+    const now = Date.now();
     const copy: Budget = {
       ...target,
       id: 'b_' + Math.random().toString(36).substring(2, 9),
       nombre: `${target.nombre} (Copia)`,
-      categoria: 'Recientes'
+      categoria: 'Recientes',
+      ownerId: user?.uid ?? target.ownerId,
+      permissions: {},
+      createdAt: now,
+      updatedAt: now
     };
-    setBudgets([copy, ...budgets]);
+    persistBudgetLocally(copy);
+    setBudgets(prev => [copy, ...prev]);
     setMenuOpenId(null);
+    void saveBudgetToCloud(copy);
     alert('Presupuesto duplicado con éxito.');
   };
 
   const handleDeleteBudget = (id: string) => {
     if (publicReadOnly) return;
     if (!confirm('¿Está seguro de que desea eliminar este presupuesto?')) return;
-    setBudgets(budgets.filter(b => b.id !== id));
+    const nextBudgets = budgets.filter(b => b.id !== id);
+    persistBudgetsLocally(nextBudgets);
+    setBudgets(nextBudgets);
+    if (activeBudget?.id === id) {
+      activeBudgetRef.current = null;
+      setActiveBudget(null);
+      setViewState('list');
+    }
     setMenuOpenId(null);
+    void deleteDoc(doc(firestore, 'budgets', id));
   };
 
   const handlePartidaCellClick = (p: Partida, e?: React.MouseEvent) => {
