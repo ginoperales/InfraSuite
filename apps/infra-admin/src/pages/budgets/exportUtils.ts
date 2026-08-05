@@ -1117,7 +1117,8 @@ function downloadExcelWorkbook(XLSX: any, wb: any, fileName: string) {
 }
 
 async function excelPresupuesto(budget: Budget, option: ExportOption = 'presupuesto') {
-  const XLSX = await import('xlsx');
+  const XLSXModule: any = await import('xlsx-js-style');
+  const XLSX = XLSXModule.default || XLSXModule;
   const wb = XLSX.utils.book_new();
   const budgetCode = getBudgetCode(budget);
   const subPresupuestoCode = getSubPresupuestoCode(budget);
@@ -1145,30 +1146,136 @@ async function excelPresupuesto(budget: Budget, option: ExportOption = 'presupue
     }
   };
 
+  const BLACK = { rgb: '000000' };
+  const THIN = { style: 'thin', color: BLACK };
+  const MEDIUM = { style: 'medium', color: BLACK };
+  const DOUBLE = { style: 'double', color: BLACK };
+
+  const mergeStyle = (base: any, extra: any) => ({
+    ...base,
+    ...extra,
+    font: { ...(base.font || {}), ...(extra.font || {}) },
+    alignment: { ...(base.alignment || {}), ...(extra.alignment || {}) },
+    border: { ...(base.border || {}), ...(extra.border || {}) },
+  });
+
+  const ensureCell = (ws: any, r: number, c: number) => {
+    const cellRef = XLSX.utils.encode_cell({ r, c });
+    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+    return ws[cellRef];
+  };
+
+  const setCellStyle = (ws: any, r: number, c: number, style: any, ensure = false) => {
+    const cellRef = XLSX.utils.encode_cell({ r, c });
+    const cell = ensure ? ensureCell(ws, r, c) : ws[cellRef];
+    if (!cell) return;
+    cell.s = mergeStyle(cell.s || {}, style);
+  };
+
+  const applyRowStyle = (ws: any, r: number, colCount: number, style: any, ensure = false) => {
+    for (let c = 0; c < colCount; c++) setCellStyle(ws, r, c, style, ensure);
+  };
+
+  const isUpperGroupRow = (row: any[]) => {
+    const first = String(row[0] || '');
+    const second = String(row[1] || '');
+    return first === '' && second && second === second.toUpperCase();
+  };
+
+  const isBudgetTitleRow = (row: any[]) => {
+    const item = String(row[0] || '');
+    return /^\d+(?:\.\d+)*$/.test(item) && row[1] && !row[2] && row[3] === '' && row[4] === '';
+  };
+
+  const isSubtotalOnlyRow = (row: any[], lastCol: number) => {
+    const meaningful = row
+      .map((cell, idx) => ({ cell, idx }))
+      .filter(({ cell }) => cell !== '' && cell !== null && cell !== undefined);
+    return meaningful.length === 1 && meaningful[0].idx === lastCol && typeof meaningful[0].cell === 'number';
+  };
+
   const styleRows = (ws: any, rows: any[][], colCount: number, tableHeaderRows: number[]) => {
+    const lastCol = colCount - 1;
+    const baseFont = { name: 'Arial', sz: 10 };
+    const baseStyle = {
+      font: baseFont,
+      alignment: { vertical: 'center', wrapText: false }
+    };
+    const titleStyle = {
+      font: { ...baseFont, bold: true, sz: 11 },
+      alignment: { horizontal: 'center', vertical: 'center' },
+    };
+    const boldStyle = { font: { ...baseFont, bold: true } };
+    const headerStyle = {
+      font: { ...baseFont, bold: true },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: { top: THIN, bottom: THIN, left: THIN, right: THIN }
+    };
+    const rightStyle = { alignment: { horizontal: 'right', vertical: 'center' } };
+    const centerStyle = { alignment: { horizontal: 'center', vertical: 'center' } };
+
     for (let r = 0; r < rows.length; r++) {
-      const first = String(rows[r][0] || '');
-      const second = String(rows[r][1] || '');
-      const isMeta = r < 7;
+      const row = rows[r] || [];
       const isTableHeader = tableHeaderRows.includes(r);
-      const isGroup = first === '' && second && second === second.toUpperCase();
-      const hasTotal = rows[r].some(cell => String(cell).toUpperCase().includes('TOTAL'));
       for (let c = 0; c < colCount; c++) {
         const cellRef = XLSX.utils.encode_cell({ r, c });
         const cell = ws[cellRef];
         if (!cell) continue;
-        cell.s = {
-          font: { name: 'Arial', sz: r < 8 ? 8 : 7, bold: isMeta || isTableHeader || isGroup || hasTotal },
+        cell.s = mergeStyle(baseStyle, {
           alignment: {
-            horizontal: r === 0 ? 'center' : c >= 3 ? 'right' : 'left',
+            horizontal: c >= Math.max(3, colCount - 3) ? 'right' : 'left',
             vertical: 'center',
             wrapText: c === 1 || c === 2
-          },
-          border: isTableHeader ? {
-            top: { style: 'thin', color: { rgb: '000000' } },
-            bottom: { style: 'thin', color: { rgb: '000000' } }
-          } : undefined
-        };
+          }
+        });
+      }
+
+      if (r === 0) applyRowStyle(ws, r, colCount, titleStyle, true);
+      if (r >= 2 && r <= 5) {
+        setCellStyle(ws, r, 0, boldStyle);
+        setCellStyle(ws, r, 4, boldStyle);
+        setCellStyle(ws, r, 5, rightStyle);
+      }
+      if (isTableHeader) applyRowStyle(ws, r, colCount, headerStyle, true);
+      if (isUpperGroupRow(row)) applyRowStyle(ws, r, colCount, boldStyle);
+      if (isBudgetTitleRow(row)) applyRowStyle(ws, r, colCount, boldStyle);
+      if (isSubtotalOnlyRow(row, lastCol)) setCellStyle(ws, r, lastCol, boldStyle);
+
+      const rowText = row.map(cell => String(cell || '').toUpperCase()).join(' ');
+      if (row[0] === 'Partida' || row[0] === 'Rendimiento') {
+        setCellStyle(ws, r, 0, boldStyle);
+        setCellStyle(ws, r, 1, row[0] === 'Partida' ? boldStyle : {});
+        setCellStyle(ws, r, 3, boldStyle);
+        setCellStyle(ws, r, 5, boldStyle);
+        setCellStyle(ws, r, 6, boldStyle);
+      }
+      if (rowText.includes('COSTO DIRECTO') || rowText.includes('GASTOS GENERALES') || rowText.includes('UTILIDAD') || rowText.includes('TOTAL') || rowText.includes('SUBTOTAL') || rowText.includes('IGV')) {
+        applyRowStyle(ws, r, colCount, boldStyle);
+      }
+      if (rowText.includes('SUBTOTAL')) {
+        setCellStyle(ws, r, lastCol, { border: { top: THIN } }, true);
+      }
+      if (rowText.includes('IGV')) {
+        setCellStyle(ws, r, lastCol, { border: { bottom: MEDIUM } }, true);
+      }
+      if (rowText.includes('TOTAL DEL PRESUPUESTO') || row[3] === 'Total') {
+        setCellStyle(ws, r, lastCol, { border: { top: THIN, bottom: DOUBLE } }, true);
+      }
+      if (rowText.startsWith(' SON:') || rowText.includes('SON:')) {
+        applyRowStyle(ws, r, colCount, boldStyle);
+      }
+      if (colCount >= 6) {
+        setCellStyle(ws, r, 2, centerStyle);
+        setCellStyle(ws, r, 3, rightStyle);
+        setCellStyle(ws, r, 4, rightStyle);
+        setCellStyle(ws, r, 5, rightStyle);
+      }
+      if (colCount === 7) {
+        setCellStyle(ws, r, 2, centerStyle);
+        setCellStyle(ws, r, 3, rightStyle);
+        setCellStyle(ws, r, 4, rightStyle);
+        setCellStyle(ws, r, 5, rightStyle);
+        setCellStyle(ws, r, 6, rightStyle);
       }
     }
   };
