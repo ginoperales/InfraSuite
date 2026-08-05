@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@infrasuite/auth';
 import { Button, Card, Table, Input, Select, Modal } from '@infrasuite/shared';
-import { db } from '@infrasuite/firebase';
+import { db, firestore } from '@infrasuite/firebase';
+import { doc as firestoreDoc, onSnapshot } from 'firebase/firestore';
 import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { syncModuleData } from '@infrasuite/sync-service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCompanyModules } from '@infrasuite/license-service';
+import type { Budget, Insumo, Partida } from './pages/budgets/types';
 
 // Subpages
 import { Dashboard } from './pages/Dashboard';
@@ -22,11 +24,197 @@ import { SharedItems } from './pages/SharedItems';
 import { Contacts } from './pages/Contacts';
 import { RecycleBin } from './pages/RecycleBin';
 
+const getSharedInsumoCantidad = (ins: Insumo, rend: number) => {
+  const explicitCantidad = typeof ins.cantidad === 'number' && Number.isFinite(ins.cantidad) ? ins.cantidad : null;
+  if (ins.unidad === '%MO') return explicitCantidad ?? ins.cuadrilla;
+  if (ins.tipo === 'MO') return rend > 0 ? (ins.cuadrilla * 8) / rend : 0;
+  if (ins.tipo === 'EQ') return explicitCantidad ?? (rend > 0 ? (ins.cuadrilla * 8) / rend : 0);
+  return explicitCantidad ?? ins.cuadrilla;
+};
+
+const isSharedManualTools = (ins: Pick<Insumo, 'nombre' | 'unidad'>) => {
+  const unidad = (ins.unidad || '').trim().toUpperCase();
+  const nombre = (ins.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  return unidad === '%MO' || nombre.includes('HERRAMIENTAS MANUALES');
+};
+
+const getSharedMoSubtotal = (partida: Partida) =>
+  partida.insumos.reduce((sum, ins) => {
+    if (ins.tipo !== 'MO' || isSharedManualTools(ins)) return sum;
+    return sum + getSharedInsumoCantidad(ins, partida.rendimiento) * ins.pu;
+  }, 0);
+
+const getSharedInsumoParcial = (ins: Insumo, partida: Partida) => {
+  const unitPrice = isSharedManualTools(ins) ? getSharedMoSubtotal(partida) : ins.pu;
+  return isSharedManualTools(ins)
+    ? (unitPrice * getSharedInsumoCantidad(ins, partida.rendimiento)) / 100
+    : getSharedInsumoCantidad(ins, partida.rendimiento) * unitPrice;
+};
+
+const getSharedPartidaCU = (partida: Partida) =>
+  partida.esTitulo ? 0 : partida.insumos.reduce((sum, ins) => sum + getSharedInsumoParcial(ins, partida), 0);
+
+const getSharedBudgetCD = (budget: Budget | null) =>
+  budget?.partidas.filter(p => !p.esTitulo).reduce((sum, p) => sum + p.metrado * getSharedPartidaCU(p), 0) || 0;
+
+const PublicBudgetAccess: React.FC<{
+  budgetId: string;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  onAccess: () => void;
+}> = ({ budgetId, theme, toggleTheme, onAccess }) => {
+  const [budget, setBudget] = useState<Budget | null>(null);
+  const [status, setStatus] = useState<'loading' | 'allowed' | 'restricted' | 'not_found'>('loading');
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      firestoreDoc(firestore, 'budgets', budgetId),
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setBudget(null);
+          setStatus('not_found');
+          return;
+        }
+
+        const loaded = { id: snapshot.id, ...snapshot.data() } as Budget;
+        setBudget(loaded);
+        setStatus(loaded.linkAccess === 'ANYONE_WITH_LINK' ? 'allowed' : 'restricted');
+      },
+      () => {
+        setBudget(null);
+        setStatus('restricted');
+      }
+    );
+
+    return () => unsubscribe();
+  }, [budgetId]);
+
+  const cd = getSharedBudgetCD(budget);
+  const partidas = budget?.partidas.filter(p => !p.esTitulo).length || 0;
+  const titulos = budget?.partidas.filter(p => p.esTitulo).length || 0;
+  const roleLabel = budget?.linkRole === 'EDITOR' ? 'Editor' : budget?.linkRole === 'COMMENTER' ? 'Comentador' : 'Lector';
+  const canAccess = status === 'allowed' || status === 'restricted';
+
+  return (
+    <motion.div
+      key="public-budget-summary"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      style={{ width: '100%' }}
+    >
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--bg-main)',
+          color: 'var(--text-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 'clamp(16px, 4vw, 42px)'
+        }}
+      >
+        <style>{`
+          .public-budget-card {
+            width: min(880px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+            gap: 18px;
+          }
+
+          @media (max-width: 760px) {
+            .public-budget-card {
+              grid-template-columns: 1fr;
+            }
+
+            .public-budget-actions {
+              flex-direction: column;
+              align-items: stretch !important;
+            }
+          }
+        `}</style>
+
+        <div className="public-budget-card">
+          <section style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 'clamp(22px, 4vw, 34px)', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+              <span style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(37, 99, 235, 0.12)', border: '1px solid rgba(37, 99, 235, 0.28)', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>IC</span>
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Presupuesto compartido</div>
+                <h1 style={{ margin: '3px 0 0', fontFamily: 'var(--font-display)', fontSize: 'clamp(1.25rem, 3vw, 2rem)', lineHeight: 1.2 }}>
+                  {budget?.nombre || (status === 'loading' ? 'Cargando presupuesto...' : 'Presupuesto no disponible')}
+                </h1>
+              </div>
+            </div>
+
+            <p style={{ margin: '0 0 22px', color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: 680 }}>
+              {status === 'allowed'
+                ? 'Revisa el resumen antes de entrar. Para abrir el presupuesto se requiere iniciar sesion con Google.'
+                : status === 'loading'
+                  ? 'Estamos verificando el enlace compartido.'
+                  : status === 'not_found'
+                    ? 'No encontramos un presupuesto asociado a este enlace.'
+                    : 'Este enlace esta restringido. Inicia sesion con Google para verificar si tienes acceso.'}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+              {[
+                ['Cliente', budget?.cliente || '-'],
+                ['Fecha base', budget?.fechaBase || '-'],
+                ['Grupo', budget?.grupo || '-'],
+                ['Permiso enlace', status === 'allowed' ? roleLabel : 'Restringido']
+              ].map(([label, value]) => (
+                <div key={label} style={{ border: '1px solid var(--border-color)', background: 'var(--modal-panel-bg)', borderRadius: 10, padding: '12px 13px' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 6 }}>{label}</div>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: '0.92rem', overflowWrap: 'anywhere' }}>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <aside style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 'clamp(20px, 3vw, 28px)', boxShadow: 'var(--shadow-lg)', display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'space-between' }}>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Resumen</div>
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Partidas</span>
+                  <strong>{partidas}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Titulos</span>
+                  <strong>{titulos}</strong>
+                </div>
+                <div style={{ height: 1, background: 'var(--border-color)', margin: '4px 0' }} />
+                <div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: 4 }}>Costo directo</div>
+                  <strong style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-display)', fontSize: '1.45rem' }}>
+                    S/ {cd.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="public-budget-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <Button type="button" onClick={onAccess} disabled={!canAccess} style={{ flex: 1, minHeight: 44 }}>
+                Acceder al presupuesto
+              </Button>
+              <Button type="button" variant="secondary" onClick={toggleTheme} style={{ minHeight: 44 }}>
+                {theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+              </Button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // App Inner Layout
 const AppContent: React.FC = () => {
   const { user, login, loginWithGoogle, logout, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [installedModules, setInstalledModules] = useState<string[]>([]);
   const [openBudgetId, setOpenBudgetId] = useState<string | null>(null);
   
@@ -54,6 +242,10 @@ const AppContent: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('Iniciando carga segura...');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const publicBudgetId = (() => {
+    const match = window.location.pathname.match(/^\/budgets\/([^/?#]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  })();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -87,13 +279,16 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'SUPER_ADMIN') {
+      if (publicBudgetId) {
+        setOpenBudgetId(publicBudgetId);
+        setActiveTab('budgets_lite');
+      } else if (user.role === 'SUPER_ADMIN') {
         setActiveTab('dashboard');
       } else {
         setActiveTab('home');
       }
     }
-  }, [user]);
+  }, [user, publicBudgetId]);
 
   // Turn off the success transition overlay after a set duration
   useEffect(() => {
@@ -409,6 +604,18 @@ const AppContent: React.FC = () => {
             </div>
           </motion.div>
         </motion.div>
+      ) : publicBudgetId && !user && !showLogin ? (
+        <PublicBudgetAccess
+          budgetId={publicBudgetId}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onAccess={() => {
+            setOpenBudgetId(publicBudgetId);
+            setActiveTab('budgets_lite');
+            setShowLogin(true);
+            void handleGoogleLoginClick();
+          }}
+        />
       ) : !user ? (
         !showLogin ? (
           <motion.div 
@@ -530,7 +737,7 @@ const AppContent: React.FC = () => {
                     alignItems: 'center',
                     gap: '14px',
                     padding: '14px',
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--modal-panel-bg)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 'var(--radius-md)',
                     color: 'var(--text-primary)',
@@ -556,7 +763,7 @@ const AppContent: React.FC = () => {
                     alignItems: 'center',
                     gap: '14px',
                     padding: '14px',
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--modal-panel-bg)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 'var(--radius-md)',
                     color: 'var(--text-primary)',
@@ -582,7 +789,7 @@ const AppContent: React.FC = () => {
                     alignItems: 'center',
                     gap: '14px',
                     padding: '14px',
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--modal-panel-bg)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 'var(--radius-md)',
                     color: 'var(--text-primary)',
@@ -593,7 +800,7 @@ const AppContent: React.FC = () => {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <div className="avatar" style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.1)', color: 'white' }}>CO</div>
+                  <div className="avatar" style={{ width: '32px', height: '32px', background: 'var(--modal-panel-hover-bg)', color: 'var(--text-primary)' }}>CO</div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Colaborador Obra</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>colaborador.obra@gmail.com</div>
@@ -631,8 +838,42 @@ const AppContent: React.FC = () => {
           transition={{ duration: 0.45, ease: 'easeOut' }}
           style={{ width: '100%' }}
         >
+          <button
+            type="button"
+            className="mobile-sidebar-toggle"
+            onClick={() => {
+              setIsSidebarCollapsed(false);
+              setIsMobileSidebarOpen(true);
+            }}
+            aria-label="Abrir menu de InfraSuite"
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+            </svg>
+            <span>Menu</span>
+          </button>
+
+          {isMobileSidebarOpen && (
+            <button
+              type="button"
+              className="sidebar-mobile-backdrop"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              aria-label="Cerrar menu de InfraSuite"
+            />
+          )}
+
           {/* Sidebar navigation */}
-          <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          <aside
+            className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileSidebarOpen ? 'mobile-open' : ''}`}
+            onClickCapture={(event) => {
+              const target = event.target as HTMLElement;
+              if (target.closest('button.menu-item')) {
+                setIsMobileSidebarOpen(false);
+              }
+            }}
+          >
             <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="logo-container">
                 <div className="logo-icon">I</div>
@@ -640,6 +881,7 @@ const AppContent: React.FC = () => {
               </div>
               <button 
                 type="button"
+                className="sidebar-collapse-button"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 style={{
                   background: 'none',
@@ -673,6 +915,17 @@ const AppContent: React.FC = () => {
                     <polyline points="15 18 9 12 15 6" />
                   </svg>
                 )}
+              </button>
+              <button
+                type="button"
+                className="sidebar-mobile-close"
+                onClick={() => setIsMobileSidebarOpen(false)}
+                aria-label="Cerrar menu"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 

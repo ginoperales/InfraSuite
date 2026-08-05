@@ -256,13 +256,18 @@ interface BudgetEditorProProps {
   partidaTableWidth: number;
 
   handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => void;
-  handleUpdateInsumoField: (insId: string, field: keyof Insumo, val: any) => void;
+  handleUpdateInsumoField: (pId: string, insId: string, field: keyof Insumo, val: any) => void;
   handleDeleteInsumo: (insId: string) => void;
   setSelectedSpecPartidaId: (id: string | null) => void;
   setIsAddInsumoOpen: (v: boolean) => void;
+  getInsumoBaseCantidad: (ins: Insumo, rend: number) => number;
   getInsumoCantidad: (ins: Insumo, rend: number) => number;
-  getInsumoParcial: (ins: Insumo, rend: number) => number;
+  getInsumoParcial: (ins: Insumo, rend: number, partida?: Partida) => number;
   updatePartidasList?: (partidas: Partida[]) => void;
+  handleUndo?: () => void;
+  handleRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 interface FloatingWindowProps {
@@ -457,9 +462,14 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   handleDeleteInsumo,
   setSelectedSpecPartidaId,
   setIsAddInsumoOpen,
+  getInsumoBaseCantidad,
   getInsumoCantidad,
   getInsumoParcial,
-  updatePartidasList
+  updatePartidasList,
+  handleUndo,
+  handleRedo,
+  canUndo,
+  canRedo
 }) => {
   const cd = getBudgetCD(activeBudget);
   const gg = cd * 0.0624; // matches screenshot 6.24%
@@ -469,6 +479,20 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
   const cdTotal = selectedPartida ? getPartidaCU(selectedPartida) : 0;
   const specKey = selectedPartida ? selectedPartida.id : '';
   const specValue = specKey ? (specifications[specKey] || `${selectedPartida?.nombre || ''} (unidad de medida: ${selectedPartida?.unidad || 'm²'})\n\nDESCRIPCIÓN - Procesando...`) : '';
+
+  const isManualToolsInsumo = (ins: Pick<Insumo, 'nombre' | 'unidad'>) => {
+    const unidad = (ins.unidad || '').trim().toUpperCase();
+    const nombre = (ins.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    return unidad === '%MO' || nombre.includes('HERRAMIENTAS MANUALES');
+  };
+  const getManualToolsUnitPrice = (partida: Partida) => {
+    return partida.insumos.reduce((sum, item) => {
+      if (item.tipo !== 'MO' || isManualToolsInsumo(item)) return sum;
+      return sum + getInsumoCantidad(item, partida.rendimiento) * item.pu;
+    }, 0);
+  };
+  const getDisplayedUnitPrice = (ins: Insumo, partida: Partida) =>
+    isManualToolsInsumo(ins) ? getManualToolsUnitPrice(partida) : ins.pu;
 
   const [activeBottomTab, setActiveBottomTab] = useState<'apu' | 'specs' | 'bim' | 'metrado' | 'xls' | 'consol'>('specs');
   const [floatingWindows, setFloatingWindows] = useState<Record<string, { isOpen: boolean; isMinimized: boolean; x: number; y: number }>>({
@@ -608,7 +632,14 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                               <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.74rem' }}>{subtotal.toFixed(2)}</td>
                             </tr>
                             {itemsOfType.map(ins => {
-                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+                              const isManualTools = isManualToolsInsumo(ins);
+                              const displayedUnitPrice = getDisplayedUnitPrice(ins, selectedPartida);
+                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento, selectedPartida);
+                              const baseQty = getInsumoBaseCantidad(ins, selectedPartida.rendimiento);
+                              const adjustedQty = getInsumoCantidad(ins, selectedPartida.rendimiento);
+                              const desperdicioValue = ins.tipo === 'MT' ? (ins.desperdicio ?? 0) : 0;
+                              const editableAmountField: keyof Insumo = (ins.tipo === 'MO' || (ins.tipo === 'EQ' && ins.unidad !== '%MO')) ? 'cuadrilla' : 'cantidad';
+                              const editableAmountValue = editableAmountField === 'cuadrilla' ? ins.cuadrilla : baseQty;
                               return (
                                 <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                   <td style={{ padding: '6px 12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -616,11 +647,15 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                   </td>
                                   <td style={{ padding: '6px 12px', color: 'var(--text-muted)' }}>{ins.unidad}</td>
                                   <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                    <input type="number" step="0.0001" value={ins.cuadrilla} onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    <input type="number" step="0.0001" value={editableAmountValue} onChange={(e) => handleUpdateInsumoField(selectedPartida.id, ins.id, editableAmountField, parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
                                   </td>
-                                  <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>0%</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                                    {ins.tipo === 'MT' ? (
+                                      <input type="number" step="0.01" value={desperdicioValue} onChange={(e) => handleUpdateInsumoField(selectedPartida.id, ins.id, 'desperdicio', parseFloat(e.target.value) || 0)} title={`Cantidad ajustada: ${adjustedQty.toFixed(4)}`} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    ) : '-'}
+                                  </td>
                                   <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                    <input type="number" step="0.01" value={ins.pu} onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    <input type="number" step="0.01" value={displayedUnitPrice} readOnly={isManualTools} onChange={(e) => { if (!isManualTools) handleUpdateInsumoField(selectedPartida.id, ins.id, 'pu', parseFloat(e.target.value) || 0); }} style={{ width: '100%', background: isManualTools ? 'rgba(148, 163, 184, 0.08)' : 'transparent', border: 'none', color: isManualTools ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'right', outline: 'none', cursor: isManualTools ? 'default' : 'text', borderRadius: isManualTools ? 4 : 0 }} title={isManualTools ? 'Calculado automaticamente desde el subtotal de Mano de Obra' : undefined} />
                                   </td>
                                   <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{insParcial.toFixed(2)}</td>
                                 </tr>
@@ -740,15 +775,18 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
       const groupName = type === 'MO' ? 'MANO DE OBRA' : type === 'MT' ? 'MATERIALES' : type === 'EQ' ? 'EQUIPO' : type === 'SC' ? 'SUB-CONTRATOS' : 'SUB-PARTIDAS';
 
       const rowsHtmlStr = itemsOfType.map(ins => {
-        const insQty = getInsumoCantidad(ins, selectedPartida.rendimiento);
-        const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+        const baseQty = getInsumoBaseCantidad(ins, selectedPartida.rendimiento);
+        const displayedUnitPrice = getDisplayedUnitPrice(ins, selectedPartida);
+        const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento, selectedPartida);
+        const desperdicioValue = ins.tipo === 'MT' ? (ins.desperdicio ?? 0) : 0;
+        const amountValue = (ins.tipo === 'MO' || (ins.tipo === 'EQ' && ins.unidad !== '%MO')) ? ins.cuadrilla : baseQty;
         return `
           <tr>
             <td style="padding: 8px 12px; font-weight: 600;">${ins.nombre}</td>
             <td style="padding: 8px 12px; color: #64748b;">${ins.unidad}</td>
-            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${ins.cuadrilla.toFixed(4)}</td>
-            <td style="padding: 8px 12px; text-align: right; color: #64748b;">0%</td>
-            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${ins.pu.toFixed(2)}</td>
+            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${amountValue.toFixed(4)}</td>
+            <td style="padding: 8px 12px; text-align: right; color: #64748b;">${ins.tipo === 'MT' ? `${desperdicioValue.toFixed(2)}%` : '-'}</td>
+            <td style="padding: 8px 12px; text-align: right; font-family: monospace;">${displayedUnitPrice.toFixed(2)}</td>
             <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: #0284c7; font-family: monospace;">${insParcial.toFixed(2)}</td>
           </tr>
         `;
@@ -2021,7 +2059,14 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                               <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.74rem' }}>{subtotal.toFixed(2)}</td>
                             </tr>
                             {itemsOfType.map(ins => {
-                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento);
+                              const isManualTools = isManualToolsInsumo(ins);
+                              const displayedUnitPrice = getDisplayedUnitPrice(ins, selectedPartida);
+                              const insParcial = getInsumoParcial(ins, selectedPartida.rendimiento, selectedPartida);
+                              const baseQty = getInsumoBaseCantidad(ins, selectedPartida.rendimiento);
+                              const adjustedQty = getInsumoCantidad(ins, selectedPartida.rendimiento);
+                              const desperdicioValue = ins.tipo === 'MT' ? (ins.desperdicio ?? 0) : 0;
+                              const editableAmountField: keyof Insumo = (ins.tipo === 'MO' || (ins.tipo === 'EQ' && ins.unidad !== '%MO')) ? 'cuadrilla' : 'cantidad';
+                              const editableAmountValue = editableAmountField === 'cuadrilla' ? ins.cuadrilla : baseQty;
                               return (
                                 <tr key={ins.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                   <td style={{ padding: '6px 12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -2030,11 +2075,15 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                                   </td>
                                   <td style={{ padding: '6px 12px', color: 'var(--text-muted)' }}>{ins.unidad}</td>
                                   <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                    <input type="number" step="0.0001" value={ins.cuadrilla} onChange={(e) => handleUpdateInsumoField(ins.id, 'cuadrilla', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    <input type="number" step="0.0001" value={editableAmountValue} onChange={(e) => handleUpdateInsumoField(selectedPartida.id, ins.id, editableAmountField, parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
                                   </td>
-                                  <td style={{ padding: '6px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>0%</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right', color: 'var(--text-secondary)' }}>
+                                    {ins.tipo === 'MT' ? (
+                                      <input type="number" step="0.01" value={desperdicioValue} onChange={(e) => handleUpdateInsumoField(selectedPartida.id, ins.id, 'desperdicio', parseFloat(e.target.value) || 0)} title={`Cantidad ajustada: ${adjustedQty.toFixed(4)}`} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    ) : '-'}
+                                  </td>
                                   <td style={{ padding: '4px 8px', textAlign: 'right' }}>
-                                    <input type="number" step="0.01" value={ins.pu} onChange={(e) => handleUpdateInsumoField(ins.id, 'pu', parseFloat(e.target.value) || 0)} style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right', outline: 'none' }} />
+                                    <input type="number" step="0.01" value={displayedUnitPrice} readOnly={isManualTools} onChange={(e) => { if (!isManualTools) handleUpdateInsumoField(selectedPartida.id, ins.id, 'pu', parseFloat(e.target.value) || 0); }} style={{ width: '100%', background: isManualTools ? 'rgba(148, 163, 184, 0.08)' : 'transparent', border: 'none', color: isManualTools ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'right', outline: 'none', cursor: isManualTools ? 'default' : 'text', borderRadius: isManualTools ? 4 : 0 }} title={isManualTools ? 'Calculado automaticamente desde el subtotal de Mano de Obra' : undefined} />
                                   </td>
                                   <td style={{ padding: '6px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{insParcial.toFixed(2)}</td>
                                 </tr>

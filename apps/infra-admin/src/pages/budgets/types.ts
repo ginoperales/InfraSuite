@@ -1,12 +1,15 @@
 export interface Insumo {
   id: string;
+  codigo?: string;   // Código del catálogo de insumos (ej: 0147010004)
   nombre: string;
   unidad: string;
   cuadrilla: number;
   pu: number;
   tipo: 'MO' | 'MT' | 'EQ' | 'SC' | 'SP'; // Mano de Obra, Materiales, Equipos, Subcontratos, Subpartidas
+  scope?: 'global' | 'local';
   color?: string;
   cantidad?: number;
+  desperdicio?: number;
   parcial?: number;
 }
 
@@ -19,6 +22,20 @@ export interface Partida {
   esTitulo: boolean;
   rendimiento: number;
   insumos: Insumo[];
+}
+
+export interface PiePresupuestoRow {
+  variable: string;
+  descripcion: string;
+  formula: string;
+  iu: string;
+  resaltar: boolean;
+  ocultarEnPdf?: boolean;
+}
+
+export interface BudgetPermission {
+  userId: string;
+  role: 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
 }
 
 export interface Budget {
@@ -38,11 +55,20 @@ export interface Budget {
   jornada: number;
   moneda: 'SOLES' | 'DOLARES';
   subPresupuestos: string[];
+  pieRows?: PiePresupuestoRow[];
+
+  // Sharing and Collaboration
+  ownerId?: string; // ID of the user who created it
+  permissions?: Record<string, 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER'>; // Map of userId to role
+  linkAccess?: 'RESTRICTED' | 'ANYONE_WITH_LINK';
+  linkRole?: 'VIEWER' | 'COMMENTER' | 'EDITOR';
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export type PartidaColumnKey = 'item' | 'descripcion' | 'unidad' | 'metrado' | 'cu' | 'parcial' | 'mo' | 'mt' | 'eq' | 'sc';
 
-export type ApuColumnKey = 'nombre' | 'unidad' | 'cuadrilla' | 'cantidad' | 'pu' | 'parcial' | 'tipo';
+export type ApuColumnKey = 'codigo' | 'nombre' | 'unidad' | 'cuadrilla' | 'cantidad' | 'desperdicio' | 'pu' | 'parcial' | 'tipo';
 
 export interface BudgetsProps {
   theme: 'light' | 'dark';
@@ -51,4 +77,6 @@ export interface BudgetsProps {
   mode?: 'lite' | 'pro';
   onNavigate?: (tab: string) => void;
   initialOpenBudgetId?: string | null;
+  publicReadOnly?: boolean;
+  onRequireLogin?: () => void;
 }

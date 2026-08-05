@@ -6,7 +6,8 @@ import {
   setDoc as firebaseSetDoc, 
   doc as firebaseDoc, 
   getDoc as firebaseGetDoc, 
-  deleteDoc as firebaseDeleteDoc 
+  deleteDoc as firebaseDeleteDoc,
+  enableIndexedDbPersistence
 } from 'firebase/firestore';
 
 const isBrowser = typeof window !== 'undefined';
@@ -125,6 +126,17 @@ const firebaseConfig = {
 // Initialize real Firebase App
 export const app = initializeApp(firebaseConfig);
 export const firestore = getFirestore(app);
+
+// Enable offline persistence
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(firestore).catch((err: any) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, offline persistence is enabled only in one.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser does not support all of the features required to enable persistence.');
+    }
+  });
+}
 
 // Online detection helper
 export const isOnline = (): boolean => {

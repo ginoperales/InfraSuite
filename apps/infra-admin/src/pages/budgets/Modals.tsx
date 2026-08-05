@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button } from '@infrasuite/shared';
-import type { Budget, Partida, Insumo, PartidaColumnKey } from './types';
+import type { Budget, Partida, Insumo, PartidaColumnKey, PiePresupuestoRow } from './types';
+import { LiteIcon } from './BudgetEditorLite';
 
 // Common CSS styles
 export const thStyle: React.CSSProperties = {
@@ -12,12 +13,12 @@ export const thStyle: React.CSSProperties = {
 
 export const tdStyle: React.CSSProperties = {
   padding: '12px 16px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
+  borderBottom: '1px solid var(--modal-divider-color)',
   color: 'var(--text-secondary)'
 };
 
 export const tableInputStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.02)',
+  background: 'var(--modal-input-bg)',
   border: '1px solid var(--border-color)',
   color: 'var(--text-primary)',
   padding: '4px 8px',
@@ -31,7 +32,7 @@ export const tableInputStyle: React.CSSProperties = {
 
 export const dgInputStyle: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255, 255, 255, 0.02)',
+  background: 'var(--modal-input-bg)',
   border: '1px solid var(--border-color)',
   color: 'var(--text-primary)',
   padding: '10px 14px',
@@ -215,6 +216,10 @@ export const AddInsumoModal: React.FC<{
   handleSelectSuggestion,
   handleCreateNewInsumoOption
 }) => {
+  const isManualToolsInput =
+    insumoUnidad.trim().toUpperCase() === '%MO' ||
+    insumoNombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().includes('HERRAMIENTAS MANUALES');
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Agregar Insumo al Análisis (APU)">
       <form onSubmit={onSubmit} className="login-form">
@@ -241,13 +246,13 @@ export const AddInsumoModal: React.FC<{
                 top: '100%',
                 left: 0,
                 right: 0,
-                background: 'var(--bg-surface-elevated, #181d28)',
+                background: 'var(--modal-bg)',
                 border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
                 borderRadius: '6px',
                 maxHeight: '200px',
                 overflowY: 'auto',
                 zIndex: 1000,
-                boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                boxShadow: 'var(--modal-shadow)',
                 marginTop: '4px'
               }}
             >
@@ -259,7 +264,7 @@ export const AddInsumoModal: React.FC<{
                     padding: '8px 12px',
                     cursor: 'pointer',
                     fontSize: '0.82rem',
-                    borderBottom: '1px solid rgba(255,255,255,0.02)',
+                    borderBottom: '1px solid var(--modal-divider-color)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center'
@@ -271,12 +276,17 @@ export const AddInsumoModal: React.FC<{
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '8px' }}>
                       ({item.unidad})
                     </span>
+                    {(item.codigo || item.sourceLabel) && (
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                        {[item.codigo, item.sourceLabel].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
                   </div>
                   <span style={{
                     fontSize: '0.72rem',
                     padding: '2px 6px',
                     borderRadius: '4px',
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'var(--modal-panel-bg)',
                     color: 'var(--text-secondary)'
                   }}>
                     {item.tipo}
@@ -325,7 +335,22 @@ export const AddInsumoModal: React.FC<{
             value={insumoUnidad}
             onChange={(e) => setInsumoUnidad(e.target.value)}
             required
+            list="unidades-list"
           />
+          <datalist id="unidades-list">
+            <option value="HH" />
+            <option value="M3" />
+            <option value="M2" />
+            <option value="ML" />
+            <option value="GLB" />
+            <option value="KG" />
+            <option value="UND" />
+            <option value="PAR" />
+            <option value="%MO" />
+            <option value="MES" />
+            <option value="DIA" />
+            <option value="GAL" />
+          </datalist>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Input
@@ -339,10 +364,14 @@ export const AddInsumoModal: React.FC<{
           <Input
             type="number"
             step="0.01"
-            label="Precio Unitario (PU) *"
-            value={insumoPU}
-            onChange={(e) => setInsumoPU(e.target.value)}
-            required
+            label={isManualToolsInput ? "Precio Unitario (auto MO)" : "Precio Unitario (PU) *"}
+            placeholder={isManualToolsInput ? "Calculado desde Mano de Obra" : undefined}
+            value={isManualToolsInput ? '' : insumoPU}
+            onChange={(e) => {
+              if (!isManualToolsInput) setInsumoPU(e.target.value);
+            }}
+            disabled={isManualToolsInput}
+            required={!isManualToolsInput}
           />
         </div>
 
@@ -691,7 +720,7 @@ export const DatosGeneralesModal: React.FC<{
                 style={{
                   background: 'var(--color-primary)',
                   border: 'none',
-                  color: '#121622',
+                  color: 'var(--text-on-primary)',
                   padding: '10px 18px',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -703,12 +732,12 @@ export const DatosGeneralesModal: React.FC<{
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '6px', background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid var(--border-color)', padding: '12px', borderRadius: '6px', background: 'var(--modal-panel-bg)' }}>
               {dgSubPresupuestos.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '12px' }}>No hay sub presupuestos agregados.</div>
               ) : (
                 dgSubPresupuestos.map((sub, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--modal-bg)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '600' }}>{sub}</span>
                     <button
                       onClick={() => setDgSubPresupuestos(dgSubPresupuestos.filter((_, i) => i !== idx))}
@@ -756,7 +785,7 @@ export const DatosGeneralesModal: React.FC<{
           style={{
             background: 'var(--color-primary)',
             border: 'none',
-            color: '#121622',
+            color: 'var(--text-on-primary)',
             padding: '10px 24px',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -830,9 +859,9 @@ export const GastosGeneralesModal: React.FC<{
           width: 95% !important;
           padding: 0 !important;
           overflow: hidden !important;
-          background: #0f111a !important;
-          border: 1px solid rgba(0, 240, 255, 0.2) !important;
-          box-shadow: 0 0 30px rgba(0, 240, 255, 0.1) !important;
+          background: var(--modal-bg) !important;
+          border: 1px solid var(--border-color) !important;
+          box-shadow: var(--modal-shadow) !important;
         }
         .gg-container {
           display: flex;
@@ -843,7 +872,7 @@ export const GastosGeneralesModal: React.FC<{
           display: flex;
           gap: 8px;
           padding: 12px 20px 0 20px;
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--modal-panel-bg);
           border-bottom: 1px solid var(--border-color);
         }
         .gg-tab-btn {
@@ -884,7 +913,7 @@ export const GastosGeneralesModal: React.FC<{
         <div style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Summary Panel */}
           <div style={{
-            background: 'rgba(255,255,255,0.01)',
+            background: 'var(--modal-panel-bg)',
             border: '1px solid var(--border-color)',
             borderRadius: '8px',
             padding: '12px 18px',
@@ -927,7 +956,7 @@ export const GastosGeneralesModal: React.FC<{
             overflowY: 'auto',
             borderRadius: '6px',
             border: '1px solid var(--border-color)',
-            background: 'rgba(0, 0, 0, 0.1)'
+            background: 'var(--modal-table-bg)'
           }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead style={{
@@ -1021,13 +1050,18 @@ export const GastosGeneralesModal: React.FC<{
                             border: 'none',
                             color: 'var(--color-danger)',
                             cursor: 'pointer',
-                            fontSize: '1rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '6px',
                             transition: 'transform 0.1s'
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
                           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
-                          🗑️
+                          <LiteIcon name="trash" size={16} />
                         </button>
                       </td>
                     </tr>
@@ -1043,7 +1077,7 @@ export const GastosGeneralesModal: React.FC<{
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '12px 16px',
-            background: 'rgba(0,0,0,0.15)',
+            background: 'var(--modal-panel-bg)',
             borderRadius: '8px',
             border: '1px solid var(--border-color)'
           }}>
@@ -1051,7 +1085,7 @@ export const GastosGeneralesModal: React.FC<{
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Formato:</span>
               <select
                 style={{
-                  background: 'rgba(0, 0, 0, 0.25)',
+                  background: 'var(--modal-input-bg)',
                   border: '1px solid var(--border-color)',
                   color: 'var(--text-primary)',
                   borderRadius: '4px',
@@ -1078,6 +1112,9 @@ export const GastosGeneralesModal: React.FC<{
                 cursor: 'pointer',
                 fontSize: '0.82rem',
                 fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
@@ -1089,7 +1126,8 @@ export const GastosGeneralesModal: React.FC<{
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              ➕ Agregar item
+              <LiteIcon name="plus" size={16} />
+              Agregar item
             </button>
           </div>
 
@@ -1098,7 +1136,7 @@ export const GastosGeneralesModal: React.FC<{
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255,255,255,0.03)',
+                background: 'var(--modal-bg)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-secondary)',
                 padding: '10px 24px',
@@ -1131,8 +1169,8 @@ export const PiePresupuestoModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   activeBudget: Budget | null;
-  pieRows: any[];
-  setPieRows: (v: any[]) => void;
+  pieRows: PiePresupuestoRow[];
+  setPieRows: (v: PiePresupuestoRow[]) => void;
   getBudgetCD: (b: Budget | null) => number;
 }> = ({ isOpen, onClose, activeBudget, pieRows, setPieRows, getBudgetCD }) => {
   const cd = activeBudget ? getBudgetCD(activeBudget) : 0;
@@ -1160,7 +1198,7 @@ export const PiePresupuestoModal: React.FC<{
     return { ...row, valor: val };
   });
 
-  const handleUpdateRow = (index: number, field: string, val: any) => {
+  const handleUpdateRow = (index: number, field: keyof PiePresupuestoRow, val: any) => {
     const copy = [...pieRows];
     copy[index] = { ...copy[index], [field]: val };
     setPieRows(copy);
@@ -1173,7 +1211,8 @@ export const PiePresupuestoModal: React.FC<{
       descripcion: 'NUEVO CONCEPTO',
       formula: 'CD * 0.05',
       iu: '39',
-      resaltar: false
+      resaltar: false,
+      ocultarEnPdf: false
     });
     setPieRows(copy);
   };
@@ -1195,13 +1234,13 @@ export const PiePresupuestoModal: React.FC<{
     >
       <style>{`
         .modal-overlay:has(.pie-presupuesto-container) .modal-content {
-          max-width: 900px !important;
+          max-width: 1080px !important;
           width: 95% !important;
           padding: 0 !important;
           overflow: hidden !important;
-          background: #0f111a !important;
-          border: 1px solid rgba(0, 240, 255, 0.2) !important;
-          box-shadow: 0 0 30px rgba(0, 240, 255, 0.1) !important;
+          background: var(--modal-bg) !important;
+          border: 1px solid var(--border-color) !important;
+          box-shadow: var(--modal-shadow) !important;
         }
         .pie-presupuesto-container {
           display: flex;
@@ -1212,7 +1251,7 @@ export const PiePresupuestoModal: React.FC<{
           display: flex;
           gap: 20px;
           padding: 12px 20px;
-          background: rgba(255, 255, 255, 0.02);
+          background: var(--modal-panel-bg);
           border-bottom: 1px solid var(--border-color);
         }
         .pie-toolbar-btn {
@@ -1237,19 +1276,19 @@ export const PiePresupuestoModal: React.FC<{
           font-size: 0.85rem;
         }
         .pie-presupuesto-table th {
-          background: rgba(255, 255, 255, 0.03);
+          background: var(--modal-panel-bg);
           color: var(--text-secondary);
           font-weight: 600;
           text-transform: uppercase;
           font-size: 0.76rem;
           padding: 10px 12px;
           border-bottom: 1px solid var(--border-color);
-          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          border-right: 1px solid var(--modal-divider-color);
         }
         .pie-presupuesto-table td {
           padding: 4px 8px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          border-right: 1px solid rgba(255, 255, 255, 0.03);
+          border-bottom: 1px solid var(--modal-divider-color);
+          border-right: 1px solid var(--modal-divider-color);
           color: var(--text-secondary);
         }
         .pie-presupuesto-table input[type="text"] {
@@ -1269,20 +1308,23 @@ export const PiePresupuestoModal: React.FC<{
           border-radius: 4px;
         }
         .pie-presupuesto-table input[type="text"]:hover:not(:focus):not(:disabled) {
-          border-color: rgba(255, 255, 255, 0.15);
-          background: rgba(255, 255, 255, 0.01);
+          border-color: var(--border-color-focus);
+          background: var(--modal-panel-hover-bg);
           border-radius: 4px;
         }
         .pie-presupuesto-table input:disabled {
           color: var(--text-muted) !important;
           cursor: not-allowed;
         }
+        .pie-presupuesto-table input[type="checkbox"] {
+          accent-color: var(--color-primary);
+        }
         .pie-agregar-row {
           display: flex;
           justifyContent: center;
           align-items: center;
           padding: 10px;
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--modal-panel-bg);
           border-bottom: 1px solid var(--border-color);
           cursor: pointer;
           font-size: 0.85rem;
@@ -1327,13 +1369,14 @@ export const PiePresupuestoModal: React.FC<{
           <table className="pie-presupuesto-table">
             <thead>
               <tr>
-                <th style={{ width: '12%', textAlign: 'center' }}>Variable</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Variable</th>
                 <th style={{ width: '35%' }}>Descripción</th>
                 <th style={{ width: '20%' }}>Fórmula</th>
-                <th style={{ width: '15%', textAlign: 'right' }}>Valor</th>
-                <th style={{ width: '8%', textAlign: 'center' }}>IU</th>
-                <th style={{ width: '8%', textAlign: 'center' }}>Resaltar?</th>
-                <th style={{ width: '5%', textAlign: 'center' }}></th>
+                <th style={{ width: '14%', textAlign: 'right' }}>Valor</th>
+                <th style={{ width: '7%', textAlign: 'center' }}>IU</th>
+                <th style={{ width: '8%', textAlign: 'center' }}>Resaltar</th>
+                <th style={{ width: '9%', textAlign: 'center' }}>Ocultar PDF</th>
+                <th style={{ width: '4%', textAlign: 'center' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -1428,6 +1471,21 @@ export const PiePresupuestoModal: React.FC<{
                       />
                     </td>
 
+                    {/* Ocultar PDF */}
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(row.ocultarEnPdf)}
+                        onChange={(e) => handleUpdateRow(idx, 'ocultarEnPdf', e.target.checked)}
+                        title="Ocultar esta fila al descargar PDF"
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          cursor: 'pointer'
+                        }}
+                      />
+                    </td>
+
                     {/* Delete */}
                     <td style={{ textAlign: 'center' }}>
                       {!isLocked && row.variable !== 'TOTAL' && (
@@ -1438,10 +1496,15 @@ export const PiePresupuestoModal: React.FC<{
                             border: 'none',
                             color: 'var(--color-danger)',
                             cursor: 'pointer',
-                            fontSize: '1rem'
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '6px'
                           }}
                         >
-                          🗑️
+                          <LiteIcon name="trash" size={16} />
                         </button>
                       )}
                     </td>
@@ -1458,11 +1521,11 @@ export const PiePresupuestoModal: React.FC<{
         </div>
 
         {/* Close Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px', background: 'rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px', background: 'var(--modal-panel-bg)' }}>
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--modal-bg)',
               border: '1px solid var(--border-color)',
               color: 'var(--text-secondary)',
               padding: '8px 20px',
@@ -1576,20 +1639,59 @@ export const FormulaPolinomicaModal: React.FC<{
     return '39';
   };
 
-  const getInsumoCantidad = (ins: any, rend: number) => {
-    if (ins.tipo === 'MO' || ins.tipo === 'EQ') {
+  const getInsumoBaseCantidad = (ins: any, rend: number) => {
+    const explicitCantidad = typeof ins.cantidad === 'number' && Number.isFinite(ins.cantidad) ? ins.cantidad : null;
+    if (ins.unidad === '%MO') return explicitCantidad ?? ins.cuadrilla;
+    if (ins.tipo === 'MO') {
       return rend > 0 ? (ins.cuadrilla * 8) / rend : 0;
     }
-    return ins.cuadrilla;
+    if (ins.tipo === 'EQ') {
+      return explicitCantidad ?? (rend > 0 ? (ins.cuadrilla * 8) / rend : 0);
+    }
+    return explicitCantidad ?? ins.cuadrilla;
   };
 
-  const getInsumoParcial = (ins: any, rend: number) => {
-    return getInsumoCantidad(ins, rend) * ins.pu;
+  const getInsumoDesperdicio = (ins: any) => {
+    const raw = typeof ins.desperdicio === 'number' && Number.isFinite(ins.desperdicio) ? ins.desperdicio : 0;
+    return ins.tipo === 'MT' ? Math.max(0, raw) : 0;
+  };
+
+  const getInsumoCantidad = (ins: any, rend: number) => {
+    const baseCantidad = getInsumoBaseCantidad(ins, rend);
+    return baseCantidad * (1 + getInsumoDesperdicio(ins) / 100);
+  };
+
+  const isManualToolsInsumo = (ins: any) => {
+    const unidad = (ins.unidad || '').trim().toUpperCase();
+    const nombre = (ins.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    return unidad === '%MO' || nombre.includes('HERRAMIENTAS MANUALES');
+  };
+
+  const getManoObraSubtotal = (p: any) => {
+    return p.insumos.reduce((sum: number, ins: any) => {
+      if (ins.tipo !== 'MO' || isManualToolsInsumo(ins)) return sum;
+      return sum + getInsumoCantidad(ins, p.rendimiento) * ins.pu;
+    }, 0);
+  };
+
+  const getInsumoUnitPrice = (ins: any, p?: any) => {
+    if (p && isManualToolsInsumo(ins)) {
+      return getManoObraSubtotal(p);
+    }
+    return ins.pu;
+  };
+
+  const getInsumoParcial = (ins: any, rend: number, p?: any) => {
+    const unitPrice = getInsumoUnitPrice(ins, p);
+    if (isManualToolsInsumo(ins)) {
+      return (unitPrice * getInsumoCantidad(ins, rend)) / 100;
+    }
+    return getInsumoCantidad(ins, rend) * unitPrice;
   };
 
   const getPartidaCU = (p: any) => {
     if (p.esTitulo) return 0;
-    return p.insumos.reduce((sum: number, ins: any) => sum + getInsumoParcial(ins, p.rendimiento), 0);
+    return p.insumos.reduce((sum: number, ins: any) => sum + getInsumoParcial(ins, p.rendimiento, p), 0);
   };
 
   const getPartidaParcial = (p: any) => {
@@ -1628,7 +1730,7 @@ export const FormulaPolinomicaModal: React.FC<{
         totalCost += subPMetrado * getPartidaCU(subP);
         subP.insumos.forEach((ins: any) => {
           const uIdx = getUnifiedIndex(ins);
-          const cost = subPMetrado * getInsumoParcial(ins, subP.rendimiento);
+          const cost = subPMetrado * getInsumoParcial(ins, subP.rendimiento, subP);
           indexSums[uIdx] = (indexSums[uIdx] || 0) + cost;
         });
       });
@@ -1643,7 +1745,7 @@ export const FormulaPolinomicaModal: React.FC<{
       const indexSums: Record<string, number> = {};
       p.insumos.forEach((ins: any) => {
         const uIdx = getUnifiedIndex(ins);
-        const cost = p.metrado * getInsumoParcial(ins, p.rendimiento);
+        const cost = p.metrado * getInsumoParcial(ins, p.rendimiento, p);
         indexSums[uIdx] = (indexSums[uIdx] || 0) + cost;
       });
 
@@ -1678,7 +1780,7 @@ export const FormulaPolinomicaModal: React.FC<{
   partidas.filter(p => !p.esTitulo).forEach(p => {
     p.insumos.forEach(ins => {
       const uIdx = getUnifiedIndex(ins);
-      colTotals[uIdx] = (colTotals[uIdx] || 0) + (p.metrado * getInsumoParcial(ins, p.rendimiento));
+      colTotals[uIdx] = (colTotals[uIdx] || 0) + (p.metrado * getInsumoParcial(ins, p.rendimiento, p));
     });
   });
 
@@ -1703,27 +1805,27 @@ export const FormulaPolinomicaModal: React.FC<{
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     const rowsHtml = formattedRows.map((row, idx) => `
       <tr key="${row.index}">
-        <td style="text-align: center; font-weight: bold; color: #64748b;">${idx + 1}</td>
+        <td style="text-align: center; font-weight: bold; color: var(--external-text-secondary);">${idx + 1}</td>
         <td style="text-align: center; font-family: monospace; font-weight: bold;">${row.index}</td>
         <td style="font-weight: 500;">${row.name}</td>
-        <td style="font-weight: bold; color: #475569;">
+        <td style="font-weight: bold; color: var(--external-text-secondary);">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span>🔑</span>
+            <span style="display:inline-flex;width:14px;height:14px;border:1px solid currentColor;border-radius:999px;"></span>
             <span>${row.symbol}</span>
           </div>
         </td>
-        <td style="text-align: right; font-family: monospace; color: #475569;">
+        <td style="text-align: right; font-family: monospace; color: var(--external-text-secondary);">
           ${row.coefCalculado.toFixed(10)}
         </td>
         <td style="text-align: right; font-weight: bold;">
           <div style="display: inline-flex; align-items: center; gap: 4px;">
-            <span style="color: #059669; font-size: 0.8rem;">📌</span>
+            <span style="width:6px;height:6px;border-radius:999px;background:#059669;display:inline-block;"></span>
             <span style="font-family: monospace;" class="coef-definido-val">
               ${row.coefDefinido.toFixed(3)}
             </span>
           </div>
         </td>
-        <td style="text-align: right; font-family: monospace; color: #64748b;">
+        <td style="text-align: right; font-family: monospace; color: var(--external-text-secondary);">
           ${row.pct.toFixed(2)}
         </td>
       </tr>
@@ -1734,7 +1836,7 @@ export const FormulaPolinomicaModal: React.FC<{
       const isBold = row.isBold || isComponent;
       const colorStyle = isComponent ? 'color: #dc2626;' : (row.isGreen ? 'color: #16a34a;' : '');
       const weightStyle = isBold ? 'font-weight: bold;' : '';
-      const bgStyle = isBold ? 'background: rgba(0, 0, 0, 0.02);' : '';
+      const bgStyle = isBold ? 'background: var(--external-surface);' : '';
       
       const valuesCells = desagregadoCols.map(col => {
         const val = row.values[col.id as keyof typeof row.values] || '';
@@ -1743,7 +1845,7 @@ export const FormulaPolinomicaModal: React.FC<{
 
       return `
         <tr style="${bgStyle}">
-          <td style="text-align: center; font-weight: bold; color: #64748b; ${colorStyle}">${row.item}</td>
+          <td style="text-align: center; font-weight: bold; color: var(--external-text-secondary); ${colorStyle}">${row.item}</td>
           <td style="${weightStyle} ${colorStyle}">${row.desc}</td>
           <td style="text-align: center; ${colorStyle}">${row.und}</td>
           <td style="text-align: right; font-family: monospace; ${colorStyle}">${row.metrado}</td>
@@ -1778,22 +1880,44 @@ export const FormulaPolinomicaModal: React.FC<{
         <head>
           <title>${title}</title>
           <style>
+            :root,
+            [data-theme="light"] {
+              --external-bg: #ffffff;
+              --external-surface: #f8fafc;
+              --external-surface-hover: #f1f5f9;
+              --external-text: #1e293b;
+              --external-text-secondary: #64748b;
+              --external-border: #e2e8f0;
+              --external-primary: #0f52ba;
+              --external-button-bg: #ffffff;
+            }
+            [data-theme="dark"] {
+              --external-bg: #0c0e15;
+              --external-surface: #121622;
+              --external-surface-hover: #1b2030;
+              --external-text: #f8fafc;
+              --external-text-secondary: #94a3b8;
+              --external-border: rgba(255, 255, 255, 0.08);
+              --external-primary: #00f0ff;
+              --external-button-bg: rgba(255, 255, 255, 0.03);
+            }
             body {
               margin: 0;
               padding: 0;
-              background-color: #ffffff;
+              background-color: var(--external-bg);
+              color: var(--external-text);
               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
               box-sizing: border-box;
             }
             [data-theme="dark"] body {
-              background-color: #0f111a;
+              background-color: var(--external-bg);
             }
             .modal-content-mimic {
               max-width: none;
               width: 100vw;
               min-height: 100vh;
-              background: #ffffff;
-              color: #1e293b;
+              background: var(--external-bg);
+              color: var(--external-text);
               border: none;
               border-radius: 0;
               box-shadow: none;
@@ -1802,8 +1926,8 @@ export const FormulaPolinomicaModal: React.FC<{
               flex-direction: column;
             }
             [data-theme="dark"] .modal-content-mimic {
-              background: #0f111a;
-              color: #f1f5f9;
+              background: var(--external-bg);
+              color: var(--external-text);
               border: none;
               box-shadow: none;
             }
@@ -1812,25 +1936,25 @@ export const FormulaPolinomicaModal: React.FC<{
               justify-content: space-between;
               align-items: center;
               padding: 16px 24px;
-              background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-              border-bottom: 1px solid #e2e8f0;
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             [data-theme="dark"] .modal-header-mimic {
-              background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-              border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             .modal-title-mimic {
               margin: 0;
               font-size: 1.2rem;
               font-weight: 700;
-              color: #0f172a;
+              color: var(--external-text);
               display: flex;
               align-items: center;
               gap: 10px;
             }
             [data-theme="dark"] .modal-title-mimic {
-              color: #00f0ff;
-              text-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+              color: var(--external-text);
+              text-shadow: none;
             }
             .formula-polinomica-container {
               display: flex;
@@ -1841,17 +1965,17 @@ export const FormulaPolinomicaModal: React.FC<{
               display: flex;
               gap: 16px;
               padding: 12px 20px;
-              background: #f8fafc;
-              border-bottom: 1px solid #e2e8f0;
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             [data-theme="dark"] .formula-toolbar {
-              background: rgba(255, 255, 255, 0.02);
-              border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             .formula-toolbar-btn {
-              background: #ffffff;
-              border: 1px solid #cbd5e1;
-              color: #334155;
+              background: var(--external-button-bg);
+              border: 1px solid var(--external-border);
+              color: var(--external-text);
               font-size: 0.78rem;
               font-weight: 600;
               cursor: pointer;
@@ -1862,36 +1986,48 @@ export const FormulaPolinomicaModal: React.FC<{
               gap: 6px;
               transition: all 0.2s;
             }
+            .line-icon {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 16px;
+              height: 16px;
+              border: 1px solid currentColor;
+              border-radius: 999px;
+              font-size: 0.62rem;
+              font-weight: 700;
+              line-height: 1;
+            }
             [data-theme="dark"] .formula-toolbar-btn {
-              background: rgba(255,255,255,0.03);
-              border: 1px solid rgba(255,255,255,0.08);
-              color: #cbd5e1;
+              background: var(--external-button-bg);
+              border: 1px solid var(--external-border);
+              color: var(--external-text);
             }
             .formula-toolbar-btn:hover {
-              background: #f1f5f9;
-              border-color: #94a3b8;
+              background: var(--external-surface-hover);
+              border-color: var(--external-primary);
             }
             [data-theme="dark"] .formula-toolbar-btn:hover {
-              background: rgba(255,255,255,0.08);
-              border-color: rgba(255, 255, 255, 0.2);
-              color: #ffffff;
+              background: var(--external-surface-hover);
+              border-color: var(--external-primary);
+              color: var(--external-text);
             }
             .formula-tabs {
               display: flex;
               gap: 4px;
               padding: 8px 20px;
-              background: #f8fafc;
-              border-bottom: 1px solid #e2e8f0;
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             [data-theme="dark"] .formula-tabs {
-              background: rgba(255,255,255,0.01);
-              border-bottom: 1px solid rgba(255,255,255,0.08);
+              background: var(--external-surface);
+              border-bottom: 1px solid var(--external-border);
             }
             .formula-tab-btn {
               background: transparent;
               border: none;
               border-bottom: 2px solid transparent;
-              color: #64748b;
+              color: var(--external-text-secondary);
               font-size: 0.8rem;
               font-weight: 600;
               padding: 8px 16px;
@@ -1899,18 +2035,18 @@ export const FormulaPolinomicaModal: React.FC<{
               transition: all 0.2s ease;
             }
             .formula-tab-btn:hover {
-              color: #0f172a;
+              color: var(--external-text);
             }
             [data-theme="dark"] .formula-tab-btn:hover {
-              color: #ffffff;
+              color: var(--external-text);
             }
             .formula-tab-btn.active {
-              color: #3b82f6;
-              border-bottom: 2px solid #3b82f6;
+              color: var(--external-primary);
+              border-bottom: 2px solid var(--external-primary);
             }
             [data-theme="dark"] .formula-tab-btn.active {
-              color: #00f0ff;
-              border-bottom: 2px solid #00f0ff;
+              color: var(--external-primary);
+              border-bottom: 2px solid var(--external-primary);
             }
             .formula-table {
               width: 100%;
@@ -1919,40 +2055,40 @@ export const FormulaPolinomicaModal: React.FC<{
               font-size: 0.8rem;
             }
             .formula-table th {
-              background: #f1f5f9;
-              color: #475569;
+              background: var(--external-surface);
+              color: var(--external-text-secondary);
               font-weight: 600;
               text-transform: capitalize;
               font-size: 0.78rem;
               padding: 8px 12px;
-              border-bottom: 1px solid #e2e8f0;
-              border-right: 1px solid #e2e8f0;
+              border-bottom: 1px solid var(--external-border);
+              border-right: 1px solid var(--external-border);
             }
             [data-theme="dark"] .formula-table th {
-              background: rgba(255, 255, 255, 0.03);
-              color: #94a3b8;
-              border-bottom: 1px solid rgba(255,255,255,0.08);
-              border-right: 1px solid rgba(255, 255, 255, 0.05);
+              background: var(--external-surface);
+              color: var(--external-text-secondary);
+              border-bottom: 1px solid var(--external-border);
+              border-right: 1px solid var(--external-border);
             }
             .formula-table td {
               padding: 6px 12px;
-              border-bottom: 1px solid #f1f5f9;
-              border-right: 1px solid #f1f5f9;
-              color: #334155;
+              border-bottom: 1px solid var(--external-border);
+              border-right: 1px solid var(--external-border);
+              color: var(--external-text);
             }
             [data-theme="dark"] .formula-table td {
-              border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-              border-right: 1px solid rgba(255, 255, 255, 0.02);
-              color: #cbd5e1;
+              border-bottom: 1px solid var(--external-border);
+              border-right: 1px solid var(--external-border);
+              color: var(--external-text);
             }
             [data-theme="dark"] .coef-definido-val {
-              color: #ffffff !important;
+              color: var(--external-text) !important;
             }
             .formula-table tr:hover {
-              background: #f8fafc;
+              background: var(--external-surface-hover);
             }
             [data-theme="dark"] .formula-table tr:hover {
-              background: rgba(255, 255, 255, 0.01);
+              background: var(--external-surface-hover);
             }
             .alert-bar {
               background: #fffbeb;
@@ -2005,7 +2141,7 @@ export const FormulaPolinomicaModal: React.FC<{
           <div class="modal-content-mimic">
             <div class="modal-header-mimic">
               <h2 class="modal-title-mimic">
-                <span>📐</span>
+                <span class="line-icon">Σ</span>
                 <span>FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}</span>
               </h2>
             </div>
@@ -2013,26 +2149,26 @@ export const FormulaPolinomicaModal: React.FC<{
             <div class="formula-polinomica-container">
               <div class="formula-toolbar">
                 <button class="formula-toolbar-btn" onclick="window.close()">
-                  <span>↩️</span> Volver
+                  <span class="line-icon">←</span> Volver
                 </button>
                 <button class="formula-toolbar-btn" onclick="window.print()">
-                  <span>🖨️</span> Imprimir Detallado
+                  <span class="line-icon">P</span> Imprimir Detallado
                 </button>
                 <button class="formula-toolbar-btn" onclick="window.print()">
-                  <span>📊</span> Imprimir Fórmula
+                  <span class="line-icon">F</span> Imprimir Fórmula
                 </button>
                 <button class="formula-toolbar-btn" onclick="alert('Actualizando coeficientes...')">
-                  <span>🔄</span> Actualizar
+                  <span class="line-icon">R</span> Actualizar
                 </button>
               </div>
 
               <div class="formula-tabs">
-                <button id="formula-btn" class="formula-tab-btn active" onclick="switchTab('formula')">📊 Coeficientes y Fórmula</button>
-                <button id="desagregado-btn" class="formula-tab-btn" onclick="switchTab('desagregado')">🧮 Matriz de Desagregado (Índices Unificados)</button>
+                <button id="formula-btn" class="formula-tab-btn active" onclick="switchTab('formula')">Coeficientes y Fórmula</button>
+                <button id="desagregado-btn" class="formula-tab-btn" onclick="switchTab('desagregado')">Matriz de Desagregado (Índices Unificados)</button>
               </div>
 
               <div class="alert-bar">
-                <span>⚠️</span>
+                <span class="line-icon">!</span>
                 <span>La fórmula polinómica debe tener como máximo 8 monomios</span>
               </div>
 
@@ -2052,7 +2188,7 @@ export const FormulaPolinomicaModal: React.FC<{
                   </thead>
                   <tbody>
                     ${rowsHtml}
-                    <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                    <tr style="background: var(--external-surface); font-weight: bold; border-top: 2px solid var(--external-border);">
                       <td colSpan="4" style="text-align: right; padding: 10px 12px;">Total Coeficientes:</td>
                       <td style="text-align: right; font-family: monospace; padding: 10px 12px;">1.0000000000</td>
                       <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #059669; font-size: 0.9rem;">1.000</td>
@@ -2078,12 +2214,12 @@ export const FormulaPolinomicaModal: React.FC<{
                   </thead>
                   <tbody>
                     ${desagregadoRowsHtml}
-                    <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
+                    <tr style="background: var(--external-surface); font-weight: bold; border-top: 2px solid var(--external-border);">
                       <td colSpan="5" style="text-align: right; padding: 10px 12px;">Total:</td>
                       <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #dc2626;">1,987,882.30</td>
                       ${desagregadoTotalsCells}
                     </tr>
-                    <tr style="background: #f1f5f9; font-weight: bold;">
+                    <tr style="background: var(--external-surface-hover); font-weight: bold;">
                       <td colSpan="5" style="text-align: right; padding: 10px 12px; color: #059669;">Total Coeficiente:</td>
                       <td style="text-align: right; font-family: monospace; padding: 10px 12px; color: #059669;">1.000</td>
                       ${desagregadoCoefsCells}
@@ -2107,38 +2243,38 @@ export const FormulaPolinomicaModal: React.FC<{
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`📐 FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
+      title={`FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
       onExternalOpen={handleOpenExternal}
     >
       <style>{`
         .modal-overlay:has(.formula-polinomica-container) {
           backdrop-filter: none !important;
           -webkit-backdrop-filter: none !important;
-          background: rgba(0, 0, 0, 0.25) !important;
+          background: var(--modal-overlay-bg) !important;
         }
         .modal-overlay:has(.formula-polinomica-container) .modal-header {
           display: flex !important;
           justify-content: space-between !important;
           align-items: center !important;
           padding: 16px 24px !important;
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-          border-bottom: 1px solid #e2e8f0 !important;
+          background: var(--modal-header-bg) !important;
+          border-bottom: 1px solid var(--border-color) !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-header {
-          background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-          border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+          background: var(--modal-header-bg) !important;
+          border-bottom: 1px solid var(--border-color) !important;
         }
         .modal-overlay:has(.formula-polinomica-container) .modal-title {
           font-size: 1.2rem !important;
           font-weight: 700 !important;
-          color: #0f172a !important;
+          color: var(--text-primary) !important;
           display: flex !important;
           align-items: center !important;
           gap: 10px !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-title {
-          color: #00f0ff !important;
-          text-shadow: 0 0 10px rgba(0, 240, 255, 0.35) !important;
+          color: var(--text-primary) !important;
+          text-shadow: none !important;
         }
         .modal-overlay:has(.formula-polinomica-container) .modal-close {
           border: none !important;
@@ -2152,12 +2288,12 @@ export const FormulaPolinomicaModal: React.FC<{
           transition: all 0.2s ease !important;
           font-size: 0.85rem !important;
           line-height: 1 !important;
-          background: #f1f5f9 !important;
-          color: #475569 !important;
+          background: var(--modal-close-bg) !important;
+          color: var(--text-secondary) !important;
         }
         .modal-overlay:has(.formula-polinomica-container) .modal-close:hover {
-          background: #e2e8f0 !important;
-          color: #0f172a !important;
+          background: var(--modal-close-hover-bg) !important;
+          color: var(--text-primary) !important;
           transform: translateY(-1px) !important;
         }
         .modal-overlay:has(.formula-polinomica-container) .modal-close:nth-child(2):hover {
@@ -2165,13 +2301,13 @@ export const FormulaPolinomicaModal: React.FC<{
           color: #ef4444 !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close {
-          background: rgba(255, 255, 255, 0.05) !important;
-          color: #94a3b8 !important;
+          background: var(--modal-close-bg) !important;
+          color: var(--text-secondary) !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close:hover {
-          background: rgba(255, 255, 255, 0.12) !important;
-          color: #00f0ff !important;
-          box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+          background: var(--modal-close-hover-bg) !important;
+          color: var(--text-primary) !important;
+          box-shadow: var(--border-glow) !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-close:nth-child(2):hover {
           background: rgba(239, 68, 68, 0.2) !important;
@@ -2187,16 +2323,16 @@ export const FormulaPolinomicaModal: React.FC<{
           padding: 0 !important;
           overflow: auto !important;
           resize: both !important;
-          background: #ffffff !important;
-          color: #1e293b !important;
-          border: 1px solid #cbd5e1 !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+          background: var(--modal-bg) !important;
+          color: var(--text-primary) !important;
+          border: 1px solid var(--border-color) !important;
+          box-shadow: var(--modal-shadow) !important;
         }
         [data-theme="dark"] .modal-overlay:has(.formula-polinomica-container) .modal-content {
-          background: #0f111a !important;
-          color: #f1f5f9 !important;
-          border: 1px solid rgba(0, 240, 255, 0.2) !important;
-          box-shadow: 0 0 30px rgba(0, 240, 255, 0.1) !important;
+          background: var(--modal-bg) !important;
+          color: var(--text-primary) !important;
+          border: 1px solid var(--border-color) !important;
+          box-shadow: var(--modal-shadow) !important;
         }
         .formula-polinomica-container {
           display: flex;
@@ -2209,17 +2345,17 @@ export const FormulaPolinomicaModal: React.FC<{
           display: flex;
           gap: 16px;
           padding: 12px 20px;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
+          background: var(--modal-panel-bg);
+          border-bottom: 1px solid var(--border-color);
         }
         [data-theme="dark"] .formula-toolbar {
-          background: rgba(255, 255, 255, 0.02);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--modal-panel-bg);
+          border-bottom: 1px solid var(--border-color);
         }
         .formula-toolbar-btn {
-          background: #ffffff;
-          border: 1px solid #cbd5e1;
-          color: #334155;
+          background: var(--modal-bg);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
           font-size: 0.78rem;
           font-weight: 600;
           cursor: pointer;
@@ -2231,35 +2367,35 @@ export const FormulaPolinomicaModal: React.FC<{
           transition: all 0.2s;
         }
         [data-theme="dark"] .formula-toolbar-btn {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.08);
-          color: #cbd5e1;
+          background: var(--modal-panel-bg);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
         }
         .formula-toolbar-btn:hover {
-          background: #f1f5f9;
-          border-color: #94a3b8;
+          background: var(--modal-panel-hover-bg);
+          border-color: var(--border-color-focus);
         }
         [data-theme="dark"] .formula-toolbar-btn:hover {
-          background: rgba(255,255,255,0.08);
-          border-color: rgba(255, 255, 255, 0.2);
-          color: #ffffff;
+          background: var(--modal-panel-hover-bg);
+          border-color: var(--border-color-focus);
+          color: var(--text-primary);
         }
         .formula-tabs {
           display: flex;
           gap: 4px;
           padding: 8px 20px;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
+          background: var(--modal-panel-bg);
+          border-bottom: 1px solid var(--border-color);
         }
         [data-theme="dark"] .formula-tabs {
-          background: rgba(255,255,255,0.01);
-          border-bottom: 1px solid rgba(255,255,255,0.08);
+          background: var(--modal-panel-bg);
+          border-bottom: 1px solid var(--border-color);
         }
         .formula-tab-btn {
           background: transparent;
           border: none;
           border-bottom: 2px solid transparent;
-          color: #64748b;
+          color: var(--text-secondary);
           font-size: 0.8rem;
           font-weight: 600;
           padding: 8px 16px;
@@ -2267,18 +2403,18 @@ export const FormulaPolinomicaModal: React.FC<{
           transition: all 0.2s ease;
         }
         .formula-tab-btn:hover {
-          color: #0f172a;
+          color: var(--text-primary);
         }
         [data-theme="dark"] .formula-tab-btn:hover {
-          color: #ffffff;
+          color: var(--text-primary);
         }
         .formula-tab-btn.active {
-          color: #3b82f6;
-          border-bottom: 2px solid #3b82f6;
+          color: var(--color-primary);
+          border-bottom: 2px solid var(--color-primary);
         }
         [data-theme="dark"] .formula-tab-btn.active {
-          color: #00f0ff;
-          border-bottom: 2px solid #00f0ff;
+          color: var(--color-primary);
+          border-bottom: 2px solid var(--color-primary);
         }
         .formula-table {
           width: 100%;
@@ -2287,37 +2423,37 @@ export const FormulaPolinomicaModal: React.FC<{
           font-size: 0.8rem;
         }
         .formula-table th {
-          background: #f1f5f9;
-          color: #475569;
+          background: var(--modal-panel-bg);
+          color: var(--text-secondary);
           font-weight: 600;
           text-transform: capitalize;
           font-size: 0.78rem;
           padding: 8px 12px;
-          border-bottom: 1px solid #e2e8f0;
-          border-right: 1px solid #e2e8f0;
+          border-bottom: 1px solid var(--border-color);
+          border-right: 1px solid var(--border-color);
         }
         [data-theme="dark"] .formula-table th {
-          background: rgba(255, 255, 255, 0.03);
-          color: #94a3b8;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
-          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--modal-panel-bg);
+          color: var(--text-secondary);
+          border-bottom: 1px solid var(--border-color);
+          border-right: 1px solid var(--border-color);
         }
         .formula-table td {
           padding: 6px 12px;
-          border-bottom: 1px solid #f1f5f9;
-          border-right: 1px solid #f1f5f9;
-          color: #334155;
+          border-bottom: 1px solid var(--modal-divider-color);
+          border-right: 1px solid var(--modal-divider-color);
+          color: var(--text-primary);
         }
         [data-theme="dark"] .formula-table td {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-          border-right: 1px solid rgba(255, 255, 255, 0.02);
-          color: #cbd5e1;
+          border-bottom: 1px solid var(--modal-divider-color);
+          border-right: 1px solid var(--modal-divider-color);
+          color: var(--text-primary);
         }
         .formula-table tr:hover {
-          background: #f8fafc;
+          background: var(--modal-panel-hover-bg);
         }
         [data-theme="dark"] .formula-table tr:hover {
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--modal-panel-hover-bg);
         }
         .alert-bar {
           background: #fffbeb;
@@ -2341,28 +2477,28 @@ export const FormulaPolinomicaModal: React.FC<{
         {/* Toolbar */}
         <div className="formula-toolbar">
           <button className="formula-toolbar-btn" onClick={onClose}>
-            <span>↩️</span> Volver
+            <LiteIcon name="arrow-left" size={16} /> Volver
           </button>
           <button className="formula-toolbar-btn" onClick={handleOpenExternal}>
-            <span>🖨️</span> Imprimir Detallado
+            <LiteIcon name="file-text" size={16} /> Imprimir Detallado
           </button>
           <button className="formula-toolbar-btn" onClick={handleOpenExternal}>
-            <span>📊</span> Imprimir Fórmula
+            <LiteIcon name="chart" size={16} /> Imprimir Fórmula
           </button>
           <button className="formula-toolbar-btn" onClick={() => alert('Actualizando coeficientes...')}>
-            <span>🔄</span> Actualizar
+            <LiteIcon name="redo" size={16} /> Actualizar
           </button>
         </div>
 
         {/* Tab selection */}
         <div className="formula-tabs">
-          <button className={`formula-tab-btn ${activeTab === 'formula' ? 'active' : ''}`} onClick={() => setActiveTab('formula')}>📊 Coeficientes y Fórmula</button>
-          <button className={`formula-tab-btn ${activeTab === 'desagregado' ? 'active' : ''}`} onClick={() => setActiveTab('desagregado')}>🧮 Matriz de Desagregado (Índices Unificados)</button>
+          <button className={`formula-tab-btn ${activeTab === 'formula' ? 'active' : ''}`} onClick={() => setActiveTab('formula')}>Coeficientes y Fórmula</button>
+          <button className={`formula-tab-btn ${activeTab === 'desagregado' ? 'active' : ''}`} onClick={() => setActiveTab('desagregado')}>Matriz de Desagregado (Índices Unificados)</button>
         </div>
 
         {/* Warning banner */}
         <div className="alert-bar">
-          <span>⚠️</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, border: '1px solid currentColor', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 800 }}>!</span>
           <span>La fórmula polinómica debe tener como máximo 8 monomios</span>
         </div>
 
@@ -2383,32 +2519,32 @@ export const FormulaPolinomicaModal: React.FC<{
               <tbody>
                 {formattedRows.map((row, idx) => (
                   <tr key={row.index}>
-                    <td style={{ textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{idx + 1}</td>
                     <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold' }}>{row.index}</td>
                     <td style={{ fontWeight: 500 }}>{row.name}</td>
-                    <td style={{ fontWeight: 'bold', color: '#475569' }}>
+                    <td style={{ fontWeight: 'bold', color: 'var(--text-secondary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🔑</span>
+                        <span style={{ display: 'inline-flex', width: 14, height: 14, border: '1px solid currentColor', borderRadius: 999 }} />
                         <span>{row.symbol}</span>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#475569' }}>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
                       {row.coefCalculado.toFixed(10)}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ color: '#059669', fontSize: '0.8rem' }}>📌</span>
-                        <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>
+                        <span style={{ width: 6, height: 6, borderRadius: 999, background: '#059669', display: 'inline-block' }} />
+                        <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>
                           {row.coefDefinido.toFixed(3)}
                         </span>
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#64748b' }}>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
                       {row.pct.toFixed(2)}
                     </td>
                   </tr>
                 ))}
-                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                <tr style={{ background: 'var(--modal-panel-bg)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)' }}>
                   <td colSpan={4} style={{ textAlign: 'right', padding: '10px 12px' }}>Total Coeficientes:</td>
                   <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px' }}>1.0000000000</td>
                   <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669', fontSize: '0.9rem' }}>1.000</td>
@@ -2439,7 +2575,7 @@ export const FormulaPolinomicaModal: React.FC<{
                   const isBold = row.isBold || isComponent;
                   const fontColor = isComponent ? '#dc2626' : (row.isGreen ? '#16a34a' : 'inherit');
                   return (
-                    <tr key={row.item} style={{ background: isBold ? 'rgba(0, 0, 0, 0.02)' : 'transparent', fontWeight: isBold ? 'bold' : 'normal' }}>
+                    <tr key={row.item} style={{ background: isBold ? 'var(--modal-panel-bg)' : 'transparent', fontWeight: isBold ? 'bold' : 'normal' }}>
                       <td style={{ textAlign: 'center', color: fontColor }}>{row.item}</td>
                       <td style={{ color: fontColor }}>{row.desc}</td>
                       <td style={{ textAlign: 'center', color: fontColor }}>{row.und}</td>
@@ -2454,7 +2590,7 @@ export const FormulaPolinomicaModal: React.FC<{
                     </tr>
                   );
                 })}
-                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                <tr style={{ background: 'var(--modal-panel-bg)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)' }}>
                   <td colSpan={5} style={{ textAlign: 'right', padding: '10px 12px' }}>Total:</td>
                   <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#dc2626' }}>
                     {totalPresupuestoCost.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2465,7 +2601,7 @@ export const FormulaPolinomicaModal: React.FC<{
                     </td>
                   ))}
                 </tr>
-                <tr style={{ background: '#f1f5f9', fontWeight: 'bold' }}>
+                <tr style={{ background: 'var(--modal-panel-hover-bg)', fontWeight: 'bold' }}>
                   <td colSpan={5} style={{ textAlign: 'right', padding: '10px 12px', color: '#059669' }}>Total Coeficiente:</td>
                   <td style={{ textAlign: 'right', fontFamily: 'monospace', padding: '10px 12px', color: '#059669' }}>1.000</td>
                   {desagregadoCols.map(col => (
@@ -2480,13 +2616,13 @@ export const FormulaPolinomicaModal: React.FC<{
         )}
 
         {/* Close Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 20px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 20px', background: 'var(--modal-panel-bg)', borderTop: '1px solid var(--border-color)' }}>
           <button
             onClick={onClose}
             style={{
-              background: '#ffffff',
-              border: '1px solid #cbd5e1',
-              color: '#334155',
+              background: 'var(--modal-bg)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
               padding: '6px 20px',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -2633,7 +2769,7 @@ export const CatalogoPartidasModal: React.FC<{
                     </div>
                   ))}
                 </div>
-                <Button onClick={() => onAddPartidaFromCatalog(activePartida)} style={{ background: 'var(--color-primary)', border: 'none', color: '#121622', fontWeight: 'bold' }}>Agregar al presupuesto</Button>
+                <Button onClick={() => onAddPartidaFromCatalog(activePartida)} style={{ background: 'var(--color-primary)', border: 'none', color: 'var(--text-on-primary)', fontWeight: 'bold' }}>Agregar al presupuesto</Button>
               </>
             ) : (
               <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '30px' }}>Seleccione una partida del catálogo.</div>
@@ -2648,11 +2784,294 @@ export const CatalogoPartidasModal: React.FC<{
   );
 };
 
+export const ImportarPartidaModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  budgets: Budget[];
+  activeBudgetId: string;
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  selectedScope: 'global' | 'local';
+  setSelectedScope: (v: 'global' | 'local') => void;
+  onImportPartida: (sourceBudgetId: string, sourcePartidaId: string, scope: 'global' | 'local') => void;
+}> = ({ isOpen, onClose, budgets, activeBudgetId, searchTerm, setSearchTerm, selectedScope, setSelectedScope, onImportPartida }) => {
+  const sourceBudgets = budgets.filter(b => b.id !== activeBudgetId);
+  const filteredBudgets = sourceBudgets.filter(b => {
+    const budgetMatch = b.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const partidaMatch = b.partidas.some(p => p.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
+    return budgetMatch || partidaMatch;
+  });
+
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string>(filteredBudgets[0]?.id || '');
+  const [selectedPartidaId, setSelectedPartidaId] = useState<string>('');
+
+  useEffect(() => {
+    if (!filteredBudgets.length) {
+      setSelectedBudgetId('');
+      setSelectedPartidaId('');
+      return;
+    }
+    if (!selectedBudgetId || !filteredBudgets.some(b => b.id === selectedBudgetId)) {
+      setSelectedBudgetId(filteredBudgets[0].id);
+    }
+  }, [filteredBudgets, selectedBudgetId]);
+
+  useEffect(() => {
+    const budget = filteredBudgets.find(b => b.id === selectedBudgetId);
+    const firstPartida = budget?.partidas.find(p => !p.esTitulo)?.id || budget?.partidas[0]?.id || '';
+    setSelectedPartidaId(prev => prev && budget?.partidas.some(p => p.id === prev) ? prev : firstPartida);
+  }, [selectedBudgetId, filteredBudgets]);
+
+  const selectedBudget = filteredBudgets.find(b => b.id === selectedBudgetId) || null;
+  const selectedPartida = selectedBudget?.partidas.find(p => p.id === selectedPartidaId) || null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="PARTIDA POR BÚSQUEDA">
+      <div className="import-partida-container" style={{ padding: '24px 28px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <style>{`
+          .modal-overlay:has(.import-partida-container) .modal-content {
+            width: min(940px, calc(100vw - 48px));
+            max-width: min(940px, calc(100vw - 48px));
+            max-height: calc(100vh - 56px);
+            padding: 0;
+            overflow: hidden;
+            border-radius: 18px;
+            box-shadow: var(--shadow-lg), 0 24px 80px rgba(15, 23, 42, 0.24);
+          }
+
+          .modal-overlay:has(.import-partida-container) .modal-header {
+            margin: 0;
+            padding: 28px 32px 18px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--modal-header-bg);
+          }
+
+          .modal-overlay:has(.import-partida-container) .modal-title {
+            font-size: 1.38rem;
+            letter-spacing: 0;
+          }
+
+          .modal-overlay:has(.import-partida-container) .modal-body {
+            max-height: calc(100vh - 142px);
+            overflow: auto;
+          }
+
+          @media (max-width: 860px) {
+            .modal-overlay:has(.import-partida-container) .modal-content {
+              width: calc(100vw - 24px);
+              max-width: calc(100vw - 24px);
+              max-height: calc(100vh - 24px);
+            }
+
+            .modal-overlay:has(.import-partida-container) .modal-header {
+              padding: 22px 20px 16px;
+            }
+
+            .import-partida-container {
+              padding: 18px 20px 22px !important;
+            }
+
+            .import-partida-grid,
+            .import-partida-meta-grid,
+            .import-partida-scope-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+        <div style={{ padding: '14px 16px', border: '1px solid rgba(14, 165, 233, 0.28)', borderRadius: '10px', background: 'rgba(14, 165, 233, 0.08)', color: 'var(--text-primary)', fontSize: '0.84rem', lineHeight: 1.45 }}>
+          <strong>Advertencia:</strong> al importar una partida, también se importan sus insumos. Los insumos son globales por regla de oro en todos los proyectos. Puedes decidir si ese precio se aplica globalmente o solo en este proyecto.
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar por nombre de presupuesto o partida..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ ...dgInputStyle, padding: '13px 15px', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--modal-input-bg)' }}
+        />
+
+        <div className="import-partida-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 0.95fr) minmax(420px, 1.25fr)', gap: '18px', minHeight: '430px' }}>
+          <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', maxHeight: '430px', overflowY: 'auto', background: 'var(--modal-panel-bg)' }}>
+            {filteredBudgets.length === 0 ? (
+              <div style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No hay presupuestos adicionales para importar.</div>
+            ) : (
+              filteredBudgets.map(b => (
+                <div
+                  key={b.id}
+                  onClick={() => setSelectedBudgetId(b.id)}
+                  style={{
+                    padding: '14px 16px',
+                    borderBottom: '1px solid var(--border-color)',
+                    borderLeft: selectedBudgetId === b.id ? '3px solid var(--color-primary)' : '3px solid transparent',
+                    cursor: 'pointer',
+                    background: selectedBudgetId === b.id ? 'var(--color-primary-glow)' : 'transparent',
+                    transition: 'background 0.16s ease, border-color 0.16s ease'
+                  }}
+                >
+                  <div style={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.3 }}>{b.nombre}</div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '5px' }}>{b.partidas.filter(p => !p.esTitulo).length} partidas APU · {b.partidas.length} items</div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--modal-panel-bg)' }}>
+            {selectedBudget ? (
+              <>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)', lineHeight: 1.35 }}>{selectedBudget.nombre}</div>
+                <select
+                  value={selectedPartidaId}
+                  onChange={(e) => setSelectedPartidaId(e.target.value)}
+                  style={{ ...dgInputStyle, padding: '12px 14px', borderRadius: '8px', fontSize: '0.88rem', background: 'var(--modal-input-bg)' }}
+                >
+                  {selectedBudget.partidas.map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+
+                {selectedPartida ? (
+                  <>
+                    <div className="import-partida-meta-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
+                      <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', background: 'var(--modal-bg)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '5px' }}>Unidad</div>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)' }}>{selectedPartida.unidad || '-'}</strong>
+                      </div>
+                      <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', background: 'var(--modal-bg)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '5px' }}>Rendimiento</div>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)' }}>{selectedPartida.rendimiento || 1}</strong>
+                      </div>
+                      <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', background: 'var(--modal-bg)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '5px' }}>Insumos</div>
+                        <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)' }}>{selectedPartida.insumos.length}</strong>
+                      </div>
+                    </div>
+                    <div className="import-partida-scope-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedScope('global')}
+                        style={{
+                          padding: '13px 14px',
+                          minHeight: '78px',
+                          borderRadius: '10px',
+                          border: selectedScope === 'global' ? '1px solid rgba(0, 240, 255, 0.55)' : '1px solid var(--border-color)',
+                          background: selectedScope === 'global' ? 'var(--color-primary-glow)' : 'var(--modal-bg)',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          textAlign: 'left',
+                          lineHeight: 1.35,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}
+                      >
+                        <LiteIcon name="database" size={17} />
+                        Global (cambia en todos los proyectos)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedScope('local')}
+                        style={{
+                          padding: '13px 14px',
+                          minHeight: '78px',
+                          borderRadius: '10px',
+                          border: selectedScope === 'local' ? '1px solid rgba(244, 63, 94, 0.55)' : '1px solid var(--border-color)',
+                          background: selectedScope === 'local' ? 'var(--color-danger-glow)' : 'var(--modal-bg)',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          fontWeight: 800,
+                          textAlign: 'left',
+                          lineHeight: 1.35,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px'
+                        }}
+                      >
+                        <LiteIcon name="file-text" size={17} />
+                        Solo este proyecto
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(0, 240, 255, 0.055)', borderLeft: '3px solid rgba(0, 240, 255, 0.45)', borderRadius: '6px', padding: '10px 12px', lineHeight: 1.45 }}>
+                      {selectedScope === 'global'
+                        ? 'Cuando edites el APU de cualquier insumo importado en este presupuesto, ese cambio se reflejará en los demás proyectos que compartan el mismo insumo.'
+                        : 'Cuando edites el APU de esta partida acá, el cambio quedará solo en este proyecto y no se propagará a los demás.'}
+                    </div>
+                    <Button onClick={() => onImportPartida(selectedBudget.id, selectedPartida.id, selectedScope)} style={{ background: 'var(--color-primary)', border: 'none', color: 'var(--text-on-primary)', fontWeight: 'bold', padding: '12px 16px', borderRadius: '8px' }}>
+                      Importar partida
+                    </Button>
+                  </>
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Seleccione una partida.</div>
+                )}
+              </>
+            ) : (
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '30px' }}>No se encontró una partida.</div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 export const ListaInsumosModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   activeBudget: Budget | null;
 }> = ({ isOpen, onClose, activeBudget }) => {
+  const getBaseCantidad = (ins: any, rend: number) => {
+    const explicitCantidad = typeof ins.cantidad === 'number' && Number.isFinite(ins.cantidad) ? ins.cantidad : null;
+    if (ins.unidad === '%MO') return explicitCantidad ?? ins.cuadrilla;
+    if (ins.tipo === 'MO') return rend > 0 ? (ins.cuadrilla * 8) / rend : 0;
+    if (ins.tipo === 'EQ') return explicitCantidad ?? (rend > 0 ? (ins.cuadrilla * 8) / rend : 0);
+    return explicitCantidad ?? ins.cuadrilla;
+  };
+
+  const getDesperdicio = (ins: any) => {
+    const raw = typeof ins.desperdicio === 'number' && Number.isFinite(ins.desperdicio) ? ins.desperdicio : 0;
+    return ins.tipo === 'MT' ? Math.max(0, raw) : 0;
+  };
+
+  const getCantidad = (ins: any, rend: number) => {
+    const baseCantidad = getBaseCantidad(ins, rend);
+    return baseCantidad * (1 + getDesperdicio(ins) / 100);
+  };
+
+  const isManualTools = (ins: any) => {
+    const unidad = (ins.unidad || '').trim().toUpperCase();
+    const nombre = (ins.nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    return unidad === '%MO' || nombre.includes('HERRAMIENTAS MANUALES');
+  };
+
+  const getMoSubtotal = (p: any) => p.insumos.reduce((sum: number, ins: any) => {
+    if (ins.tipo !== 'MO' || isManualTools(ins)) return sum;
+    return sum + getCantidad(ins, p.rendimiento) * ins.pu;
+  }, 0);
+
+  const getParcial = (ins: any, p: any) => {
+    const unitPrice = isManualTools(ins) ? getMoSubtotal(p) : ins.pu;
+    return isManualTools(ins)
+      ? (unitPrice * getCantidad(ins, p.rendimiento)) / 100
+      : getCantidad(ins, p.rendimiento) * unitPrice;
+  };
+
+  const insumoRows = activeBudget?.partidas
+    .filter(p => !p.esTitulo)
+    .flatMap(p => p.insumos.map(ins => ({ ...ins, totalParcial: p.metrado * getParcial(ins, p) })))
+    .reduce((acc: any[], current) => {
+      const key = `${current.codigo || ''}|${current.nombre}|${current.unidad}|${current.tipo}`;
+      const existing = acc.find(x => x.key === key);
+      if (existing) {
+        existing.totalParcial += current.totalParcial;
+      } else {
+        acc.push({ ...current, key });
+      }
+      return acc;
+    }, []) || [];
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`LISTA DE INSUMOS: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}>
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -2660,6 +3079,7 @@ export const ListaInsumosModal: React.FC<{
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
             <thead>
               <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ padding: '8px 12px', width: '12%', fontFamily: 'monospace' }}>Código</th>
                 <th style={{ padding: '8px 12px' }}>Insumo</th>
                 <th style={{ padding: '8px 12px', width: '10%' }}>Unidad</th>
                 <th style={{ padding: '8px 12px', width: '20%' }}>Tipo</th>
@@ -2667,20 +3087,13 @@ export const ListaInsumosModal: React.FC<{
               </tr>
             </thead>
             <tbody>
-              {activeBudget?.partidas.flatMap(p => p.insumos).reduce((acc: any[], current) => {
-                const existing = acc.find(x => x.nombre === current.nombre);
-                if (existing) {
-                  existing.pu += current.pu; // Simple aggregate
-                } else {
-                  acc.push({ ...current });
-                }
-                return acc;
-              }, []).map((ins, idx) => (
+              {insumoRows.map((ins, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: '0.76rem', color: 'var(--text-muted)' }}>{ins.codigo || '—'}</td>
                   <td style={{ padding: '8px 12px' }}>{ins.nombre}</td>
                   <td style={{ padding: '8px 12px' }}>{ins.unidad}</td>
                   <td style={{ padding: '8px 12px' }}>{ins.tipo}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>S/ {(ins.pu * (ins.cuadrilla || 1)).toFixed(2)}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>S/ {ins.totalParcial.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
