@@ -1047,7 +1047,51 @@ async function excelPresupuestoLegacy(budget: Budget) {
 
 void excelPresupuestoLegacy;
 
-async function excelPresupuesto(budget: Budget) {
+function numberToSpanishWords(value: number): string {
+  const units = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+  const teens = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISEIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+  const tens = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const hundreds = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+  const convertBelowThousand = (num: number): string => {
+    if (num === 0) return '';
+    if (num === 100) return 'CIEN';
+    if (num < 10) return units[num];
+    if (num < 20) return teens[num - 10];
+    if (num < 30) return num === 20 ? 'VEINTE' : `VEINTI${units[num - 20]}`;
+    if (num < 100) {
+      const unit = num % 10;
+      return unit ? `${tens[Math.floor(num / 10)]} Y ${units[unit]}` : tens[Math.floor(num / 10)];
+    }
+    const rest = num % 100;
+    return `${hundreds[Math.floor(num / 100)]}${rest ? ` ${convertBelowThousand(rest)}` : ''}`;
+  };
+
+  const convert = (num: number): string => {
+    if (num === 0) return 'CERO';
+    if (num < 1000) return convertBelowThousand(num);
+    if (num < 1000000) {
+      const thousands = Math.floor(num / 1000);
+      const rest = num % 1000;
+      return `${thousands === 1 ? 'MIL' : `${convertBelowThousand(thousands)} MIL`}${rest ? ` ${convert(rest)}` : ''}`;
+    }
+    const millions = Math.floor(num / 1000000);
+    const rest = num % 1000000;
+    return `${millions === 1 ? 'UN MILLON' : `${convert(millions)} MILLONES`}${rest ? ` ${convert(rest)}` : ''}`;
+  };
+
+  const integerValue = Math.floor(Math.abs(value));
+  return `${value < 0 ? 'MENOS ' : ''}${convert(integerValue)}`;
+}
+
+function amountToSpanishCurrency(value: number, currency: Budget['moneda'] = 'SOLES') {
+  const centsTotal = Math.round(Math.abs(value) * 100);
+  const integerPart = Math.floor(centsTotal / 100);
+  const cents = centsTotal % 100;
+  return `SON: ${numberToSpanishWords(value < 0 ? -integerPart : integerPart)} Y ${String(cents).padStart(2, '0')}/100 ${currency}`;
+}
+
+async function excelPresupuesto(budget: Budget, option: ExportOption = 'presupuesto') {
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
   const budgetCode = getBudgetCode(budget);
@@ -1059,12 +1103,9 @@ async function excelPresupuesto(budget: Budget) {
   const upper = (value: unknown) => String(value || '').toUpperCase();
   const isTitle = (p: Partida) => p.esTitulo;
 
-  const applySheetLayout = (ws: any, rows: any[][], cols: number[]) => {
+  const applySheetLayout = (ws: any, _rows: any[][], cols: number[]) => {
     ws['!cols'] = cols.map(wch => ({ wch }));
-    ws['!rows'] = Array.from({ length: Math.max(rows.length, 1000) }, (_, idx) => ({
-      hpt: idx < 8 ? 18 : 15
-    }));
-    ws['!margins'] = { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 };
+    ws['!margins'] = { left: 0.75, right: 0.75, top: 1, bottom: 1, header: 0, footer: 0 };
     ws['!ref'] = `A1:${XLSX.utils.encode_col(cols.length - 1)}1000`;
   };
 
@@ -1107,7 +1148,7 @@ async function excelPresupuesto(budget: Budget) {
     }
   };
 
-  {
+  const appendPresupuestoSheet = () => {
     const rows: any[][] = [
       ['Presupuesto', '', '', '', '', ''],
       [],
@@ -1134,23 +1175,22 @@ async function excelPresupuesto(budget: Budget) {
     rows.push(['', 'COSTO DIRECTO', '', '', '', totals.cd]);
     rows.push(['', 'Gastos Generales 10%CD', '', '', '', totals.gg]);
     rows.push(['', 'Utilidad 10% CD', '', '', '', totals.ut]);
-    rows.push(['', '', '', '', '', '***************']);
-    rows.push(['', 'SUB TOTAL', '', '', '', totals.st]);
-    rows.push(['', 'IGV(18%)', '', '', '', totals.igv]);
-    rows.push(['', '', '', '', '', '***************']);
+    rows.push(['', 'SUBTOTAL', '', '', '', totals.st]);
+    rows.push(['', 'IGV (18%)', '', '', '', totals.igv]);
+    rows.push([]);
     rows.push(['', 'TOTAL DEL PRESUPUESTO', '', '', '', totals.total]);
     rows.push([]);
-    rows.push(['SON :', '', `${fmtNum(totals.total)} SOLES`, '', '', '']);
+    rows.push(['', amountToSpanishCurrency(totals.total, budget.moneda), '', '', '', '']);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
-    applySheetLayout(ws, rows, [14, 76, 9, 12, 13, 14]);
+    applySheetLayout(ws, rows, [16.17, 75.17, 48.17, 11.17, 36.17, 23.17]);
     setNumberFormats(ws, rows, { 3: '#,##0.00', 4: '#,##0.00', 5: '#,##0.00' });
     styleRows(ws, rows, 6, [7]);
     XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto');
-  }
+  };
 
-  {
+  const appendApuSheet = () => {
     const rows: any[][] = [
       ['Análisis de precios unitarios', '', '', '', '', '', ''],
       [],
@@ -1193,13 +1233,14 @@ async function excelPresupuesto(budget: Budget) {
     }
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    applySheetLayout(ws, rows, [15, 76, 10, 13, 13, 13, 14]);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+    applySheetLayout(ws, rows, [34.17, 85.17, 11.17, 11.17, 7.5, 30.17, 22.17]);
     setNumberFormats(ws, rows, { 3: '0.0000', 4: '0.0000', 5: '#,##0.00', 6: '#,##0.00' });
     styleRows(ws, rows, 7, tableHeaderRows);
     XLSX.utils.book_append_sheet(wb, ws, 'Análisis Precios Unitarios');
-  }
+  };
 
-  {
+  const appendInsumosSheet = () => {
     const rows: any[][] = [
       ['Relación de Insumos', '', '', '', '', ''],
       [],
@@ -1241,7 +1282,7 @@ async function excelPresupuesto(budget: Budget) {
     for (const tipo of RESOURCE_TYPE_ORDER) {
       const items = [...map.values()]
         .filter(item => item.tipo === tipo)
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+        .sort((a, b) => (a.codigo || a.nombre).localeCompare(b.codigo || b.nombre));
       if (!items.length) continue;
       rows.push([]);
       rows.push(['', RESOURCE_TYPE_LABEL[tipo].toUpperCase(), '', '', '', '']);
@@ -1253,16 +1294,99 @@ async function excelPresupuesto(budget: Budget) {
     }
 
     rows.push([]);
-    rows.push(['', '', '', '', 'Total', [...map.values()].reduce((sum, item) => sum + item.parcial, 0)]);
+    rows.push(['', '', '', 'Total', '', [...map.values()].reduce((sum, item) => sum + item.parcial, 0)]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    applySheetLayout(ws, rows, [15, 74, 10, 14, 13, 15]);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+    applySheetLayout(ws, rows, [21.17, 58.17, 48.17, 10, 12.17, 10]);
     setNumberFormats(ws, rows, { 3: '0.0000', 4: '#,##0.00', 5: '#,##0.00' });
     styleRows(ws, rows, 6, [7]);
     XLSX.utils.book_append_sheet(wb, ws, 'Relación de Insumos');
+  };
+
+  const appendResumenSheet = () => {
+    const pieRows = calculateBudgetPieRows(budget);
+    const rows: any[][] = [
+      ['Hoja Resumen', '', '', '', '', ''],
+      [],
+      ['Presupuesto', budgetCode, upper(budget.nombre), '', '', ''],
+      ['Subpresupuesto', subPresupuestoCode, upper(subPresupuesto), '', '', ''],
+      ['Cliente', '', upper(budget.cliente), '', 'Costo al', fecha],
+      ['Lugar', '', upper(lugar), '', '', ''],
+      [],
+      ['Variable', 'Descripción', 'Fórmula', 'I.U.', 'Importe S/.', ''],
+    ];
+
+    for (const row of pieRows) {
+      rows.push([
+        row.variable,
+        upper(row.descripcion),
+        row.formula || '',
+        row.iu || '',
+        row.valor,
+        row.resaltar ? 'TOTAL' : ''
+      ]);
+    }
+
+    rows.push([]);
+    rows.push(['', amountToSpanishCurrency(getPieTotal(pieRows), budget.moneda), '', '', '', '']);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+    applySheetLayout(ws, rows, [16.17, 58.17, 28, 10, 16, 12]);
+    setNumberFormats(ws, rows, { 4: '#,##0.00' });
+    styleRows(ws, rows, 6, [7]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Hoja Resumen');
+  };
+
+  const appendFormulaPolinomicaSheet = () => {
+    const rows: any[][] = [
+      ['Fórmula Polinómica', '', '', '', ''],
+      [],
+      ['Presupuesto', budgetCode, upper(budget.nombre), '', ''],
+      ['Subpresupuesto', subPresupuestoCode, upper(subPresupuesto), '', ''],
+      ['Cliente', '', upper(budget.cliente), '', ''],
+      ['Lugar', '', upper(lugar), '', ''],
+      [],
+      ['Monomio', 'Índice Unificado', 'Coeficiente', 'Símbolo', 'Factor'],
+      ['1', '37 : HERRAMIENTA MANUAL', 0.025, 'HM', ''],
+      ['1', '39 : ÍNDICE DE PRECIOS AL CONSUMIDOR (INEI)', 0.439, 'IPC', ''],
+      ['1', '47 : MANO DE OBRA (INC. LEYES SOCIALES)', 0.536, 'MO', ''],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
+    applySheetLayout(ws, rows, [16.17, 58.17, 14, 14, 18]);
+    setNumberFormats(ws, rows, { 2: '0.000' });
+    styleRows(ws, rows, 5, [7]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Fórmula Polinómica');
+  };
+
+  let filePrefix = 'PRESUPUESTO';
+  switch (option) {
+    case 'resumen':
+      filePrefix = 'RESUMEN';
+      appendResumenSheet();
+      break;
+    case 'presupuesto':
+      filePrefix = 'PRESUPUESTO';
+      appendPresupuestoSheet();
+      break;
+    case 'apu':
+      filePrefix = 'APU';
+      appendApuSheet();
+      break;
+    case 'insumos':
+      filePrefix = 'INSUMOS';
+      appendInsumosSheet();
+      break;
+    case 'polinomica':
+      filePrefix = 'FORMULA_POLINOMICA';
+      appendFormulaPolinomicaSheet();
+      break;
   }
 
-  XLSX.writeFile(wb, `PRESUPUESTO_${safeFileName(budget.nombre)}.xlsx`, { cellStyles: true });
+  XLSX.writeFile(wb, `${filePrefix}_${safeFileName(budget.nombre)}.xlsx`, { cellStyles: true });
 }
 
 // ─── Dispatcher público ───────────────────────────────────────────────────
@@ -1280,14 +1404,5 @@ export async function exportPDF(option: ExportOption, budget: Budget) {
 }
 
 export async function exportExcel(option: ExportOption, budget: Budget) {
-  // All Excel sheets in one workbook, or only the selected section
-  switch (option) {
-    case 'resumen':
-    case 'presupuesto':
-    case 'apu':
-    case 'insumos':
-    case 'polinomica':
-      await excelPresupuesto(budget);
-      break;
-  }
+  await excelPresupuesto(budget, option);
 }
