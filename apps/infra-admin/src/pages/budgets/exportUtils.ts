@@ -1091,6 +1091,31 @@ function amountToSpanishCurrency(value: number, currency: Budget['moneda'] = 'SO
   return `SON: ${numberToSpanishWords(value < 0 ? -integerPart : integerPart)} Y ${String(cents).padStart(2, '0')}/100 ${currency}`;
 }
 
+function downloadExcelWorkbook(XLSX: any, wb: any, fileName: string) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    XLSX.writeFile(wb, fileName, { cellStyles: true });
+    return;
+  }
+
+  const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
+  const blob = new Blob([data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.rel = 'noopener';
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+
+  window.setTimeout(() => {
+    document.body.removeChild(anchor);
+    window.URL.revokeObjectURL(url);
+  }, 0);
+}
+
 async function excelPresupuesto(budget: Budget, option: ExportOption = 'presupuesto') {
   const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
@@ -1386,7 +1411,7 @@ async function excelPresupuesto(budget: Budget, option: ExportOption = 'presupue
       break;
   }
 
-  XLSX.writeFile(wb, `${filePrefix}_${safeFileName(budget.nombre)}.xlsx`, { cellStyles: true });
+  downloadExcelWorkbook(XLSX, wb, `${filePrefix}_${safeFileName(budget.nombre)}.xlsx`);
 }
 
 // ─── Dispatcher público ───────────────────────────────────────────────────

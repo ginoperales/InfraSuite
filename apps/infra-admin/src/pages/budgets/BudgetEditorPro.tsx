@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
 import type { Budget, Partida, Insumo, PartidaColumnKey, SharedPartidaBudgetRef } from './types';
-import { LiteIcon } from './BudgetEditorLite';
+import { ExportDropdowns, LiteIcon } from './BudgetEditorLite';
 
 const contextMenuItemStyle: React.CSSProperties = {
   background: 'transparent',
@@ -1230,7 +1230,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
             { label: 'Guardar', icon: '💾', onClick: () => alert('Proyecto guardado en base de datos local.') },
             { label: 'Imprimir', icon: '🖨️', onClick: () => window.print() },
             { label: 'Info. Proyecto', icon: 'ℹ️', onClick: () => setIsDatosGeneralesOpen(true) },
-            { label: 'Exportar', icon: '💾', onClick: downloadActiveBudgetDatabase },
+            { label: 'Base JSON', icon: '💾', onClick: downloadActiveBudgetDatabase },
             { label: 'Fórmula Polinómica', icon: '📐', onClick: () => setIsFormulaPolinomicaOpen(true) },
             { label: 'Presupuesto Analítico', icon: '📊', onClick: () => alert('Presupuesto Analítico generado') },
             { label: 'Calendario Adquisiciones', icon: '📅', onClick: () => alert('Calendario de Adquisiciones abierto') },
@@ -1264,6 +1264,10 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
               <span style={{ fontSize: '0.62rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', maxWidth: '85px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opt.label}</span>
             </div>
           ))}
+        </div>
+
+        <div style={{ flexShrink: 0, marginLeft: '10px' }}>
+          <ExportDropdowns budget={activeBudget} />
         </div>
 
         {/* Right side mode toggles (R, CPM, BP, BIM, BI) */}

@@ -434,7 +434,7 @@ const EXPORT_OPTIONS: { value: ExportOption; label: string; icon: LiteIconName }
   { value: 'polinomica',  label: 'Fórmula Polinómica',         icon: 'sigma' },
 ];
 
-const ExportDropdowns: React.FC<{ budget: Budget }> = ({ budget }) => {
+export const ExportDropdowns: React.FC<{ budget: Budget }> = ({ budget }) => {
   const [openMenu, setOpenMenu] = useState<'pdf' | 'excel' | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -446,6 +446,7 @@ const ExportDropdowns: React.FC<{ budget: Budget }> = ({ budget }) => {
       else                await exportExcel(option, budget);
     } catch (e) {
       console.error('Export error', e);
+      window.alert(type === 'excel' ? 'No se pudo generar el archivo Excel.' : 'No se pudo generar el archivo PDF.');
     } finally {
       setLoading(null);
     }
