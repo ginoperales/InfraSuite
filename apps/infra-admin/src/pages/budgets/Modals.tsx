@@ -3163,3 +3163,184 @@ export const ConfiguracionModal: React.FC<{
     </Modal>
   );
 };
+export const AgregarConIAModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  budgets: Budget[];
+  activeBudgetId: string;
+  onAddPartida: (partidaToImport: Partida) => void;
+}> = ({ isOpen, onClose, budgets, activeBudgetId, onAddPartida }) => {
+  const [nombre, setNombre] = useState('');
+  const [tipo, setTipo] = useState<'PARTIDA' | 'TITULO'>('PARTIDA');
+  const [descripcion, setDescripcion] = useState('');
+  const [lugar, setLugar] = useState('');
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [results, setResults] = useState<{ source: 'DB' | 'IA', data: Partida }[]>([]);
+
+  const handleGenerate = () => {
+    setIsGenerating(true);
+    setResults([]);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      const generatedResults: { source: 'DB' | 'IA', data: Partida }[] = [];
+      
+      // 1. Mock DB search (search existing budgets)
+      const dbMatches: Partida[] = [];
+      budgets.forEach(b => {
+        b.partidas.forEach(p => {
+          if (p.esTitulo === (tipo === 'TITULO') && p.nombre.toLowerCase().includes(nombre.toLowerCase())) {
+            dbMatches.push(p);
+          }
+        });
+      });
+      
+      // Take up to 2 unique DB matches
+      const uniqueDbMatches = dbMatches.filter((v,i,a)=>a.findIndex(v2=>(v2.nombre===v.nombre))===i).slice(0, 2);
+      uniqueDbMatches.forEach(p => generatedResults.push({ source: 'DB', data: p }));
+
+      // 2. Mock AI generations
+      const aiMock1: Partida = {
+        id: 'ai_' + Math.random().toString(36).substring(2, 9),
+        item: '',
+        nombre: nombre ? `${nombre} (Generado por IA)` : 'Nueva Partida (IA)',
+        esTitulo: tipo === 'TITULO',
+        unidad: tipo === 'TITULO' ? '' : 'M2',
+        metrado: 1,
+        rendimiento: tipo === 'TITULO' ? 1 : (Math.floor(Math.random() * 50) + 10),
+        insumos: []
+      };
+
+      const aiMock2: Partida = {
+        id: 'ai_' + Math.random().toString(36).substring(2, 9),
+        item: '',
+        nombre: nombre ? `${nombre} ${lugar ? `en ${lugar}` : 'Premium'}` : 'Partida Premium (IA)',
+        esTitulo: tipo === 'TITULO',
+        unidad: tipo === 'TITULO' ? '' : 'GLB',
+        metrado: 1,
+        rendimiento: 1,
+        insumos: []
+      };
+
+      generatedResults.push({ source: 'IA', data: aiMock1 });
+      generatedResults.push({ source: 'IA', data: aiMock2 });
+
+      setResults(generatedResults);
+      setIsGenerating(false);
+    }, 1500);
+  };
+
+  const handleAdd = (result: Partida) => {
+    onAddPartida({ ...result, id: 'p_' + Math.random().toString(36).substring(2, 9), isImported: false });
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Partida/TÃ­tulo con IA">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0', width: '700px', maxWidth: '90vw' }}>
+        
+        {/* Form */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Tipo</label>
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as 'PARTIDA' | 'TITULO')}
+              style={dgInputStyle}
+            >
+              <option value="PARTIDA">Partida</option>
+              <option value="TITULO">TÃ­tulo</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Nombre de la {tipo === 'TITULO' ? 'TÃ­tulo' : 'Partida'}</label>
+            <Input 
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder={`Ej: ${tipo === 'TITULO' ? 'Obras Provisionales' : 'ExcavaciÃ³n de zanjas'}`}
+              style={dgInputStyle}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>DescripciÃ³n Adicional (Opcional)</label>
+          <textarea
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            placeholder="Describe mÃ¡s detalles sobre el elemento a generar..."
+            style={{ ...dgInputStyle, minHeight: '60px', resize: 'vertical' }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ConfiguraciÃ³n Avanzada (Opcional)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Input 
+              value={lugar}
+              onChange={(e) => setLugar(e.target.value)}
+              placeholder="Lugar / RegiÃ³n"
+              style={dgInputStyle}
+            />
+            {/* Can add more config inputs here */}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button 
+            onClick={handleGenerate}
+            disabled={!nombre || isGenerating}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-glow)', color: 'var(--color-primary)', border: '1px solid rgba(15, 82, 186, 0.25)' }}
+          >
+            <LiteIcon name={isGenerating ? "refresh-cw" : "sparkles"} size={16} />
+            {isGenerating ? 'Generando...' : (results.length > 0 ? 'Volver a Iterar' : 'Generar Resultados')}
+          </Button>
+        </div>
+
+        {/* Results Area */}
+        {results.length > 0 && (
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Resultados Obtenidos</h4>
+            
+            {results.map((res, index) => (
+              <div key={index} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', borderRadius: '8px',
+                background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-color)'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold',
+                      background: res.source === 'IA' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                      color: res.source === 'IA' ? '#a855f7' : '#22c55e'
+                    }}>
+                      {res.source === 'IA' ? 'Generado por IA' : 'Base de Datos'}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {res.data.esTitulo ? 'TÃTULO' : 'PARTIDA'}
+                    </span>
+                  </div>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{res.data.nombre}</strong>
+                  {!res.data.esTitulo && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      Unidad: {res.data.unidad} | Rendimiento: {res.data.rendimiento}
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  onClick={() => handleAdd(res.data)}
+                  style={{ background: 'var(--grad-primary)', border: 'none', color: '#fff', fontSize: '0.8rem', padding: '6px 12px' }}
+                >
+                  Agregar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </Modal>
+  );
+};

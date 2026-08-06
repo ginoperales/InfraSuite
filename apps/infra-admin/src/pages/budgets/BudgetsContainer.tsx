@@ -1249,6 +1249,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const [cpSearchTerm, setCpSearchTerm] = useState('');
   const [cpSelectedPartidaIndex, setCpSelectedPartidaIndex] = useState(0);
   const [isImportPartidaOpen, setIsImportPartidaOpen] = useState(false);
+  const [isAgregarConIAOpen, setIsAgregarConIAOpen] = useState(false);
   const [importPartidaSearchTerm, setImportPartidaSearchTerm] = useState('');
   const [importPartidaScope, setImportPartidaScope] = useState<'global' | 'local'>('global');
   const [isListaInsumosOpen, setIsListaInsumosOpen] = useState(false);
@@ -2602,6 +2603,13 @@ export const Budgets: React.FC<BudgetsProps> = ({
     setIsCatalogoPartidasOpen(false);
   };
 
+  const handleAddPartidaConIA = (partida: Partida) => {
+    const targetBudget = activeBudgetRef.current ?? activeBudget;
+    if (!targetBudget) return;
+    insertPartidaAfterCurrent(targetBudget, partida);
+    setIsAgregarConIAOpen(false);
+  };
+
   const handleSaveDatosGenerales = () => {
     if (!activeBudget) return;
     const updated: Budget = {
@@ -2952,6 +2960,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
               {[{ label: '+ Agregar Título',   icon: 'folder' as LiteIconName, action: () => { setEditingPartidaId(null); setInsertAfterPartidaId(contextMenu.targetPartida?.id ?? null); setPartidaEsTitulo(true); setPartidaNombre(''); setPartidaUnidad(''); setPartidaMetrado('1'); setPartidaRendimiento('1'); setIsAddPartidaOpen(true); setContextMenu(p => ({ ...p, visible: false })); } },
                 { label: '+ Agregar Partida',  icon: 'file-text' as LiteIconName, action: () => { setEditingPartidaId(null); setInsertAfterPartidaId(contextMenu.targetPartida?.id ?? null); setPartidaEsTitulo(false); setPartidaNombre(''); setPartidaUnidad('M2'); setPartidaMetrado('1'); setPartidaRendimiento('1'); setIsAddPartidaOpen(true); setContextMenu(p => ({ ...p, visible: false })); } },
                 { label: 'Agregar Partida por búsqueda', icon: 'calculator' as LiteIconName, action: () => { setInsertAfterPartidaId(contextMenu.targetPartida?.id ?? null); setContextMenu(p => ({ ...p, visible: false })); setIsImportPartidaOpen(true); } },
+                { label: 'Agregar Partida/Título con IA', icon: 'sparkles' as LiteIconName, action: () => { setInsertAfterPartidaId(contextMenu.targetPartida?.id ?? null); setContextMenu(p => ({ ...p, visible: false })); setIsAgregarConIAOpen(true); } },
                 ...(contextMenu.targetPartida ? [
                   { label: 'Editar',             icon: 'settings' as LiteIconName, action: () => { if (contextMenu.targetPartida) { openEditPartidaModal(contextMenu.targetPartida); setContextMenu(p => ({ ...p, visible: false })); } } },
                   { label: 'Eliminar',           icon: 'trash' as LiteIconName, isRed: true, action: () => {
@@ -3171,6 +3180,13 @@ export const Budgets: React.FC<BudgetsProps> = ({
         />
         <Modals.ListaInsumosModal isOpen={isListaInsumosOpen} onClose={() => setIsListaInsumosOpen(false)} activeBudget={activeBudget} />
         <Modals.ConfiguracionModal isOpen={isConfiguracionOpen} onClose={() => setIsConfiguracionOpen(false)} showGridlines={showGridlines} setShowGridlines={setShowGridlines} />
+        <Modals.AgregarConIAModal
+          isOpen={isAgregarConIAOpen}
+          onClose={() => { setIsAgregarConIAOpen(false); setInsertAfterPartidaId(null); }}
+          budgets={budgets}
+          activeBudgetId={activeBudget?.id ?? ''}
+          onAddPartida={handleAddPartidaConIA}
+        />
       </>
     );
   }
