@@ -408,6 +408,7 @@ interface BudgetEditorLiteProps {
   handlePartidaDragEnter: (p: Partida) => void;
   handlePartidaDragEnd: () => void;
   handlePartidaContextMenu: (e: React.MouseEvent, p: Partida) => void;
+  openEditPartidaModal: (p: Partida) => void;
   handleEmptyPartidasContextMenu: (e: React.MouseEvent) => void;
   handlePartidaCellChange: (pId: string, field: keyof Partida, val: any) => boolean | void;
   handleUpdateInsumoField: (pId: string, insId: string, field: keyof Insumo, val: any) => void;
@@ -613,6 +614,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   handlePartidaDragEnter,
   handlePartidaDragEnd,
   handlePartidaContextMenu,
+  openEditPartidaModal,
   handleEmptyPartidasContextMenu,
   handlePartidaCellChange,
   handleUpdateInsumoField,
@@ -1408,6 +1410,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                       }}
                       onMouseEnter={() => handlePartidaDragEnter(p)}
                       onMouseUp={handlePartidaDragEnd}
+                      onDoubleClick={() => openEditPartidaModal(p)}
                       onContextMenu={(e) => {
                         if (readOnly) {
                           e.preventDefault();

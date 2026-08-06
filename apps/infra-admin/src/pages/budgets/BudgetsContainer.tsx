@@ -2872,6 +2872,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
             handlePartidaDragEnter={extendPartidaDragSelection}
             handlePartidaDragEnd={() => setIsPartidaDragSelecting(false)}
             handlePartidaContextMenu={handlePartidaContextMenu}
+            openEditPartidaModal={openEditPartidaModal}
             handleEmptyPartidasContextMenu={handleEmptyPartidasContextMenu}
             getPartidaSharedBudgets={getPartidaSharedBudgets}
             handlePartidaCellChange={handlePartidaCellChange}
