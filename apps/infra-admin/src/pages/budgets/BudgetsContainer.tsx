@@ -1982,6 +1982,35 @@ export const Budgets: React.FC<BudgetsProps> = ({
     void saveBudgetToCloud(newB);
   };
 
+  const handleUploadBudget = (file: File) => {
+    if (publicReadOnly) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const uploadedBudget: Budget = JSON.parse(text);
+        
+        const now = Date.now();
+        const newB: Budget = {
+          ...uploadedBudget,
+          id: 'b_' + Math.random().toString(36).substring(2, 9),
+          ownerId: user?.uid,
+          permissions: {},
+          createdAt: now,
+          updatedAt: now
+        };
+        
+        persistBudgetLocally(newB);
+        setBudgets(prev => [newB, ...prev]);
+        alert('Presupuesto subido exitosamente.');
+      } catch (err) {
+        console.error('Error parsing uploaded budget', err);
+        alert('El archivo no es un presupuesto válido.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const startEditBudget = (b: Budget) => {
     if (publicReadOnly) return;
     setActiveBudget(b);

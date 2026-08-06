@@ -48,6 +48,7 @@ export type LiteIconName =
   | 'trash'
   | 'outdent'
   | 'undo'
+  | 'upload'
   | 'user'
   | 'users'
   | 'clock'
@@ -274,6 +275,13 @@ export const LiteIcon: React.FC<{ name: LiteIconName; size?: number; strokeWidth
         <path d="m7 7-4 4 4 4" />
         <path d="M21 11H3" />
         <path d="M17 7h2a2 2 0 0 1 2 2v2" />
+      </>
+    ),
+    upload: (
+      <>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
       </>
     ),
     user: (

@@ -23,6 +23,7 @@ interface BudgetsListLiteProps {
   openBudgets: Budget[];
   handleSelectBudgetTab: (id: string) => void;
   handleCloseBudgetTab: (id: string, e: React.MouseEvent) => void;
+  handleUploadBudget?: (file: File) => void;
   toggleTheme: () => void;
   theme: 'light' | 'dark';
   companies: any[];
@@ -262,6 +263,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   openBudgets,
   handleSelectBudgetTab,
   handleCloseBudgetTab,
+  handleUploadBudget,
   toggleTheme,
   theme,
   companies,
@@ -275,6 +277,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   onNavigate,
   onShareBudget
 }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const closeBudgetMenu = () => closeMenu?.();
 
   const currentCompany =
@@ -466,6 +469,27 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
               <LiteIcon name="plus" size={17} />
               Nuevo Presupuesto
             </Button>
+
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', minHeight: 42, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              <LiteIcon name="upload" size={17} />
+              Subir Presupuesto
+            </Button>
+            <input 
+              type="file" 
+              accept=".json" 
+              style={{ display: 'none' }} 
+              ref={fileInputRef} 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && handleUploadBudget) {
+                  handleUploadBudget(file);
+                }
+                e.target.value = '';
+              }} 
+            />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>

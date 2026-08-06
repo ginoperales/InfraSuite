@@ -27,6 +27,7 @@ import {
   SlidersHorizontal,
   Trash2,
   Type,
+  Upload,
   UserRound,
   Users,
   Wrench,
@@ -60,6 +61,7 @@ interface BudgetsListProProps {
   theme: 'light' | 'dark';
   menuItemStyle: React.CSSProperties;
   onNavigate?: (tab: string) => void;
+  handleUploadBudget?: (file: File) => void;
 }
 
 const proToolbarItemStyle: React.CSSProperties = {
@@ -130,8 +132,10 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
   handleDeleteBudget,
   theme,
   menuItemStyle,
-  onNavigate
+  onNavigate,
+  handleUploadBudget
 }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
       {/* Delphin Express Inspired Ribbon Menu */}
@@ -205,6 +209,41 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           <FileText size={14} strokeWidth={2.3} />
           <span>+ Nuevo Proyecto</span>
         </button>
+
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(15, 82, 186, 0.25)',
+            color: 'var(--color-primary)',
+            padding: '6px 16px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Upload size={14} strokeWidth={2.3} />
+          <span>Subir Presupuesto</span>
+        </button>
+        <input 
+          type="file" 
+          accept=".json" 
+          style={{ display: 'none' }} 
+          ref={fileInputRef} 
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file && handleUploadBudget) {
+              handleUploadBudget(file);
+            }
+            e.target.value = '';
+          }} 
+        />
+
         <button
           onClick={() => { setIsLoading(true); setTimeout(() => setIsLoading(false), 500); }}
           style={{
