@@ -1116,8 +1116,20 @@ export const Budgets: React.FC<BudgetsProps> = ({
 
   const [catalogoInsumos, setCatalogoInsumos] = useState<any[]>(() => {
     const saved = localStorage.getItem('infrasuite_catalogo_insumos');
-    if (!saved) return MOCK_CATALOGO_INSUMOS;
-    try { return JSON.parse(saved); } catch { return MOCK_CATALOGO_INSUMOS; }
+    let loaded = MOCK_CATALOGO_INSUMOS;
+    if (saved) {
+      try { loaded = JSON.parse(saved); } catch { loaded = MOCK_CATALOGO_INSUMOS; }
+    }
+    
+    // Deduplicate on load to enforce unique names
+    const uniqueMap = new Map();
+    loaded.forEach((item: any) => {
+      const key = normalizeInsumoSearchText(item.nombre);
+      if (key && !uniqueMap.has(key)) {
+        uniqueMap.set(key, item);
+      }
+    });
+    return Array.from(uniqueMap.values());
   });
 
   useEffect(() => {
@@ -3095,6 +3107,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
             isOpen={isAgregarConIAOpen}
             onClose={() => { setIsAgregarConIAOpen(false); setInsertAfterPartidaId(null); }}
             budgets={budgets}
+            catalogoInsumos={catalogoInsumos}
             activeBudgetId={activeBudget?.id ?? ''}
             onAddPartida={handleAddPartidaConIA}
           />
@@ -3191,6 +3204,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
           isOpen={isAgregarConIAOpen}
           onClose={() => { setIsAgregarConIAOpen(false); setInsertAfterPartidaId(null); }}
           budgets={budgets}
+          catalogoInsumos={catalogoInsumos}
           activeBudgetId={activeBudget?.id ?? ''}
           onAddPartida={handleAddPartidaConIA}
         />

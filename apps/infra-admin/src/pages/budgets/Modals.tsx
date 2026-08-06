@@ -3167,9 +3167,10 @@ export const AgregarConIAModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   budgets: Budget[];
+  catalogoInsumos: any[];
   activeBudgetId: string;
   onAddPartida: (partidaToImport: Partida) => void;
-}> = ({ isOpen, onClose, budgets, activeBudgetId, onAddPartida }) => {
+}> = ({ isOpen, onClose, budgets, catalogoInsumos, activeBudgetId, onAddPartida }) => {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState<'PARTIDA' | 'TITULO'>('PARTIDA');
   const [descripcion, setDescripcion] = useState('');
@@ -3199,6 +3200,31 @@ export const AgregarConIAModal: React.FC<{
       const uniqueDbMatches = dbMatches.filter((v,i,a)=>a.findIndex(v2=>(v2.nombre===v.nombre))===i).slice(0, 2);
       uniqueDbMatches.forEach(p => generatedResults.push({ source: 'DB', data: p }));
 
+      // Helper function to match and merge generated insumos with the catalog
+      const mergeWithCatalog = (insumos: Insumo[]): Insumo[] => {
+        return insumos.map(ins => {
+          if (!catalogoInsumos) return ins;
+          const normalize = (s: string) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          
+          const match = catalogoInsumos.find(c => 
+            normalize(c.nombre) === normalize(ins.nombre) || 
+            (c.codigo && c.codigo === ins.codigo)
+          );
+          
+          if (match) {
+            return {
+              ...ins,
+              id: match.id || ins.id,
+              codigo: match.codigo || ins.codigo,
+              pu: match.precio !== undefined ? match.precio : ins.pu,
+              unidad: match.unidad || ins.unidad,
+              tipo: match.tipo || ins.tipo
+            };
+          }
+          return ins;
+        });
+      };
+
       // 2. Mock AI generations
       const aiMock1: Partida = {
         id: 'ai_' + Math.random().toString(36).substring(2, 9),
@@ -3208,12 +3234,12 @@ export const AgregarConIAModal: React.FC<{
         unidad: tipo === 'TITULO' ? '' : 'M2',
         metrado: 1,
         rendimiento: tipo === 'TITULO' ? 1 : (Math.floor(Math.random() * 50) + 10),
-        insumos: tipo === 'TITULO' ? [] : [
-          { id: 'i1', nombre: 'OPERARIO', tipo: 'MO', unidad: 'HH', cuadrilla: 1, pu: 20 },
-          { id: 'i2', nombre: 'PEON', tipo: 'MO', unidad: 'HH', cuadrilla: 2, pu: 15 },
-          { id: 'i3', nombre: 'MATERIAL BASE', tipo: 'MT', unidad: 'KG', cuadrilla: 0, cantidad: 5, pu: 10 },
+        insumos: mergeWithCatalog(tipo === 'TITULO' ? [] : [
+          { id: 'i1', nombre: 'OPERARIO', tipo: 'MO', unidad: 'hh', cuadrilla: 1, pu: 20 },
+          { id: 'i2', nombre: 'PEON', tipo: 'MO', unidad: 'hh', cuadrilla: 2, pu: 15 },
+          { id: 'i3', nombre: 'MATERIAL BASE', tipo: 'MT', unidad: 'kg', cuadrilla: 0, cantidad: 5, pu: 10 },
           { id: 'i4', nombre: 'HERRAMIENTAS MANUALES', tipo: 'EQ', unidad: '%mo', cuadrilla: 0, pu: 0.05 }
-        ]
+        ])
       };
 
       const aiMock2: Partida = {
@@ -3224,10 +3250,10 @@ export const AgregarConIAModal: React.FC<{
         unidad: tipo === 'TITULO' ? '' : 'GLB',
         metrado: 1,
         rendimiento: 1,
-        insumos: tipo === 'TITULO' ? [] : [
-          { id: 'i1', nombre: 'ESPECIALISTA', tipo: 'MO', unidad: 'HH', cuadrilla: 1, pu: 30 },
-          { id: 'i2', nombre: 'EQUIPO ESPECIAL', tipo: 'EQ', unidad: 'HM', cuadrilla: 1, pu: 50 }
-        ]
+        insumos: mergeWithCatalog(tipo === 'TITULO' ? [] : [
+          { id: 'i1', nombre: 'ESPECIALISTA', tipo: 'MO', unidad: 'hh', cuadrilla: 1, pu: 30 },
+          { id: 'i2', nombre: 'EQUIPO ESPECIAL', tipo: 'EQ', unidad: 'hm', cuadrilla: 1, pu: 50 }
+        ])
       };
 
       generatedResults.push({ source: 'IA', data: aiMock1 });
@@ -3367,7 +3393,10 @@ export const AgregarConIAModal: React.FC<{
                       <tbody>
                         {res.data.insumos.map((ins, i) => (
                           <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>{ins.nombre}</td>
+                            <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>
+                              {ins.codigo && <span style={{ color: 'var(--text-muted)', marginRight: '6px' }}>[{ins.codigo}]</span>}
+                              {ins.nombre}
+                            </td>
                             <td style={{ padding: '4px 0', color: 'var(--text-secondary)' }}>{ins.tipo}</td>
                             <td style={{ padding: '4px 0', color: 'var(--text-secondary)' }}>{ins.unidad}</td>
                             <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>{ins.cuadrilla || ins.cantidad || '-'}</td>
