@@ -3186,7 +3186,7 @@ export const AgregarConIAModal: React.FC<{
     setTimeout(() => {
       const generatedResults: { source: 'DB' | 'IA', data: Partida }[] = [];
       
-      // 1. Mock DB search (search existing budgets)
+      // 1. Mock DB search
       const dbMatches: Partida[] = [];
       budgets.forEach(b => {
         b.partidas.forEach(p => {
@@ -3196,7 +3196,6 @@ export const AgregarConIAModal: React.FC<{
         });
       });
       
-      // Take up to 2 unique DB matches
       const uniqueDbMatches = dbMatches.filter((v,i,a)=>a.findIndex(v2=>(v2.nombre===v.nombre))===i).slice(0, 2);
       uniqueDbMatches.forEach(p => generatedResults.push({ source: 'DB', data: p }));
 
@@ -3204,23 +3203,31 @@ export const AgregarConIAModal: React.FC<{
       const aiMock1: Partida = {
         id: 'ai_' + Math.random().toString(36).substring(2, 9),
         item: '',
-        nombre: nombre ? `${nombre} (Generado por IA)` : 'Nueva Partida (IA)',
+        nombre: nombre ? `${nombre} (Generado por IA)` : 'NUEVA PARTIDA (IA)',
         esTitulo: tipo === 'TITULO',
         unidad: tipo === 'TITULO' ? '' : 'M2',
         metrado: 1,
         rendimiento: tipo === 'TITULO' ? 1 : (Math.floor(Math.random() * 50) + 10),
-        insumos: []
+        insumos: tipo === 'TITULO' ? [] : [
+          { id: 'i1', nombre: 'OPERARIO', tipo: 'MO', unidad: 'HH', cuadrilla: 1, pu: 20 },
+          { id: 'i2', nombre: 'PEON', tipo: 'MO', unidad: 'HH', cuadrilla: 2, pu: 15 },
+          { id: 'i3', nombre: 'MATERIAL BASE', tipo: 'MT', unidad: 'KG', cuadrilla: 0, cantidad: 5, pu: 10 },
+          { id: 'i4', nombre: 'HERRAMIENTAS MANUALES', tipo: 'EQ', unidad: '%mo', cuadrilla: 0, pu: 0.05 }
+        ]
       };
 
       const aiMock2: Partida = {
         id: 'ai_' + Math.random().toString(36).substring(2, 9),
         item: '',
-        nombre: nombre ? `${nombre} ${lugar ? `en ${lugar}` : 'Premium'}` : 'Partida Premium (IA)',
+        nombre: nombre ? `${nombre} ${lugar ? `en ${lugar}` : 'Premium'}`.toUpperCase() : 'PARTIDA PREMIUM (IA)',
         esTitulo: tipo === 'TITULO',
         unidad: tipo === 'TITULO' ? '' : 'GLB',
         metrado: 1,
         rendimiento: 1,
-        insumos: []
+        insumos: tipo === 'TITULO' ? [] : [
+          { id: 'i1', nombre: 'ESPECIALISTA', tipo: 'MO', unidad: 'HH', cuadrilla: 1, pu: 30 },
+          { id: 'i2', nombre: 'EQUIPO ESPECIAL', tipo: 'EQ', unidad: 'HM', cuadrilla: 1, pu: 50 }
+        ]
       };
 
       generatedResults.push({ source: 'IA', data: aiMock1 });
@@ -3231,13 +3238,19 @@ export const AgregarConIAModal: React.FC<{
     }, 1500);
   };
 
-  const handleAdd = (result: Partida) => {
-    onAddPartida({ ...result, id: 'p_' + Math.random().toString(36).substring(2, 9), isImported: false });
+  const handleAdd = (result: { source: 'DB' | 'IA', data: Partida }) => {
+    onAddPartida({ 
+      ...result.data, 
+      id: 'p_' + Math.random().toString(36).substring(2, 9), 
+      isImported: true,
+      importedFrom: result.source === 'IA' ? 'Generador IA' : 'Catálogo Local',
+      importedAt: Date.now()
+    });
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Partida/TÃ­tulo con IA">
+    <Modal isOpen={isOpen} onClose={onClose} title="Agregar Partida/Título con IA">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0', width: '700px', maxWidth: '90vw' }}>
         
         {/* Form */}
@@ -3250,40 +3263,39 @@ export const AgregarConIAModal: React.FC<{
               style={dgInputStyle}
             >
               <option value="PARTIDA">Partida</option>
-              <option value="TITULO">TÃ­tulo</option>
+              <option value="TITULO">Título</option>
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Nombre de la {tipo === 'TITULO' ? 'TÃ­tulo' : 'Partida'}</label>
+            <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Nombre de la {tipo === 'TITULO' ? 'Título' : 'Partida'}</label>
             <Input 
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder={`Ej: ${tipo === 'TITULO' ? 'Obras Provisionales' : 'ExcavaciÃ³n de zanjas'}`}
+              placeholder={`Ej: ${tipo === 'TITULO' ? 'Obras Provisionales' : 'Excavación de zanjas'}`}
               style={dgInputStyle}
             />
           </div>
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>DescripciÃ³n Adicional (Opcional)</label>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Descripción Adicional (Opcional)</label>
           <textarea
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Describe mÃ¡s detalles sobre el elemento a generar..."
+            placeholder="Describe más detalles sobre el elemento a generar..."
             style={{ ...dgInputStyle, minHeight: '60px', resize: 'vertical' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ConfiguraciÃ³n Avanzada (Opcional)</label>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Configuración Avanzada (Opcional)</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Input 
               value={lugar}
               onChange={(e) => setLugar(e.target.value)}
-              placeholder="Lugar / RegiÃ³n"
+              placeholder="Lugar / Región"
               style={dgInputStyle}
             />
-            {/* Can add more config inputs here */}
           </div>
         </div>
 
@@ -3300,41 +3312,72 @@ export const AgregarConIAModal: React.FC<{
 
         {/* Results Area */}
         {results.length > 0 && (
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
             <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Resultados Obtenidos</h4>
             
             {results.map((res, index) => (
               <div key={index} style={{ 
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                display: 'flex', flexDirection: 'column',
                 padding: '12px 16px', borderRadius: '8px',
                 background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-color)'
               }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold',
-                      background: res.source === 'IA' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-                      color: res.source === 'IA' ? '#a855f7' : '#22c55e'
-                    }}>
-                      {res.source === 'IA' ? 'Generado por IA' : 'Base de Datos'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {res.data.esTitulo ? 'TÃTULO' : 'PARTIDA'}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold',
+                        background: res.source === 'IA' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                        color: res.source === 'IA' ? '#a855f7' : '#22c55e'
+                      }}>
+                        {res.source === 'IA' ? 'Generado por IA' : 'Base de Datos'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {res.data.esTitulo ? 'TÍTULO' : 'PARTIDA'}
+                      </span>
+                    </div>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{res.data.nombre}</strong>
+                    {!res.data.esTitulo && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        Unidad: {res.data.unidad} | Rendimiento: {res.data.rendimiento}
+                      </span>
+                    )}
                   </div>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{res.data.nombre}</strong>
-                  {!res.data.esTitulo && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      Unidad: {res.data.unidad} | Rendimiento: {res.data.rendimiento}
-                    </span>
-                  )}
+                  <Button 
+                    onClick={() => handleAdd(res)}
+                    style={{ background: 'var(--grad-primary)', border: 'none', color: '#fff', fontSize: '0.8rem', padding: '6px 12px', height: 'fit-content' }}
+                  >
+                    Agregar
+                  </Button>
                 </div>
-                <Button 
-                  onClick={() => handleAdd(res.data)}
-                  style={{ background: 'var(--grad-primary)', border: 'none', color: '#fff', fontSize: '0.8rem', padding: '6px 12px' }}
-                >
-                  Agregar
-                </Button>
+                
+                {/* APU Breakdown */}
+                {!res.data.esTitulo && res.data.insumos && res.data.insumos.length > 0 && (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--border-color)', fontSize: '0.75rem' }}>
+                    <div style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>Análisis de Precios Unitarios (APU)</div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ color: 'var(--text-muted)' }}>
+                          <th style={{ paddingBottom: '4px' }}>Descripción</th>
+                          <th style={{ paddingBottom: '4px' }}>Tipo</th>
+                          <th style={{ paddingBottom: '4px' }}>Und.</th>
+                          <th style={{ paddingBottom: '4px' }}>Cuadrilla</th>
+                          <th style={{ paddingBottom: '4px' }}>Precio</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {res.data.insumos.map((ins, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>{ins.nombre}</td>
+                            <td style={{ padding: '4px 0', color: 'var(--text-secondary)' }}>{ins.tipo}</td>
+                            <td style={{ padding: '4px 0', color: 'var(--text-secondary)' }}>{ins.unidad}</td>
+                            <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>{ins.cuadrilla || ins.cantidad || '-'}</td>
+                            <td style={{ padding: '4px 0', color: 'var(--text-primary)' }}>{ins.pu.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             ))}
           </div>
