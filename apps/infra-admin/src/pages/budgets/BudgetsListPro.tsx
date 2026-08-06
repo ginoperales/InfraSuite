@@ -280,15 +280,18 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           <div style={{ flexGrow: 1, overflowY: 'auto', padding: '12px' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', padding: '0 8px 8px 8px', letterSpacing: '1px' }}>Portafolio de Proyectos</div>
             {[
-              { name: 'Construcción', count: 2, icon: Building2 },
-              { name: 'Mejoramiento', count: 0, icon: Wrench },
-              { name: 'Ampliación', count: 0, icon: Plus },
-              { name: 'Instalaciones', count: 0, icon: Zap },
-              { name: 'Carreteras', count: 0, icon: Route },
-              { name: 'Saneamiento', count: 0, icon: Droplets },
-              { name: 'Minería', count: 0, icon: Pickaxe }
+              { name: 'Construcción', icon: Building2 },
+              { name: 'Mejoramiento', icon: Wrench },
+              { name: 'Ampliación', icon: Plus },
+              { name: 'Instalaciones', icon: Zap },
+              { name: 'Carreteras', icon: Route },
+              { name: 'Saneamiento', icon: Droplets },
+              { name: 'Minería', icon: Pickaxe }
             ].filter(p => p.name.toLowerCase().includes(portfolioSearchTerm.toLowerCase())).map(p => {
               const PortfolioIcon = p.icon;
+              const count = p.name === 'Construcción' 
+                ? budgets.length 
+                : budgets.filter(b => b.grupo.toLowerCase().includes(p.name.substring(0, 5).toLowerCase())).length;
               return (
                 <div
                   key={p.name}
@@ -312,7 +315,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
                     <PortfolioIcon size={14} strokeWidth={2.35} />
                     <span>{p.name}</span>
                   </span>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '10px', color: 'var(--text-muted)' }}>{p.count}</span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '10px', color: 'var(--text-muted)' }}>{count}</span>
                 </div>
               );
             })}
