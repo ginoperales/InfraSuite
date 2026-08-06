@@ -680,6 +680,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const [historyFuture, setHistoryFuture] = useState<Budget[]>([]);
   const activeBudgetRef = useRef<Budget | null>(null);
   const recoveredBudgetUploadsRef = useRef<Record<string, number>>({});
+  const lastSavedBudgetJson = useRef<string>("");
+  const lastSavedBudgetId = useRef<string | null>(null);
 
   // Custom setter for activeBudget that records history
   const setHistoricalActiveBudget = (newBudget: Budget, skipHistory = false): Budget => {
@@ -1042,6 +1044,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
             if (remoteTime >= localTime) {
               if (JSON.stringify(updatedActive) !== JSON.stringify(prev)) {
                 activeBudgetRef.current = updatedActive;
+                const { updatedAt, ...budgetContent } = updatedActive;
+                lastSavedBudgetJson.current = JSON.stringify(budgetContent);
                 return updatedActive;
               }
               return prev;
@@ -1098,9 +1102,23 @@ export const Budgets: React.FC<BudgetsProps> = ({
   // Autosave to Firebase (Debounced)
   useEffect(() => {
     if (activeBudget && user && !publicReadOnly) {
-      // Avoid saving if the change came from the cloud (updatedAt >= Date.now() - 500)
-      // Or just debounce it and let the sync logic handle it.
+      // Exclude updatedAt to prevent infinite save loops triggered by timestamp updates
+      const { updatedAt, ...budgetContent } = activeBudget;
+      const currentJson = JSON.stringify(budgetContent);
+
+      // If we just switched to a new budget, don't auto-save immediately
+      if (lastSavedBudgetId.current !== activeBudget.id) {
+        lastSavedBudgetId.current = activeBudget.id;
+        lastSavedBudgetJson.current = currentJson;
+        return;
+      }
+
+      if (lastSavedBudgetJson.current === currentJson) {
+        return; // No real content change
+      }
+
       const timer = setTimeout(() => {
+        lastSavedBudgetJson.current = currentJson;
         saveBudgetToCloud(activeBudget);
       }, 1500); // 1.5 seconds debounce
       return () => clearTimeout(timer);
