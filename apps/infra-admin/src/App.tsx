@@ -1702,7 +1702,7 @@ const AppContent: React.FC = () => {
                   theme={theme} 
                   toggleTheme={toggleTheme} 
                   companies={companies} 
-                  onNavigate={(tab) => { setOpenBudgetId(null); setActiveTab(tab); }} 
+                  onNavigate={(tab, budgetId) => { if (budgetId) setOpenBudgetId(budgetId); else setOpenBudgetId(null); setActiveTab(tab); }} 
                   initialOpenBudgetId={openBudgetId}
                 />
               )}
@@ -1712,7 +1712,7 @@ const AppContent: React.FC = () => {
                   theme={theme} 
                   toggleTheme={toggleTheme} 
                   companies={companies} 
-                  onNavigate={(tab) => { setOpenBudgetId(null); setActiveTab(tab); }} 
+                  onNavigate={(tab, budgetId) => { if (budgetId) setOpenBudgetId(budgetId); else setOpenBudgetId(null); setActiveTab(tab); }} 
                   initialOpenBudgetId={openBudgetId}
                 />
               )}

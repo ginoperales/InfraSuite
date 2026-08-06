@@ -34,7 +34,7 @@ interface BudgetsListLiteProps {
   handleDuplicateBudget: (id: string) => void;
   handleDeleteBudget: (id: string) => void;
   menuItemStyle?: React.CSSProperties;
-  onNavigate?: (tab: string) => void;
+  onNavigate?: (tab: string, budgetId?: string) => void;
   onShareBudget?: (b: Budget) => void;
 }
 
@@ -600,6 +600,14 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             label="Abrir presupuesto"
             onClick={() => {
               handleOpenBudgetEditor(openMenuBudget);
+              closeBudgetMenu();
+            }}
+          />
+          <MenuAction
+            icon="link"
+            label="Abrir en InfraCost Pro"
+            onClick={() => {
+              if (onNavigate) onNavigate('budgets_pro', openMenuBudget.id);
               closeBudgetMenu();
             }}
           />

@@ -89,7 +89,7 @@ export interface BudgetsProps {
   toggleTheme: () => void;
   companies: any[];
   mode?: 'lite' | 'pro';
-  onNavigate?: (tab: string) => void;
+  onNavigate?: (tab: string, budgetId?: string) => void;
   initialOpenBudgetId?: string | null;
   publicReadOnly?: boolean;
   onRequireLogin?: () => void;
