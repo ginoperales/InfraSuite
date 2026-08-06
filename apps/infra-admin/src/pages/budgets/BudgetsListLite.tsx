@@ -661,7 +661,7 @@ const BudgetRow: React.FC<{
 
   return (
     <div
-      onClick={() => onOpen(budget)}
+      onDoubleClick={() => onOpen(budget)}
       className="budget-list-row"
       style={{
         display: 'grid',
