@@ -11,7 +11,7 @@ import { BudgetEditorPro } from './BudgetEditorPro';
 import { ShareModal } from './ShareModal';
 import * as Modals from './Modals';
 import { firestore } from '@infrasuite/firebase';
-import { collection, onSnapshot, doc, setDoc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, getDocs, deleteDoc, query, where, or } from 'firebase/firestore';
 
 // Initial Data representing the screenshot data
 const INITIAL_BUDGETS: Budget[] = [
@@ -973,9 +973,20 @@ export const Budgets: React.FC<BudgetsProps> = ({
 
     const budgetsCollectionRef = collection(firestore, 'budgets');
     
+    let budgetsQuery = budgetsCollectionRef as any;
+    if (user && !publicReadOnly) {
+      budgetsQuery = query(
+        budgetsCollectionRef,
+        or(
+          where('ownerId', '==', user.uid),
+          where('linkAccess', '==', 'COMMUNITY_TEMPLATE')
+        )
+      );
+    }
+    
     // Subscribe to real-time changes
-    const unsubscribe = onSnapshot(budgetsCollectionRef, (snapshot) => {
-      const loaded = snapshot.docs.map(snapshotDoc => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as Budget));
+    const unsubscribe = onSnapshot(budgetsQuery, (snapshot: any) => {
+      const loaded: Budget[] = snapshot.docs.map((snapshotDoc: any) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as Budget));
       const localStoredBudgets = readBudgetsFromLocalStorage();
       
       if (loaded.length === 0) {

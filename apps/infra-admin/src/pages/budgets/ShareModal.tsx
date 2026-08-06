@@ -11,7 +11,7 @@ interface ShareModalProps {
   onClose: () => void;
   budget: Budget | null;
   onUpdatePermissions: (budgetId: string, permissions: Record<string, PermissionRole>) => void;
-  onUpdateLinkAccess?: (budgetId: string, linkAccess: 'RESTRICTED' | 'ANYONE_WITH_LINK', linkRole?: ShareRole) => void;
+  onUpdateLinkAccess?: (budgetId: string, linkAccess: 'RESTRICTED' | 'ANYONE_WITH_LINK' | 'COMMUNITY_TEMPLATE', linkRole?: ShareRole) => void;
   currentUserUid: string;
 }
 
@@ -89,6 +89,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   const permissions = budget.permissions || {};
   const isPublicLink = budget.linkAccess === 'ANYONE_WITH_LINK';
+  const isCommunityTemplate = budget.linkAccess === 'COMMUNITY_TEMPLATE';
   const publicLink = `https://infrasuitee.web.app/budgets/${budget.id}`;
 
   const getUserEmail = (uid: string) => {
@@ -168,8 +169,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               whiteSpace: 'nowrap'
             }}
           >
-            <LiteIcon name={isPublicLink ? 'globe' : 'lock'} size={14} />
-            {isPublicLink ? 'Lectura publica activa' : 'Acceso restringido'}
+            <LiteIcon name={isCommunityTemplate ? 'users' : (isPublicLink ? 'globe' : 'lock')} size={14} />
+            {isCommunityTemplate ? 'Plantilla de Comunidad' : (isPublicLink ? 'Lectura publica activa' : 'Acceso restringido')}
           </span>
         </div>
 
@@ -267,22 +268,30 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>Acceso general</h4>
           <div className="share-general-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '16px', alignItems: 'center', padding: '14px', border: '1px solid var(--border-color)', borderRadius: '10px', background: 'var(--modal-panel-bg)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-              <AvatarIcon icon={isPublicLink ? 'globe' : 'lock'} active={isPublicLink} />
+              <AvatarIcon icon={isCommunityTemplate ? 'users' : (isPublicLink ? 'globe' : 'lock')} active={isPublicLink || isCommunityTemplate} />
               <div style={{ minWidth: 0 }}>
                 <SelectBox
                   value={budget.linkAccess || 'RESTRICTED'}
                   onChange={(value) => {
-                    const newAccess = value as 'RESTRICTED' | 'ANYONE_WITH_LINK';
-                    onUpdateLinkAccess?.(budget.id, newAccess, newAccess === 'ANYONE_WITH_LINK' ? (budget.linkRole || 'VIEWER') : budget.linkRole);
+                    const newAccess = value as 'RESTRICTED' | 'ANYONE_WITH_LINK' | 'COMMUNITY_TEMPLATE';
+                    onUpdateLinkAccess?.(
+                      budget.id, 
+                      newAccess, 
+                      newAccess === 'ANYONE_WITH_LINK' ? (budget.linkRole || 'VIEWER') : budget.linkRole
+                    );
                   }}
                 >
                   <option value="RESTRICTED">Restringido</option>
                   <option value="ANYONE_WITH_LINK">Cualquier persona con el enlace</option>
+                  <option value="COMMUNITY_TEMPLATE">Compartir con la comunidad (Plantilla)</option>
                 </SelectBox>
                 <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.45 }}>
-                  {isPublicLink
-                    ? 'Cualquier persona con el enlace puede solicitar acceso con Google. El permiso aplicado es el de la derecha.'
-                    : 'Solo las personas agregadas pueden abrir el enlace.'}
+                  {isCommunityTemplate
+                    ? 'Este presupuesto sera visible para todos los usuarios de la plataforma como base para sus propios proyectos.'
+                    : (isPublicLink
+                        ? 'Cualquier persona con el enlace puede solicitar acceso con Google. El permiso aplicado es el de la derecha.'
+                        : 'Solo las personas agregadas pueden abrir el enlace.')
+                  }
                 </div>
               </div>
             </div>
@@ -290,8 +299,8 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             <div className="share-general-role" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
               <SelectBox
                 value={budget.linkRole || 'VIEWER'}
-                disabled={!isPublicLink}
-                onChange={(value) => onUpdateLinkAccess?.(budget.id, 'ANYONE_WITH_LINK', value as ShareRole)}
+                disabled={!(isPublicLink || isCommunityTemplate)}
+                onChange={(value) => onUpdateLinkAccess?.(budget.id, budget.linkAccess === 'COMMUNITY_TEMPLATE' ? 'COMMUNITY_TEMPLATE' : 'ANYONE_WITH_LINK', value as ShareRole)}
               >
                 <option value="VIEWER">Lector</option>
                 <option value="COMMENTER">Comentador</option>

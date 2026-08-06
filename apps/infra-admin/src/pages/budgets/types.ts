@@ -74,7 +74,7 @@ export interface Budget {
   // Sharing and Collaboration
   ownerId?: string; // ID of the user who created it
   permissions?: Record<string, 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER'>; // Map of userId to role
-  linkAccess?: 'RESTRICTED' | 'ANYONE_WITH_LINK';
+  linkAccess?: 'RESTRICTED' | 'ANYONE_WITH_LINK' | 'COMMUNITY_TEMPLATE';
   linkRole?: 'VIEWER' | 'COMMENTER' | 'EDITOR';
   createdAt?: number;
   updatedAt?: number;
