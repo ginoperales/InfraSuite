@@ -2288,12 +2288,12 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
         {/* Navigation Tabs (Top Row) - now open floating windows */}
         <div style={{ display: 'flex', gap: '2px', height: '28px', justifyContent: 'flex-start', alignItems: 'center' }}>
           {[
-            { id: 'apu', label: 'Análisis de C.U', icon: '📐' },
-            { id: 'specs', label: 'Especif. técnicas', icon: '📝' },
-            { id: 'bim', label: 'Metrado BIM', icon: '🏗️' },
-            { id: 'metrado', label: 'Metrado', icon: '📏' },
-            { id: 'xls', label: 'Metrado Xls', icon: '📊' },
-            { id: 'consol', label: 'Consol. de Partida', icon: '📋' }
+            { id: 'apu', label: 'Análisis de C.U', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg> }, // using arrow-up/calculator concept
+            { id: 'specs', label: 'Especif. técnicas', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> }, // file-text
+            { id: 'bim', label: 'Metrado BIM', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> }, // triangle or construction concept
+            { id: 'metrado', label: 'Metrado', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 16-5.16-5.16a2 2 0 0 0-2.82 0l-5.16 5.16a2 2 0 0 0 0 2.82l5.16 5.16a2 2 0 0 0 2.82 0L21 18.84a2 2 0 0 0 0-2.84Z"/><path d="m7 7 10 10"/><path d="M4 10 10 4"/></svg> }, // ruler
+            { id: 'xls', label: 'Metrado Xls', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> }, // spreadsheet
+            { id: 'consol', label: 'Consol. de Partida', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/></svg> } // clipboard/consolidation
           ].map(tab => {
             const fw = floatingWindows[tab.id];
             const isActive = fw.isOpen && !fw.isMinimized;
@@ -2356,7 +2356,9 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                   zIndex: isActive ? 2 : 1
                 }}
               >
-                <span style={{ fontSize: '0.9rem' }}>📄</span>
+                <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                </span>
                 <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {budget.nombre}
                 </span>
@@ -2387,7 +2389,7 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
                     e.currentTarget.style.color = 'var(--text-muted)';
                   }}
                 >
-                  ×
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </span>
               </div>
             );
