@@ -540,7 +540,7 @@ export const DatosGeneralesModal: React.FC<{
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title="EDITAR DATOS GENERALES"
+      title="Editar Datos Generales"
     >
       {/* Tabs header */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', gap: '8px' }}>
@@ -851,7 +851,7 @@ export const GastosGeneralesModal: React.FC<{
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title="GASTOS GENERALES"
+      title="Gastos Generales"
     >
       <style>{`
         .modal-overlay:has(.gg-container) .modal-content {
@@ -1230,7 +1230,7 @@ export const PiePresupuestoModal: React.FC<{
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`PIE DEL SUB PRESUPUESTO: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
+      title={`Pie del Sub Presupuesto: ${activeBudget?.subPresupuestos[0] || 'Sub Presupuesto 1'}`}
     >
       <style>{`
         .modal-overlay:has(.pie-presupuesto-container) .modal-content {
@@ -2243,7 +2243,7 @@ export const FormulaPolinomicaModal: React.FC<{
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`FÓRMULA POLINÓMICA: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}
+      title={`Fórmula Polinómica: ${activeBudget?.subPresupuestos[0] || 'Sub Presupuesto 1'}`}
       onExternalOpen={handleOpenExternal}
     >
       <style>{`
@@ -2657,7 +2657,7 @@ export const CatalogoInsumosModal: React.FC<{
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="CATÁLOGO DE INSUMOS">
+    <Modal isOpen={isOpen} onClose={onClose} title="Catálogo de Insumos">
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '12px' }}>
           <input
@@ -2727,7 +2727,7 @@ export const CatalogoPartidasModal: React.FC<{
   const activePartida = filtered[cpSelectedPartidaIndex] || null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="CATÁLOGO DE PARTIDAS">
+    <Modal isOpen={isOpen} onClose={onClose} title="Catálogo de Partidas">
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <input
           type="text"
@@ -2826,7 +2826,7 @@ export const ImportarPartidaModal: React.FC<{
   const selectedPartida = selectedBudget?.partidas.find(p => p.id === selectedPartidaId) || null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="PARTIDA POR BÚSQUEDA">
+    <Modal isOpen={isOpen} onClose={onClose} title="Búsqueda de Partidas">
       <div className="import-partida-container" style={{ padding: '24px 28px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
         <style>{`
           .modal-overlay:has(.import-partida-container) .modal-content {
@@ -3073,7 +3073,7 @@ export const ListaInsumosModal: React.FC<{
     }, []) || [];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`LISTA DE INSUMOS: ${activeBudget?.subPresupuestos[0] || 'SUB PRESUPUESTO 1'}`}>
+    <Modal isOpen={isOpen} onClose={onClose} title={`Lista de Insumos: ${activeBudget?.subPresupuestos[0] || 'Sub Presupuesto 1'}`}>
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
