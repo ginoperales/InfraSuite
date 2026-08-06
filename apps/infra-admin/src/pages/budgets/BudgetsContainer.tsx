@@ -3091,6 +3091,13 @@ export const Budgets: React.FC<BudgetsProps> = ({
           />
           <Modals.ListaInsumosModal isOpen={isListaInsumosOpen} onClose={() => setIsListaInsumosOpen(false)} activeBudget={activeBudget} />
           <Modals.ConfiguracionModal isOpen={isConfiguracionOpen} onClose={() => setIsConfiguracionOpen(false)} showGridlines={showGridlines} setShowGridlines={setShowGridlines} />
+          <Modals.AgregarConIAModal
+            isOpen={isAgregarConIAOpen}
+            onClose={() => { setIsAgregarConIAOpen(false); setInsertAfterPartidaId(null); }}
+            budgets={budgets}
+            activeBudgetId={activeBudget?.id ?? ''}
+            onAddPartida={handleAddPartidaConIA}
+          />
         </>
       );
     }
