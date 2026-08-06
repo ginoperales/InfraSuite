@@ -7,6 +7,30 @@ import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { syncModuleData } from '@infrasuite/sync-service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCompanyModules } from '@infrasuite/license-service';
+import {
+  AppWindow,
+  Building2,
+  CalendarDays,
+  ChartNoAxesCombined,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  ContactRound,
+  FolderOpen,
+  FolderPlus,
+  Globe2,
+  Home,
+  LayoutDashboard,
+  Menu,
+  Paintbrush,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UploadCloud,
+  X
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Budget, Insumo, Partida } from './pages/budgets/types';
 
 // Subpages
@@ -23,6 +47,34 @@ import { HomeUser } from './pages/HomeUser';
 import { SharedItems } from './pages/SharedItems';
 import { Contacts } from './pages/Contacts';
 import { RecycleBin } from './pages/RecycleBin';
+
+type SidebarIconTone =
+  | 'blue'
+  | 'cyan'
+  | 'green'
+  | 'indigo'
+  | 'amber'
+  | 'violet'
+  | 'rose'
+  | 'slate';
+
+const SidebarNavIcon: React.FC<{ icon: LucideIcon; tone?: SidebarIconTone }> = ({
+  icon: Icon,
+  tone = 'slate'
+}) => (
+  <span className={`sidebar-nav-icon sidebar-nav-icon--${tone}`} aria-hidden="true">
+    <Icon size={17} strokeWidth={2.2} />
+  </span>
+);
+
+const CreateMenuIcon: React.FC<{ icon: LucideIcon; tone?: SidebarIconTone }> = ({
+  icon: Icon,
+  tone = 'slate'
+}) => (
+  <span className={`create-menu-icon create-menu-icon--${tone}`} aria-hidden="true">
+    <Icon size={15} strokeWidth={2.25} />
+  </span>
+);
 
 const getSharedInsumoCantidad = (ins: Insumo, rend: number) => {
   const explicitCantidad = typeof ins.cantidad === 'number' && Number.isFinite(ins.cantidad) ? ins.cantidad : null;
@@ -847,11 +899,7 @@ const AppContent: React.FC = () => {
             }}
             aria-label="Abrir menu de InfraSuite"
           >
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="18" x2="20" y2="18" />
-            </svg>
+            <Menu size={19} strokeWidth={2.2} />
             <span>Menu</span>
           </button>
 
@@ -907,13 +955,9 @@ const AppContent: React.FC = () => {
                 title={isSidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
               >
                 {isSidebarCollapsed ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <ChevronRight size={16} strokeWidth={2.5} />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
+                  <ChevronLeft size={16} strokeWidth={2.5} />
                 )}
               </button>
               <button
@@ -922,10 +966,7 @@ const AppContent: React.FC = () => {
                 onClick={() => setIsMobileSidebarOpen(false)}
                 aria-label="Cerrar menu"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X size={18} strokeWidth={2.2} />
               </button>
             </div>
 
@@ -960,7 +1001,7 @@ const AppContent: React.FC = () => {
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>+</span>
+                <Plus size={17} strokeWidth={3} />
                 {!isSidebarCollapsed && <span>Crear o cargar</span>}
               </button>
 
@@ -988,7 +1029,7 @@ const AppContent: React.FC = () => {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <span>📁</span> Carpeta
+                      <CreateMenuIcon icon={FolderPlus} tone="amber" /> Carpeta
                     </button>
                     <button
                       onClick={() => { setIsCreateMenuOpen(false); alert('Cargar archivos...'); }}
@@ -996,7 +1037,7 @@ const AppContent: React.FC = () => {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <span>📤</span> Carga de archivos
+                      <CreateMenuIcon icon={UploadCloud} tone="blue" /> Carga de archivos
                     </button>
                   </div>
 
@@ -1017,7 +1058,7 @@ const AppContent: React.FC = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>💰</span> Presupuesto Lite
+                        <CreateMenuIcon icon={CircleDollarSign} tone="green" /> Presupuesto Lite
                       </span>
                       {!installedModules.includes('INFRACOST') && (
                         <span style={{ fontSize: '0.58rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 4px', borderRadius: '3px' }}>Instalar</span>
@@ -1039,7 +1080,7 @@ const AppContent: React.FC = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>📊</span> Presupuesto Pro
+                        <CreateMenuIcon icon={ChartNoAxesCombined} tone="indigo" /> Presupuesto Pro
                       </span>
                       {!installedModules.includes('INFRACOST_PRO') && (
                         <span style={{ fontSize: '0.58rem', background: 'var(--color-secondary)', color: '#fff', padding: '1px 4px', borderRadius: '3px' }}>Instalar</span>
@@ -1054,7 +1095,7 @@ const AppContent: React.FC = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>🌏</span> Sondeo Geotécnico
+                        <CreateMenuIcon icon={Globe2} tone="cyan" /> Sondeo Geotécnico
                       </span>
                       <span style={{ fontSize: '0.58rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '1px 4px', borderRadius: '3px' }}>Plantilla</span>
                     </button>
@@ -1067,7 +1108,7 @@ const AppContent: React.FC = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>📅</span> Cronograma de Obra
+                        <CreateMenuIcon icon={CalendarDays} tone="violet" /> Cronograma de Obra
                       </span>
                       <span style={{ fontSize: '0.58rem', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '1px 4px', borderRadius: '3px' }}>Plantilla</span>
                     </button>
@@ -1087,7 +1128,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                  <SidebarNavIcon icon={LayoutDashboard} tone="blue" />
                   {!isSidebarCollapsed && <span>Panel Principal</span>}
                 </button>
                 <button
@@ -1099,7 +1140,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🏢</span>
+                  <SidebarNavIcon icon={Building2} tone="indigo" />
                   {!isSidebarCollapsed && <span>Empresas y Módulos</span>}
                 </button>
                 <button
@@ -1111,7 +1152,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🎨</span>
+                  <SidebarNavIcon icon={Paintbrush} tone="violet" />
                   {!isSidebarCollapsed && <span>Configuración Landing</span>}
                 </button>
                 <button
@@ -1123,7 +1164,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📁</span>
+                  <SidebarNavIcon icon={FolderOpen} tone="amber" />
                   {!isSidebarCollapsed && <span>Compartido</span>}
                 </button>
                 <button
@@ -1135,7 +1176,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>👥</span>
+                  <SidebarNavIcon icon={ContactRound} tone="cyan" />
                   {!isSidebarCollapsed && <span>Contactos</span>}
                 </button>
                 <button
@@ -1147,7 +1188,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</span>
+                  <SidebarNavIcon icon={Trash2} tone="rose" />
                   {!isSidebarCollapsed && <span>Papelera de reciclaje</span>}
                 </button>
                 <button
@@ -1159,7 +1200,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>⚡</span>
+                  <SidebarNavIcon icon={ShieldCheck} tone="slate" />
                   {!isSidebarCollapsed && <span>Bitácora / Auditoría</span>}
                 </button>
                 <button
@@ -1171,7 +1212,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🔄</span>
+                  <SidebarNavIcon icon={RefreshCw} tone="blue" />
                   {!isSidebarCollapsed && <span>Sincronizador Local</span>}
                 </button>
                 {installedModules.includes('INFRACOST') && (
@@ -1184,7 +1225,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    <SidebarNavIcon icon={CircleDollarSign} tone="green" />
                     {!isSidebarCollapsed && <span>InfraCost Lite</span>}
                   </button>
                 )}
@@ -1198,7 +1239,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    <SidebarNavIcon icon={ChartNoAxesCombined} tone="indigo" />
                     {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
@@ -1211,7 +1252,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📱</span>
+                  <SidebarNavIcon icon={AppWindow} tone="violet" />
                   {!isSidebarCollapsed && <span>Aplicaciones</span>}
                 </button>
               </nav>
@@ -1226,7 +1267,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🏠</span>
+                  <SidebarNavIcon icon={Home} tone="blue" />
                   {!isSidebarCollapsed && <span>Inicio</span>}
                 </button>
 
@@ -1253,7 +1294,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    <SidebarNavIcon icon={CircleDollarSign} tone="green" />
                     {!isSidebarCollapsed && <span>InfraCost Lite</span>}
                   </button>
                 )}
@@ -1267,7 +1308,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    <SidebarNavIcon icon={ChartNoAxesCombined} tone="indigo" />
                     {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
@@ -1294,7 +1335,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📁</span>
+                  <SidebarNavIcon icon={FolderOpen} tone="amber" />
                   {!isSidebarCollapsed && <span>Compartido</span>}
                 </button>
                 <button
@@ -1306,7 +1347,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>👥</span>
+                  <SidebarNavIcon icon={ContactRound} tone="cyan" />
                   {!isSidebarCollapsed && <span>Contactos</span>}
                 </button>
                 <button
@@ -1318,7 +1359,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</span>
+                  <SidebarNavIcon icon={Trash2} tone="rose" />
                   {!isSidebarCollapsed && <span>Papelera de reciclaje</span>}
                 </button>
                 <button
@@ -1330,7 +1371,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🔄</span>
+                  <SidebarNavIcon icon={RefreshCw} tone="blue" />
                   {!isSidebarCollapsed && <span>Sincronizador Local</span>}
                 </button>
                 <button
@@ -1342,7 +1383,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📱</span>
+                  <SidebarNavIcon icon={AppWindow} tone="violet" />
                   {!isSidebarCollapsed && <span>Aplicaciones</span>}
                 </button>
               </nav>
@@ -1357,7 +1398,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>🏠</span>
+                  <SidebarNavIcon icon={Home} tone="blue" />
                   {!isSidebarCollapsed && <span>Inicio</span>}
                 </button>
                 {installedModules.includes('INFRACOST') && (
@@ -1370,7 +1411,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>💰</span>
+                    <SidebarNavIcon icon={CircleDollarSign} tone="green" />
                     {!isSidebarCollapsed && <span>InfraCost Lite</span>}
                   </button>
                 )}
@@ -1384,7 +1425,7 @@ const AppContent: React.FC = () => {
                       padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                     }}
                   >
-                    <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    <SidebarNavIcon icon={ChartNoAxesCombined} tone="indigo" />
                     {!isSidebarCollapsed && <span>InfraCost Pro</span>}
                   </button>
                 )}
@@ -1397,7 +1438,7 @@ const AppContent: React.FC = () => {
                     padding: isSidebarCollapsed ? '14px 0' : '14px 18px',
                   }}
                 >
-                  <span style={{ fontSize: '1.2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📱</span>
+                  <SidebarNavIcon icon={AppWindow} tone="violet" />
                   {!isSidebarCollapsed && <span>Aplicaciones</span>}
                 </button>
               </nav>
