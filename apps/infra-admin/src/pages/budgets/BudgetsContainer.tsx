@@ -654,6 +654,23 @@ const persistBudgetLocally = (budget: Budget) => {
   persistBudgetsLocally(mergeBudgetsByFreshness(readBudgetsFromLocalStorage(), [budget]));
 };
 
+const normalizeInsumoSearchText = (value: unknown) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+
+const normalizeSuggestionTipo = (value: unknown): Insumo['tipo'] => {
+  const raw = normalizeInsumoSearchText(value);
+  if (raw === 'MO' || raw.includes('MANO')) return 'MO';
+  if (raw === 'MT' || raw.includes('MATERIAL')) return 'MT';
+  if (raw === 'EQ' || raw.includes('EQUIPO')) return 'EQ';
+  if (raw === 'SC' || raw.includes('SUBCONTRATO')) return 'SC';
+  if (raw === 'SP' || raw.includes('SUBPARTIDA')) return 'SP';
+  return 'MT';
+};
+
 export const Budgets: React.FC<BudgetsProps> = ({
   theme,
   toggleTheme,
@@ -1398,23 +1415,6 @@ export const Budgets: React.FC<BudgetsProps> = ({
     tipo: Insumo['tipo'];
     sourceRank: number;
     sourceLabel: string;
-  };
-
-  const normalizeInsumoSearchText = (value: unknown) =>
-    String(value ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .trim();
-
-  const normalizeSuggestionTipo = (value: unknown): Insumo['tipo'] => {
-    const raw = normalizeInsumoSearchText(value);
-    if (raw === 'MO' || raw.includes('MANO')) return 'MO';
-    if (raw === 'MT' || raw.includes('MATERIAL')) return 'MT';
-    if (raw === 'EQ' || raw.includes('EQUIPO')) return 'EQ';
-    if (raw === 'SC' || raw.includes('SUBCONTRATO')) return 'SC';
-    if (raw === 'SP' || raw.includes('SUBPARTIDA')) return 'SP';
-    return 'MT';
   };
 
   const insumoSuggestionsLibrary = useMemo<InsumoSuggestion[]>(() => {
