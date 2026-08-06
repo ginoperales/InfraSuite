@@ -105,7 +105,7 @@ const SectionTitle: React.FC<{
 }> = ({ icon, title, tone = 'primary', count }) => (
   <h3
     style={{
-      fontFamily: 'var(--font-display)',
+      fontFamily: 'var(--font-sans)',
       fontSize: '1.05rem',
       color: tone === 'primary' ? 'var(--color-primary)' : 'var(--text-secondary)',
       margin: '0 0 14px',
@@ -698,7 +698,7 @@ const BudgetRow: React.FC<{
           </div>
           <h4
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-sans)',
               fontSize: '1.04rem',
               fontWeight: 800,
               color: 'var(--text-primary)',
@@ -727,7 +727,7 @@ const BudgetRow: React.FC<{
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Costo Directo</div>
           <div
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-sans)',
               fontSize: '1.3rem',
               fontWeight: 900,
               color: 'var(--color-primary)',
