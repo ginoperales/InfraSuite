@@ -335,7 +335,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--bg-main)'
+          background: 'var(--bg-main)',
+          minWidth: 0
         }}>
           {/* Search project bar */}
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: '12px' }}>
