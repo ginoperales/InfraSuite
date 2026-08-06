@@ -1141,7 +1141,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
       </div>
 
       {/* Main Workspace split */}
-      <div className="budget-editor-lite-workspace" style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+      <div className="budget-editor-lite-workspace" style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         {isLiteMobileSidebarOpen && (
           <button
             type="button"
@@ -1234,7 +1234,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
         </div>
 
         {/* Center: Main Spreadsheet Grid and APU details bottom pane */}
-        <div className="budget-editor-lite-main" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+        <div className="budget-editor-lite-main" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', minWidth: 0 }}>
           
           {/* Top Half: Spreadsheet Table */}
           <div

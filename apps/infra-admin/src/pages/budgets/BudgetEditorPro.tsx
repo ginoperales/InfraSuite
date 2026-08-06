@@ -1226,20 +1226,20 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
         {/* Ribbon Options */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflowX: 'auto', flexGrow: 1 }}>
           {[
-            { label: 'Ir Inicio', icon: '🏠', onClick: () => setViewState('list') },
-            { label: 'Guardar', icon: '💾', onClick: () => alert('Proyecto guardado en base de datos local.') },
-            { label: 'Imprimir', icon: '🖨️', onClick: () => window.print() },
-            { label: 'Info. Proyecto', icon: 'ℹ️', onClick: () => setIsDatosGeneralesOpen(true) },
-            { label: 'Base JSON', icon: '💾', onClick: downloadActiveBudgetDatabase },
-            { label: 'Fórmula Polinómica', icon: '📐', onClick: () => setIsFormulaPolinomicaOpen(true) },
-            { label: 'Presupuesto Analítico', icon: '📊', onClick: () => alert('Presupuesto Analítico generado') },
-            { label: 'Calendario Adquisiciones', icon: '📅', onClick: () => alert('Calendario de Adquisiciones abierto') },
-            { label: 'Calendario Valorizado', icon: '🗓️', onClick: () => alert('Calendario Valorizado abierto') },
-            { label: 'Resumen de costos', icon: '💰', onClick: () => setIsGastosGeneralesOpen(true) },
-            { label: 'Responsables', icon: '👥', onClick: () => alert('Responsables del Proyecto') },
-            { label: 'Especificaciones técnicas', icon: '📝', onClick: () => setActiveBottomTab('specs') },
-            { label: 'Valorización', icon: '📈', onClick: () => alert('Valorización del presupuesto') },
-            { label: 'Permisos', icon: '🔒', onClick: () => alert('Configuración de permisos de usuario') }
+            { label: 'Ir Inicio', icon: <LiteIcon name="folder" size={18} />, onClick: () => setViewState('list') },
+            { label: 'Guardar', icon: <LiteIcon name="database" size={18} />, onClick: () => alert('Proyecto guardado en base de datos local.') },
+            { label: 'Imprimir', icon: <LiteIcon name="file-text" size={18} />, onClick: () => window.print() },
+            { label: 'Info. Proyecto', icon: <LiteIcon name="list" size={18} />, onClick: () => setIsDatosGeneralesOpen(true) },
+            { label: 'Base JSON', icon: <LiteIcon name="database" size={18} />, onClick: downloadActiveBudgetDatabase },
+            { label: 'Fórmula Polinómica', icon: <LiteIcon name="sigma" size={18} />, onClick: () => setIsFormulaPolinomicaOpen(true) },
+            { label: 'Presupuesto Analítico', icon: <LiteIcon name="pie" size={18} />, onClick: () => alert('Presupuesto Analítico generado') },
+            { label: 'Calendario Adquisiciones', icon: <LiteIcon name="calendar" size={18} />, onClick: () => alert('Calendario de Adquisiciones abierto') },
+            { label: 'Calendario Valorizado', icon: <LiteIcon name="calendar" size={18} />, onClick: () => alert('Calendario Valorizado abierto') },
+            { label: 'Resumen de costos', icon: <LiteIcon name="chart" size={18} />, onClick: () => setIsGastosGeneralesOpen(true) },
+            { label: 'Responsables', icon: <LiteIcon name="users" size={18} />, onClick: () => alert('Responsables del Proyecto') },
+            { label: 'Especificaciones técnicas', icon: <LiteIcon name="file-text" size={18} />, onClick: () => setActiveBottomTab('specs') },
+            { label: 'Valorización', icon: <LiteIcon name="chart" size={18} />, onClick: () => alert('Valorización del presupuesto') },
+            { label: 'Permisos', icon: <LiteIcon name="lock" size={18} />, onClick: () => alert('Configuración de permisos de usuario') }
           ].map(opt => (
             <div
               key={opt.label}
@@ -1300,10 +1300,10 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
       </div>
 
       {/* 2. MAIN WORKSPACE */}
-      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         
         {/* LEFT COLUMN: Spreadsheet hierarchical table + Incidencia bottom pane */}
-        <div style={{ width: dockedTab ? `${leftWidthPercent}%` : '100%', borderRight: dockedTab ? '1px solid var(--border-color)' : 'none', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ width: dockedTab ? `${leftWidthPercent}%` : '100%', borderRight: dockedTab ? '1px solid var(--border-color)' : 'none', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', flexShrink: 0, minWidth: 0 }}>
           
           {/* Left Top: Ingrese el texto para buscar + hierarchical table */}
           <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
