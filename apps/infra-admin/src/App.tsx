@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@infrasuite/auth';
 import { Button, Card, Table, Input, Select, Modal } from '@infrasuite/shared';
-import { db, firestore } from '@infrasuite/firebase';
-import { doc as firestoreDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '@infrasuite/firebase';
 import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { syncModuleData } from '@infrasuite/sync-service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCompanyModules } from '@infrasuite/license-service';
 import { isElectron, syncToCloud } from './lib/databaseAdapter';
+import { fetchBudgetsMetadataFromSupabase } from './lib/supabaseDB';
 import { SyncButton } from './components/SyncButton';
 import {
   AppWindow,
@@ -122,26 +122,26 @@ const PublicBudgetAccess: React.FC<{
   const [status, setStatus] = useState<'loading' | 'allowed' | 'restricted' | 'not_found'>('loading');
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      firestoreDoc(firestore, 'budgets', budgetId),
-      (snapshot) => {
-        if (!snapshot.exists()) {
+    let isSubscribed = true;
+    fetchBudgetsMetadataFromSupabase()
+      .then((metas: any[]) => {
+        if (!isSubscribed) return;
+        const match = metas.find((m: any) => m.id === budgetId);
+        if (!match) {
           setBudget(null);
           setStatus('not_found');
-          return;
+        } else {
+          setBudget(match as any);
+          setStatus(match.linkAccess === 'ANYONE_WITH_LINK' ? 'allowed' : 'restricted');
         }
-
-        const loaded = { id: snapshot.id, ...snapshot.data() } as Budget;
-        setBudget(loaded);
-        setStatus(loaded.linkAccess === 'ANYONE_WITH_LINK' ? 'allowed' : 'restricted');
-      },
-      () => {
+      })
+      .catch(() => {
+        if (!isSubscribed) return;
         setBudget(null);
         setStatus('restricted');
-      }
-    );
+      });
 
-    return () => unsubscribe();
+    return () => { isSubscribed = false; };
   }, [budgetId]);
 
   const cd = getSharedBudgetCD(budget);
@@ -466,17 +466,10 @@ const AppContent: React.FC = () => {
 
   const handleSyncNow = async () => {
     setIsSyncing(true);
-    const dbName = `${syncModule}.db`;
-    const tableName = syncModule === 'InfraCost' ? 'budgets' : 'samples';
-    const firestoreCollection = syncModule === 'InfraCost' ? 'budgets_cloud' : 'samples_cloud';
-
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    await syncModuleData(dbName, tableName, firestoreCollection);
-    
+    await syncToCloud();
     setIsSyncing(false);
     loadLocalSQLiteData();
-    alert(`¡Sincronización de ${syncModule} completada con Firestore!`);
+    alert(`¡Sincronización de ${syncModule} completada con Supabase!`);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
