@@ -1,6 +1,21 @@
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase client configuration
+// Official Firebase App Configuration for Firebase Authentication
+const firebaseConfig = {
+  apiKey: "AIzaSyCas8jIgsWV_hRnWcZiPMjBdvcRVtoh6EU",
+  authDomain: "infrasuitee.firebaseapp.com",
+  projectId: "infrasuitee",
+  storageBucket: "infrasuitee.firebasestorage.app",
+  messagingSenderId: "126902185835",
+  appId: "1:126902185835:web:fca0a2a231b8a531efa62e",
+  measurementId: "G-TVELJV85F1"
+};
+
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+export const firestore = {} as any;
+
+// Supabase client configuration (Database & Storage)
 const SUPABASE_URL = (typeof window !== 'undefined' && (window as any).env?.VITE_SUPABASE_URL)
   || (import.meta as any).env?.VITE_SUPABASE_URL 
   || 'https://smsmllenvdfvjypeplyp.supabase.co';
@@ -10,10 +25,6 @@ const SUPABASE_ANON_KEY = (typeof window !== 'undefined' && (window as any).env?
   || 'sb_publishable_ig3zCd8qaGg642Reu0WY4Q_s3vjazEt';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Legacy mocks for backwards compatibility with any remaining references
-export const app = {} as any;
-export const firestore = {} as any;
 
 const isBrowser = typeof window !== 'undefined';
 
