@@ -1,5 +1,5 @@
 -- ============================================================
--- INFRASUITE: SUPABASE DATABASE & STORAGE SETUP SCHEMA
+-- INFRASUITE: SUPABASE DATABASE & STORAGE SETUP SCHEMA (IDEMPOTENTE)
 -- Ejecuta este script en el SQL Editor de tu panel de Supabase
 -- ============================================================
 
@@ -23,41 +23,54 @@ CREATE TABLE IF NOT EXISTS public.budgets (
     updated_at BIGINT DEFAULT (extract(epoch from now()) * 1000)::bigint
 );
 
--- Habilitar RLS (Row Level Security) para seguridad opcional
+-- Habilitar RLS (Row Level Security)
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 
--- Política de lectura pública/anon (permitir acceso si es el dueño o si tiene acceso por link)
+-- Limpiar políticas anteriores si ya existen para evitar errores 42710
+DROP POLICY IF EXISTS "Permitir lectura de presupuestos" ON public.budgets;
 CREATE POLICY "Permitir lectura de presupuestos" 
 ON public.budgets FOR SELECT 
 USING (true);
 
--- Política de inserción y actualización
+DROP POLICY IF EXISTS "Permitir insercion y actualizacion de presupuestos" ON public.budgets;
 CREATE POLICY "Permitir insercion y actualizacion de presupuestos" 
 ON public.budgets FOR ALL 
 USING (true) 
 WITH CHECK (true);
 
--- Habilitar réplica en tiempo real (Supabase Realtime)
-ALTER PUBLICATION supabase_realtime ADD TABLE public.budgets;
+-- Habilitar réplica en tiempo real (Supabase Realtime) de forma segura
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'budgets'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.budgets;
+  END IF;
+END $$;
 
 -- 2. Crear Bucket de Storage 'budgets'
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('budgets', 'budgets', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- Política para permitir acceso público de lectura y subida al bucket 'budgets'
+-- Políticas de Storage idempotentes
+DROP POLICY IF EXISTS "Acceso publico lectura de presupuestos JSON" ON storage.objects;
 CREATE POLICY "Acceso publico lectura de presupuestos JSON"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'budgets');
 
+DROP POLICY IF EXISTS "Acceso publico subida de presupuestos JSON" ON storage.objects;
 CREATE POLICY "Acceso publico subida de presupuestos JSON"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'budgets');
 
+DROP POLICY IF EXISTS "Acceso publico actualizacion de presupuestos JSON" ON storage.objects;
 CREATE POLICY "Acceso publico actualizacion de presupuestos JSON"
 ON storage.objects FOR UPDATE
 USING (bucket_id = 'budgets');
 
+DROP POLICY IF EXISTS "Acceso publico eliminacion de presupuestos JSON" ON storage.objects;
 CREATE POLICY "Acceso publico eliminacion de presupuestos JSON"
 ON storage.objects FOR DELETE
 USING (bucket_id = 'budgets');
