@@ -933,46 +933,48 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
       `}</style>
       {/* Global Tabs Bar */}
       <div className="budget-editor-lite-tabs" style={{
-        height: '46px',
+        height: '44px',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '8px 16px 0 16px',
-        gap: '14px',
+        padding: '6px 14px 0 14px',
+        gap: '12px',
         flexShrink: 0
       }}>
         {/* Left: Logo & Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflowX: 'auto', flexGrow: 1, minWidth: 0 }}>
-          {/* Logo Badge (SI O SI A LA IZQUIERDA) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '6px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflowX: 'auto', flexGrow: 1, minWidth: 0 }}>
+          {/* Logo Badge (SI O SI A LA IZQUIERDA Y CON LA MISMA TIPOGRAFIA) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '4px', flexShrink: 0 }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <LiteIcon name="calculator" size={16} />
             </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>InfraCost Lite</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.02rem', color: 'var(--color-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>InfraCost Lite</span>
+            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)', whiteSpace: 'nowrap' }}>v1.0.1</span>
           </div>
 
           <button
             onClick={() => setViewState('list')}
             style={{
-              minHeight: 36,
-              padding: '6px 16px',
+              minHeight: 34,
+              padding: '5px 14px',
               background: 'transparent',
               border: '1px solid var(--border-color)',
               borderBottom: 'none',
-              borderRadius: '8px 8px 0 0',
+              borderRadius: '6px 6px 0 0',
               color: 'var(--text-secondary)',
-              fontSize: '0.84rem',
+              fontSize: '0.81rem',
               cursor: 'pointer',
-              fontWeight: 700,
+              fontWeight: 650,
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '7px',
+              fontFamily: 'inherit'
             }}
           >
-            <LiteIcon name="folder" size={16} />
+            <LiteIcon name="folder" size={15} />
             PRESUPUESTOS
           </button>
 
@@ -982,39 +984,40 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                 onClick={() => handleSelectBudgetTab(b.id)}
                 title={b.nombre}
                 style={{
-                  minHeight: 36,
-                  padding: '6px 32px 6px 12px',
+                  minHeight: 34,
+                  padding: '5px 30px 5px 10px',
                   background: activeBudget.id === b.id ? 'var(--bg-main)' : 'transparent',
                   border: '1px solid var(--border-color)',
                   borderBottom: 'none',
-                  borderRadius: '8px 8px 0 0',
+                  borderRadius: '6px 6px 0 0',
                   color: activeBudget.id === b.id ? 'var(--color-primary)' : 'var(--text-secondary)',
-                  fontSize: '0.84rem',
+                  fontSize: '0.81rem',
                   cursor: 'pointer',
-                  fontWeight: activeBudget.id === b.id ? 800 : 700,
+                  fontWeight: activeBudget.id === b.id ? 750 : 650,
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '7px',
-                  boxShadow: activeBudget.id === b.id ? '0 -2px 10px rgba(0,0,0,0.03)' : 'none'
+                  gap: '6px',
+                  boxShadow: activeBudget.id === b.id ? '0 -2px 10px rgba(0,0,0,0.03)' : 'none',
+                  fontFamily: 'inherit'
                 }}
               >
-                <LiteIcon name="file-text" size={15} />
-                <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
+                <LiteIcon name="file-text" size={14} />
+                <span style={{ maxWidth: '130px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
               </button>
               <button
                 onClick={(e) => handleCloseBudgetTab(b.id, e)}
                 style={{
                   position: 'absolute',
-                  right: '6px',
+                  right: '5px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: 'var(--text-muted)',
                   cursor: 'pointer',
-                  width: 22,
-                  height: 22,
+                  width: 20,
+                  height: 20,
                   borderRadius: 4,
                   display: 'flex',
                   alignItems: 'center',
@@ -1029,7 +1032,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
         </div>
 
         {/* Right Controls in Editor Tab Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingBottom: '4px' }}>
           <SyncButton />
 
           <button
@@ -1047,7 +1050,8 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
               fontSize: '0.78rem',
               fontWeight: 700,
               color: 'var(--text-primary)',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontFamily: 'inherit'
             }}
           >
             <LiteIcon name="refresh-cw" size={14} />
@@ -1068,9 +1072,10 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                 border: '1px solid rgba(34, 197, 94, 0.35)',
                 background: 'rgba(34, 197, 94, 0.12)',
                 fontSize: '0.78rem',
-                fontWeight: 800,
+                fontWeight: 750,
                 color: '#22c55e',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontFamily: 'inherit'
               }}
             >
               <LiteIcon name="share" size={14} />
@@ -1095,7 +1100,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
               borderRadius: '8px'
             }}
           >
-            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />
           </button>
         </div>
       </div>
