@@ -280,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           prompt: 'select_account'
         });
 
-        // Trigger Google account selector popup in browser
+        // Trigger real Google OAuth popup in browser
         const authUserCred = await signInWithPopup(authInstance, provider);
         const email = authUserCred.user.email || '';
         
@@ -321,19 +321,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       } catch (err: any) {
         console.error("Firebase Google Auth error:", err);
+        setIsLoading(false);
 
         if (err?.code === 'auth/unauthorized-domain') {
-          setIsLoading(false);
           throw new Error("El dominio '" + window.location.hostname + "' no está autorizado en Firebase Console (Authentication > Settings > Authorized Domains).");
         }
         if (err?.code === 'auth/operation-not-allowed') {
-          setIsLoading(false);
           throw new Error("El proveedor de Google no está activado en tu consola de Firebase (Authentication > Sign-in method > Google).");
         }
         if (err?.code === 'auth/popup-closed-by-user') {
-          setIsLoading(false);
           throw new Error("Inicio de sesión cancelado al cerrar la ventana emergente.");
         }
+        if (err?.code === 'auth/popup-blocked') {
+          throw new Error("La ventana emergente de Google fue bloqueada por el navegador. Habilita los popups para infrasuitee.web.app.");
+        }
+
+        throw new Error(err?.message || "Error al autenticar con Google en Firebase.");
       }
     }
 

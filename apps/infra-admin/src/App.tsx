@@ -509,11 +509,8 @@ const AppContent: React.FC = () => {
         detalle: 'Sesión iniciada con cuenta de Google'
       });
     } catch (err: any) {
-      if (err.message === "offline_fallback") {
-        setIsGoogleModalOpen(true);
-      } else {
-        console.warn("Google Auth failed, falling back to local modal:", err);
-        setIsGoogleModalOpen(true);
+      if (err?.message) {
+        alert(err.message);
       }
     }
   };
