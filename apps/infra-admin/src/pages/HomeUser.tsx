@@ -25,6 +25,98 @@ interface DashboardFile {
 }
 
 // Fluent-style Custom Icons for InfraSuite Applications
+const SearchAiIcon: React.FC<{ size?: number; color?: string }> = ({ size = 18, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    <path d="M12 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z" fill="#10b981" stroke="none" />
+  </svg>
+);
+
+const SunIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+);
+
+const MoonIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+);
+
+const SettingsGearIcon: React.FC<{ size?: number; color?: string }> = ({ size = 20, color = 'var(--text-secondary)' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>
+);
+
+const PaperclipIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+  </svg>
+);
+
+const TemplateListIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="3" y1="9" x2="21" y2="9"></line>
+    <line x1="9" y1="21" x2="9" y2="9"></line>
+  </svg>
+);
+
+const ArrowRightIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+    <polyline points="12 5 19 12 12 19"></polyline>
+  </svg>
+);
+
+const HomeChipIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+  </svg>
+);
+
+const DocumentChipIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+    <polyline points="14 2 14 8 20 8"></polyline>
+    <line x1="16" y1="13" x2="8" y2="13"></line>
+    <line x1="16" y1="17" x2="8" y2="17"></line>
+    <polyline points="10 9 9 9 8 9"></polyline>
+  </svg>
+);
+
+const CalculatorChipIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+    <line x1="8" y1="6" x2="16" y2="6"></line>
+    <line x1="16" y1="14" x2="16" y2="18"></line>
+    <path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01"></path>
+  </svg>
+);
+
+const CalendarChipIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
+
+// Fluent-style Custom Icons for InfraSuite Applications
 const InfraCostLiteIcon: React.FC = () => (
   <div style={{ position: 'relative', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
     <div style={{ width: '22px', height: '22px', backgroundColor: '#107c41', borderRadius: '4px', position: 'absolute', left: '2px', top: '2px', opacity: 0.8 }} />
@@ -87,6 +179,8 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
   const [promotions, setPromotions] = useState<any[]>([]);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [isPromoLoaded, setIsPromoLoaded] = useState(false);
+  const [isAiCreationViewOpen, setIsAiCreationViewOpen] = useState(false);
+  const [aiPromptText, setAiPromptText] = useState('');
 
   const [files, setFiles] = useState<any[]>([]);
   const [contextMenu, setContextMenu] = useState<{
@@ -333,81 +427,435 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
           zIndex: 100
         }}
       >
-        {/* Left: Spacer to help balance search bar center layout (using width of right menu) */}
+        {/* Left: Spacer */}
         <div style={{ width: '80px', display: 'none', '@media (min-width: 768px)': { display: 'block' } } as any} />
 
-        {/* Center: Search Bar */}
-        <div style={{ flexGrow: 1, maxWidth: '580px', margin: '0 auto', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.95rem' }}>🔍</span>
+        {/* Center: Search & AI Creation Pill */}
+        <div
+          onClick={() => setIsAiCreationViewOpen(true)}
+          style={{
+            flexGrow: 1,
+            maxWidth: '580px',
+            margin: '0 auto',
+            position: 'relative',
+            cursor: 'pointer'
+          }}
+        >
+          <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+            <SearchAiIcon size={18} color="var(--text-muted)" />
+          </span>
           <input
             type="text"
-            placeholder="Búsqueda"
+            readOnly
+            placeholder="Creación o Búsqueda"
             value={globalSearch}
             onChange={(e) => setGlobalSearch(e.target.value)}
+            onClick={() => setIsAiCreationViewOpen(true)}
             style={{
               width: '100%',
-              padding: '8px 16px 8px 38px',
+              padding: '9px 16px 9px 42px',
               borderRadius: '24px',
               border: '1px solid var(--border-color)',
               background: 'var(--bg-main)',
               color: 'var(--text-primary)',
               fontSize: '0.88rem',
               outline: 'none',
+              cursor: 'pointer',
               transition: 'all 0.25s',
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = 'var(--color-primary)';
-              e.target.style.boxShadow = '0 0 0 2px var(--color-primary-glow)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = 'var(--border-color)';
-              e.target.style.boxShadow = 'none';
+              fontWeight: 500
             }}
           />
         </div>
 
-        {/* Right: Sync & Theme Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginLeft: 'auto' }}>
+        {/* Right: Sync, Theme & Settings Switchers */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
           <SyncButton />
 
           <button
             type="button"
             onClick={onToggleTheme}
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.25rem',
+              background: 'var(--bg-main)',
+              border: '1px solid var(--border-color)',
+              padding: '8px',
+              borderRadius: '50%',
               cursor: 'pointer',
-              color: 'var(--text-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '6px',
-              borderRadius: '4px',
-              transition: 'background 0.2s'
+              transition: 'all 0.2s'
             }}
             title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
           </button>
           <button
+            type="button"
+            onClick={() => onNavigate('profile-settings')}
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              fontSize: '1.25rem',
+              background: 'var(--bg-main)',
+              border: '1px solid var(--border-color)',
+              padding: '8px',
+              borderRadius: '50%',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              transition: 'all 0.2s'
             }}
             title="Configuración"
-            onClick={() => onNavigate('profile-settings')}
           >
-            ⚙️
+            <SettingsGearIcon size={20} />
           </button>
         </div>
       </div>
+
+      {/* ── FULL SCREEN AI CREATION / SEARCH VIEW ── */}
+      <AnimatePresence>
+        {isAiCreationViewOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 15 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: theme === 'light' ? '#fcfcfd' : 'var(--bg-main, #0b0f19)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Top Controls */}
+            <div style={{ position: 'absolute', top: '24px', left: '24px', right: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <button
+                type="button"
+                onClick={() => setIsAiCreationViewOpen(false)}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  padding: '8px 18px',
+                  borderRadius: '20px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ← Volver al inicio
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: '8px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+                >
+                  {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAiCreationViewOpen(false);
+                    onNavigate('profile-settings');
+                  }}
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: '8px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Configuración"
+                >
+                  <SettingsGearIcon size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Main AI Prompt Container */}
+            <div style={{ maxWidth: '820px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '28px', marginTop: '30px' }}>
+              
+              {/* Title & Subtitle */}
+              <div>
+                <h1 style={{ fontSize: '2.4rem', fontWeight: 800, margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
+                  ¿Qué presupuesto deseas crear?
+                </h1>
+                <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)', margin: 0, fontWeight: 400 }}>
+                  Usa la IA para generar análisis de costos, metrados y partidas
+                </p>
+              </div>
+
+              {/* Prompt Card Box */}
+              <div
+                style={{
+                  width: '100%',
+                  background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+                  border: '1.5px solid rgba(22, 163, 74, 0.4)',
+                  borderRadius: '24px',
+                  padding: '24px 28px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  boxShadow: theme === 'light' ? '0 12px 35px rgba(22, 163, 74, 0.08)' : '0 12px 35px rgba(0,0,0,0.4)',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <textarea
+                  placeholder="Describe tu proyecto o consulta de presupuesto..."
+                  value={aiPromptText}
+                  onChange={(e) => setAiPromptText(e.target.value)}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'var(--text-primary)',
+                    fontSize: '1.05rem',
+                    fontFamily: 'inherit',
+                    resize: 'none',
+                    lineHeight: 1.5
+                  }}
+                />
+
+                {/* Bottom Toolbar inside Card */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button
+                      type="button"
+                      onClick={() => alert('Selecciona un archivo PDF, Excel o memoria descriptiva para adjuntar.')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <PaperclipIcon size={18} /> Adjuntar
+                    </button>
+                    <span style={{ color: 'var(--border-color)' }}>|</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAiCreationViewOpen(false);
+                        onNavigate('applications');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <TemplateListIcon size={18} /> Plantillas
+                    </button>
+                  </div>
+
+                  {/* Circular Green Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!aiPromptText.trim()) {
+                        alert('Por favor ingresa una descripción de tu proyecto.');
+                        return;
+                      }
+                      setIsAiCreationViewOpen(false);
+                      onNavigate('budgets_lite');
+                    }}
+                    style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)',
+                      transition: 'transform 0.2s, boxShadow 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.06)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <ArrowRightIcon size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Quick Action Chips */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiPromptText('Presupuesto de construcción de vivienda unifamiliar de 2 pisos con acabados de primera');
+                  }}
+                  style={{
+                    background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#16a34a';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <HomeChipIcon size={20} /> Presupuesto de vivienda
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiPromptText('Análisis de precios unitarios (APU) para partidas de estructuras de concreto y vaciado');
+                  }}
+                  style={{
+                    background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#16a34a';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <DocumentChipIcon size={20} /> Análisis de precios unitarios
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiPromptText('Metrados de obra y movimiento de tierras con cálculo automático de volumen de excavación');
+                  }}
+                  style={{
+                    background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#16a34a';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <CalculatorChipIcon size={20} /> Metrados de obra
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiPromptText('Cronograma de obra valorizado y flujo de caja mensual para proyecto de edificación');
+                  }}
+                  style={{
+                    background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '20px',
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#16a34a';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <CalendarChipIcon size={20} /> Cronograma y costos
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Scrollable Content Container */}
       <div style={{ flexGrow: 1, overflowY: 'auto' }}>
