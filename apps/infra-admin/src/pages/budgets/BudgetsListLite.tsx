@@ -309,129 +309,64 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
         }
       `}</style>
 
-      {/* ── TOP BRAND HEADER (ARRIBA DE TODO) ── */}
-      <div className="lite-header-top" style={{
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '10px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexShrink: 0
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <LiteIcon name="calculator" size={20} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Lite</span>
-            <span style={{ fontSize: '0.65rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>v1.0.1</span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', marginLeft: 'auto' }}>
-          <SyncButton />
-
-          {onNavigate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid var(--border-color)', paddingRight: '8px' }}>
-              <HeaderIconButton label="Compartido" icon="folder-open" onClick={() => onNavigate('shared')} />
-              <HeaderIconButton label="Contactos" icon="users" onClick={() => onNavigate('contacts')} />
-              <HeaderIconButton label="Papelera" icon="trash" onClick={() => onNavigate('trash')} />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
-            style={{
-              background: 'var(--modal-panel-bg)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 34,
-              height: 34,
-              borderRadius: '8px'
-            }}
-          >
-            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
-          </button>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '5px 10px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--modal-panel-bg)',
-              fontSize: '0.78rem',
-              color: 'var(--text-secondary)'
-            }}
-          >
-            <LiteIcon name="database" size={14} />
-            <strong style={{ color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {currentCompany}
-            </strong>
-          </span>
-        </div>
-      </div>
-
-      {/* Tabs bar */}
+      {/* ── TOP LEVEL HEADER (PESTAÑAS AL MISMO NIVEL DE LA IMAGEN 1) ── */}
       <div
+        className="lite-header-top"
         style={{
-          minHeight: '44px',
-          background: 'var(--bg-surface-elevated)',
+          background: 'var(--bg-surface)',
           borderBottom: '1px solid var(--border-color)',
+          padding: '8px 16px 0 16px',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 14px',
-          gap: '10px',
-          flexShrink: 0
+          justifyContent: 'space-between',
+          flexShrink: 0,
+          gap: '12px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0 }}>
+        {/* Left: Tab Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', minWidth: 0, paddingBottom: 0 }}>
+          {/* Active PRESUPUESTOS tab */}
           <button
             type="button"
             onClick={() => {}}
             style={{
-              minHeight: 34,
-              padding: '6px 14px',
-              background: 'var(--bg-surface)',
+              minHeight: 36,
+              padding: '6px 16px',
+              background: 'var(--bg-main)',
               border: '1px solid var(--border-color)',
               borderBottom: 'none',
               borderRadius: '8px 8px 0 0',
               color: 'var(--color-primary)',
-              fontSize: '0.82rem',
+              fontSize: '0.84rem',
               cursor: 'pointer',
               fontWeight: 800,
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              boxShadow: '0 -2px 10px rgba(0,0,0,0.03)'
             }}
           >
-            <LiteIcon name="folder" size={15} />
+            <LiteIcon name="folder" size={16} />
             PRESUPUESTOS
           </button>
 
+          {/* Opened Budget Tabs */}
           {openBudgets.map(b => (
-            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
+            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 4, flexShrink: 0 }}>
               <button
                 type="button"
                 onClick={() => handleSelectBudgetTab(b.id)}
                 title={b.nombre}
                 style={{
-                  minHeight: 34,
-                  padding: '6px 34px 6px 12px',
+                  minHeight: 36,
+                  padding: '6px 32px 6px 12px',
                   background: 'transparent',
                   border: '1px solid var(--border-color)',
                   borderBottom: 'none',
                   borderRadius: '8px 8px 0 0',
                   color: 'var(--text-secondary)',
-                  fontSize: '0.82rem',
+                  fontSize: '0.84rem',
                   cursor: 'pointer',
                   fontWeight: 700,
                   whiteSpace: 'nowrap',
@@ -440,8 +375,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                   gap: '7px'
                 }}
               >
-                <LiteIcon name="file-text" size={14} />
-                <span style={{ maxWidth: '128px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
+                <LiteIcon name="file-text" size={15} />
+                <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
               </button>
               <button
                 type="button"
@@ -456,9 +391,9 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                   border: 'none',
                   color: 'var(--text-muted)',
                   cursor: 'pointer',
-                  width: 24,
-                  height: 24,
-                  borderRadius: 6,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 4,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -469,6 +404,47 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
               </button>
             </div>
           ))}
+        </div>
+
+        {/* Right: Brand Badge & Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto', paddingBottom: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LiteIcon name="calculator" size={16} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '-0.3px' }}>InfraCost Lite</span>
+            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>v1.0.1</span>
+          </div>
+
+          <SyncButton />
+
+          {onNavigate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid var(--border-color)', paddingRight: '8px' }}>
+              <HeaderIconButton label="Compartido" icon="folder-open" onClick={() => onNavigate('shared')} />
+              <HeaderIconButton label="Contactos" icon="users" onClick={() => onNavigate('contacts')} />
+              <HeaderIconButton label="Papelera" icon="trash" onClick={() => onNavigate('trash')} />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+            style={{
+              background: 'var(--modal-panel-bg)',
+              border: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: '8px'
+            }}
+          >
+            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+          </button>
         </div>
       </div>
 

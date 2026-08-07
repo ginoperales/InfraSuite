@@ -929,59 +929,65 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
       `}</style>
       {/* Global Tabs Bar */}
       <div className="budget-editor-lite-tabs" style={{
-        height: '48px',
+        height: '46px',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-color)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 12px',
-        gap: '8px',
+        padding: '8px 16px 0 16px',
+        gap: '12px',
         flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
           <button
             onClick={() => setViewState('list')}
             style={{
-              padding: '6px 14px',
+              minHeight: 36,
+              padding: '6px 16px',
               background: 'transparent',
               border: '1px solid var(--border-color)',
               borderBottom: 'none',
-              borderRadius: '6px 6px 0 0',
+              borderRadius: '8px 8px 0 0',
               color: 'var(--text-secondary)',
-              fontSize: '0.82rem',
+              fontSize: '0.84rem',
               cursor: 'pointer',
               fontWeight: 700,
-              flexShrink: 0
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            <LiteIcon name="folder" size={15} />
+            <LiteIcon name="folder" size={16} />
             PRESUPUESTOS
           </button>
 
           {openBudgets.map(b => (
-            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 6, flexShrink: 0 }}>
+            <div key={b.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', marginRight: 4, flexShrink: 0 }}>
               <button
                 onClick={() => handleSelectBudgetTab(b.id)}
                 title={b.nombre}
                 style={{
-                  padding: '6px 10px 6px 12px',
-                  background: activeBudget.id === b.id ? 'var(--bg-surface-elevated)' : 'transparent',
+                  minHeight: 36,
+                  padding: '6px 32px 6px 12px',
+                  background: activeBudget.id === b.id ? 'var(--bg-main)' : 'transparent',
                   border: '1px solid var(--border-color)',
                   borderBottom: 'none',
-                  borderRadius: '6px 6px 0 0',
+                  borderRadius: '8px 8px 0 0',
                   color: activeBudget.id === b.id ? 'var(--color-primary)' : 'var(--text-secondary)',
-                  fontSize: '0.82rem',
+                  fontSize: '0.84rem',
                   cursor: 'pointer',
-                  fontWeight: 700,
+                  fontWeight: activeBudget.id === b.id ? 800 : 700,
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '7px',
+                  boxShadow: activeBudget.id === b.id ? '0 -2px 10px rgba(0,0,0,0.03)' : 'none'
                 }}
               >
-                <LiteIcon name="file-text" size={14} />
-                <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
+                <LiteIcon name="file-text" size={15} />
+                <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.nombre}</span>
               </button>
               <button
                 onClick={(e) => handleCloseBudgetTab(b.id, e)}
