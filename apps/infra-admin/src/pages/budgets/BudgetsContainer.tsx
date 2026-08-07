@@ -3099,6 +3099,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
             canUndo={historyPast.length > 0}
             canRedo={historyFuture.length > 0}
             readOnly={publicReadOnly}
+            onShareBudget={(b) => { setBudgetToShare(b); setIsShareModalOpen(true); }}
+            onSync={() => { window.location.reload(); }}
           />
 
           {/* Context Menu for Lite Editor */}

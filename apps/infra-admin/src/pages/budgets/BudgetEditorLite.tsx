@@ -433,6 +433,8 @@ interface BudgetEditorLiteProps {
   canUndo?: boolean;
   canRedo?: boolean;
   readOnly?: boolean;
+  onShareBudget?: (b: Budget) => void;
+  onSync?: () => void;
 }
 
 // ─── Export Dropdown Component ────────────────────────────────────────────
@@ -639,7 +641,9 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   handleRedo,
   canUndo,
   canRedo,
-  readOnly = false
+  readOnly = false,
+  onShareBudget,
+  onSync
 }) => {
   const [apuDraftValues, setApuDraftValues] = useState<Record<string, string>>({});
   const [mobileApuPartidaId, setMobileApuPartidaId] = useState<string | null>(null);
@@ -936,10 +940,19 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '8px 16px 0 16px',
-        gap: '12px',
+        gap: '14px',
         flexShrink: 0
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
+        {/* Left: Logo & Tabs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflowX: 'auto', flexGrow: 1, minWidth: 0 }}>
+          {/* Logo Badge (SI O SI A LA IZQUIERDA) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '6px', flexShrink: 0 }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LiteIcon name="calculator" size={16} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>InfraCost Lite</span>
+          </div>
+
           <button
             onClick={() => setViewState('list')}
             style={{
@@ -993,97 +1006,97 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                 onClick={(e) => handleCloseBudgetTab(b.id, e)}
                 style={{
                   position: 'absolute',
-                  right: '4px',
+                  right: '6px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
                   color: 'var(--text-muted)',
                   cursor: 'pointer',
-                  fontSize: '0.75rem',
+                  width: 22,
+                  height: 22,
+                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   zIndex: 2
                 }}
               >
-                ×
+                <LiteIcon name="x" size={14} />
               </button>
             </div>
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0, paddingRight: '8px' }}>
-          {!readOnly && <div style={{ display: 'flex', gap: '6px' }}>
+        {/* Right Controls in Editor Tab Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingBottom: '6px' }}>
+          <SyncButton />
+
+          <button
+            type="button"
+            onClick={() => { if (onSync) onSync(); }}
+            title="Actualizar presupuesto y datos"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--modal-panel-bg)',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              cursor: 'pointer'
+            }}
+          >
+            <LiteIcon name="refresh-cw" size={14} />
+            <span>Actualizar</span>
+          </button>
+
+          {onShareBudget && (
             <button
-              onClick={handleUndo}
-              disabled={!canUndo}
-              title="Deshacer (Ctrl+Z)"
+              type="button"
+              onClick={() => onShareBudget(activeBudget)}
+              title="Compartir Presupuesto"
               style={{
-                background: 'transparent',
-                border: '1px solid var(--border-color)',
-                borderRadius: '4px',
-                padding: '6px 10px',
-                cursor: canUndo ? 'pointer' : 'not-allowed',
-                opacity: canUndo ? 1 : 0.4,
-                color: 'var(--text-primary)',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s'
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                background: 'rgba(34, 197, 94, 0.12)',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#22c55e',
+                cursor: 'pointer'
               }}
             >
-              <LiteIcon name="undo" size={16} />
+              <LiteIcon name="share" size={14} />
+              <span>Compartir</span>
             </button>
-            <button
-              onClick={handleRedo}
-              disabled={!canRedo}
-              title="Rehacer (Ctrl+Y)"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border-color)',
-                borderRadius: '4px',
-                padding: '6px 10px',
-                cursor: canRedo ? 'pointer' : 'not-allowed',
-                opacity: canRedo ? 1 : 0.4,
-                color: 'var(--text-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.15s'
-              }}
-            >
-              <LiteIcon name="redo" size={16} />
-            </button>
-          </div>}
-          
+          )}
+
           <button
             type="button"
             onClick={toggleTheme}
+            title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
             style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.2rem',
+              background: 'var(--modal-panel-bg)',
+              border: '1px solid var(--border-color)',
               cursor: 'pointer',
               color: 'var(--text-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '6px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'background 0.2s'
+              width: 32,
+              height: 32,
+              borderRadius: '8px'
             }}
           >
-            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
           </button>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            {readOnly ? (
-              <strong style={{ color: 'var(--color-primary)' }}>Modo lectura pública</strong>
-            ) : (
-              <>
-                Empresa: <strong style={{ color: 'var(--color-primary)' }}>
-                  {user?.role === 'SUPER_ADMIN' ? 'Suite Global' : companies.find(c => c.id === user?.empresaId)?.nombre || 'Cargando...'}
-                </strong>
-              </>
-            )}
-          </span>
         </div>
       </div>
 

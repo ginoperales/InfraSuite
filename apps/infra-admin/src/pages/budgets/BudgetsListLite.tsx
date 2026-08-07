@@ -309,7 +309,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
         }
       `}</style>
 
-      {/* ── TOP LEVEL HEADER (PESTAÑAS AL MISMO NIVEL DE LA IMAGEN 1) ── */}
+      {/* ── TOP LEVEL HEADER (LOGO A LA IZQUIERDA Y PESTAÑAS) ── */}
       <div
         className="lite-header-top"
         style={{
@@ -320,11 +320,20 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
-          gap: '12px'
+          gap: '14px'
         }}
       >
-        {/* Left: Tab Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', minWidth: 0, paddingBottom: 0 }}>
+        {/* Left: Brand Logo + Tabs Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', overflowX: 'auto', minWidth: 0, paddingBottom: 0 }}>
+          {/* Logo Badge (SI O SI A LA IZQUIERDA) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '6px', flexShrink: 0 }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LiteIcon name="calculator" size={16} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>InfraCost Lite</span>
+            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)', whiteSpace: 'nowrap' }}>v1.0.1</span>
+          </div>
+
           {/* Active PRESUPUESTOS tab */}
           <button
             type="button"
@@ -406,20 +415,22 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
           ))}
         </div>
 
-        {/* Right: Brand Badge & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto', paddingBottom: '6px', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <LiteIcon name="calculator" size={16} />
-            </div>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.05rem', color: 'var(--color-primary)', letterSpacing: '-0.3px' }}>InfraCost Lite</span>
-            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>v1.0.1</span>
-          </div>
-
+        {/* Right: Controls & Header Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', paddingBottom: '6px', flexShrink: 0 }}>
           <SyncButton />
 
+          <HeaderIconButton
+            label="Actualizar"
+            icon="refresh-cw"
+            onClick={() => {
+              if (onSync) onSync();
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 500);
+            }}
+          />
+
           {onNavigate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid var(--border-color)', paddingRight: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <HeaderIconButton label="Compartido" icon="folder-open" onClick={() => onNavigate('shared')} />
               <HeaderIconButton label="Contactos" icon="users" onClick={() => onNavigate('contacts')} />
               <HeaderIconButton label="Papelera" icon="trash" onClick={() => onNavigate('trash')} />
