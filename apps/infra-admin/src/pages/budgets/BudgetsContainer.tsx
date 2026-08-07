@@ -813,6 +813,42 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const [partidaColumnWidths, setPartidaColumnWidths] = useState<Record<PartidaColumnKey, number>>(DEFAULT_PARTIDA_COLUMN_WIDTHS);
   const [apuColumnWidths, setApuColumnWidths] = useState<Record<ApuColumnKey, number>>(DEFAULT_APU_COLUMN_WIDTHS);
 
+  // Clients / Entidades CRUD state
+  const [clientsList, setClientsList] = useState<Modals.ClientEntity[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('infrasuite_clients_list');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return Modals.INITIAL_CLIENTS;
+  });
+
+  const [isManageClientsOpen, setIsManageClientsOpen] = useState(false);
+  const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false);
+  const [aiPromptText, setAiPromptText] = useState('');
+
+  const handleSaveClient = (client: Modals.ClientEntity) => {
+    setClientsList(prev => {
+      const idx = prev.findIndex(c => c.id === client.id);
+      const next = idx >= 0 ? prev.map((c, i) => i === idx ? client : c) : [...prev, client];
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('infrasuite_clients_list', JSON.stringify(next)); } catch {}
+      }
+      return next;
+    });
+  };
+
+  const handleDeleteClient = (id: string) => {
+    setClientsList(prev => {
+      const next = prev.filter(c => c.id !== id);
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('infrasuite_clients_list', JSON.stringify(next)); } catch {}
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     activeBudgetRef.current = activeBudget;
   }, [activeBudget]);
@@ -2952,15 +2988,108 @@ export const Budgets: React.FC<BudgetsProps> = ({
             onNavigate={onNavigate}
             handleUploadBudget={handleUploadBudget}
             onDownloadBudget={handleDownloadBudget}
+            onOpenAIGenerate={(prompt) => {
+              setAiPromptText(prompt);
+              setIsAIGenerateOpen(true);
+            }}
             onShareBudget={(budget) => {
               setBudgetToShare(budget);
               setIsShareModalOpen(true);
             }}
           />
-          <Modals.CreateBudgetModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreateBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
-          <Modals.EditBudgetModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSubmit={handleEditBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
+          <Modals.CreateBudgetModal
+            isOpen={isCreateOpen}
+            onClose={() => setIsCreateOpen(false)}
+            onSubmit={handleCreateBudget}
+            nombre={nombre}
+            setNombre={setNombre}
+            cliente={cliente}
+            setCliente={setCliente}
+            fechaBase={fechaBase}
+            setFechaBase={setFechaBase}
+            grupo={grupo}
+            setGrupo={setGrupo}
+            groups={groups}
+            clientsList={clientsList}
+            onOpenManageClients={() => setIsManageClientsOpen(true)}
+          />
+          <Modals.EditBudgetModal
+            isOpen={isEditOpen}
+            onClose={() => setIsEditOpen(false)}
+            onSubmit={handleEditBudget}
+            nombre={nombre}
+            setNombre={setNombre}
+            cliente={cliente}
+            setCliente={setCliente}
+            fechaBase={fechaBase}
+            setFechaBase={setFechaBase}
+            grupo={grupo}
+            setGrupo={setGrupo}
+            groups={groups}
+            clientsList={clientsList}
+            onOpenManageClients={() => setIsManageClientsOpen(true)}
+          />
           <Modals.DatosGeneralesModal isOpen={isDatosGeneralesOpen} onClose={() => setIsDatosGeneralesOpen(false)} activeBudget={activeBudget} dgActiveTab={dgActiveTab} setDgActiveTab={setDgActiveTab} dgGrupo={dgGrupo} setDgGrupo={setDgGrupo} dgPresupuesto={dgPresupuesto} setDgPresupuesto={setDgPresupuesto} dgCliente={dgCliente} setDgCliente={setDgCliente} dgDireccion={dgDireccion} setDgDireccion={setDgDireccion} dgDistrito={dgDistrito} setDgDistrito={setDgDistrito} dgProvincia={dgProvincia} setDgProvincia={setDgProvincia} dgDepartamento={dgDepartamento} setDgDepartamento={setDgDepartamento} dgFechaBase={dgFechaBase} setDgFechaBase={setDgFechaBase} dgJornada={dgJornada} setDgJornada={setDgJornada} dgMoneda={dgMoneda} setDgMoneda={setDgMoneda} dgSubPresupuestos={dgSubPresupuestos} setDgSubPresupuestos={setDgSubPresupuestos} newSubPresupuesto={newSubPresupuesto} setNewSubPresupuesto={setNewSubPresupuesto} groups={groups} onSave={handleSaveDatosGenerales} />
-          <Modals.CreateFromTemplateModal isOpen={isCreateFromTemplateOpen} onClose={() => { setIsCreateFromTemplateOpen(false); setSourceTemplate(null); }} onSubmit={handleCreateFromTemplateSubmit} templateName={sourceTemplate?.nombre || 'Plantilla'} nombre={tplNombre} setNombre={setTplNombre} cliente={tplCliente} setCliente={setTplCliente} fechaBase={tplFechaBase} setFechaBase={setTplFechaBase} grupo={tplGrupo} setGrupo={setTplGrupo} groups={groups} />
+          <Modals.CreateFromTemplateModal
+            isOpen={isCreateFromTemplateOpen}
+            onClose={() => { setIsCreateFromTemplateOpen(false); setSourceTemplate(null); }}
+            onSubmit={handleCreateFromTemplateSubmit}
+            templateName={sourceTemplate?.nombre || 'Plantilla'}
+            nombre={tplNombre}
+            setNombre={setTplNombre}
+            cliente={tplCliente}
+            setCliente={setTplCliente}
+            fechaBase={tplFechaBase}
+            setFechaBase={setTplFechaBase}
+            grupo={tplGrupo}
+            setGrupo={setTplGrupo}
+            groups={groups}
+            clientsList={clientsList}
+            onOpenManageClients={() => setIsManageClientsOpen(true)}
+          />
+
+          <Modals.ManageClientsModal
+            isOpen={isManageClientsOpen}
+            onClose={() => setIsManageClientsOpen(false)}
+            clients={clientsList}
+            onSaveClient={handleSaveClient}
+            onDeleteClient={handleDeleteClient}
+          />
+
+          <Modals.AIBudgetProposalModal
+            isOpen={isAIGenerateOpen}
+            onClose={() => setIsAIGenerateOpen(false)}
+            initialPrompt={aiPromptText}
+            clientsList={clientsList}
+            groups={groups}
+            onOpenManageClients={() => setIsManageClientsOpen(true)}
+            onCreateFromProposal={(newBudget) => {
+              setBudgets(prev => [newBudget, ...prev]);
+              setHistoricalActiveBudget(newBudget);
+              setViewState('editor');
+            }}
+            onCreateBlank={(data) => {
+              const blankBudget: Budget = {
+                id: 'b_' + Date.now(),
+                nombre: data.nombre,
+                cliente: data.cliente,
+                fechaBase: data.fechaBase,
+                grupo: data.grupo,
+                categoria: 'Recientes',
+                partidas: [],
+                jornada: 8,
+                moneda: 'SOLES',
+                direccion: 'NN',
+                distrito: 'NN',
+                provincia: 'NN',
+                departamento: 'NN',
+                subPresupuestos: ['SUB PRESUPUESTO 1']
+              };
+              setBudgets(prev => [blankBudget, ...prev]);
+              setHistoricalActiveBudget(blankBudget);
+              setViewState('editor');
+            }}
+          />
           <ShareModal 
             isOpen={isShareModalOpen} 
             onClose={() => {

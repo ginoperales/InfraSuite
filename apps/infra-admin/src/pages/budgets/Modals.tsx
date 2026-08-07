@@ -58,6 +58,603 @@ export const menuItemStyle: React.CSSProperties = {
   gap: '8px'
 };
 
+export interface ClientEntity {
+  id: string;
+  nombre: string;
+  tipo?: 'ENTIDAD_PUBLICA' | 'EMPRESA_PRIVADA' | 'PERSONA_NATURAL';
+  ruc?: string;
+  direccion?: string;
+  telefono?: string;
+}
+
+export const INITIAL_CLIENTS: ClientEntity[] = [
+  { id: 'cli_1', nombre: 'MUNICIPALIDAD DISTRITAL DE YARINACOCHA', tipo: 'ENTIDAD_PUBLICA', ruc: '20148596321', direccion: 'Av. Yarinacocha 450, Pucallpa' },
+  { id: 'cli_2', nombre: 'GOBIERNO REGIONAL DE UCAYALI', tipo: 'ENTIDAD_PUBLICA', ruc: '20330198421', direccion: 'Jr. Raymondi 220, Pucallpa' },
+  { id: 'cli_3', nombre: 'SELVAVIVACONSTRUCCIONES S.A.C.', tipo: 'EMPRESA_PRIVADA', ruc: '20559841235', direccion: 'Av. Centenario Km 4.5' },
+  { id: 'cli_4', nombre: 'MINISTERIO DE TRANSPORTES Y COMUNICACIONES (MTC)', tipo: 'ENTIDAD_PUBLICA', ruc: '20131377831', direccion: 'Lima' },
+  { id: 'cli_5', nombre: 'MUNICIPALIDAD PROVINCIAL DE CORONEL PORTILLO', tipo: 'ENTIDAD_PUBLICA', ruc: '20148596891', direccion: 'Pucallpa' },
+  { id: 'cli_6', nombre: 'CONSORCIO VIAL SUR', tipo: 'EMPRESA_PRIVADA', ruc: '20601234567', direccion: 'Arequipa' },
+  { id: 'cli_7', nombre: 'CLIENTE PARTICULAR / PRIVADO', tipo: 'PERSONA_NATURAL' }
+];
+
+export const ClientSelectField: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  clients: ClientEntity[];
+  onOpenManageClients: () => void;
+  required?: boolean;
+}> = ({ value, onChange, clients, onOpenManageClients, required }) => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+        Cliente / Entidad {required ? '*' : ''}
+      </label>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          style={{
+            flexGrow: 1,
+            background: 'var(--modal-input-bg)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
+            padding: '9px 12px',
+            borderRadius: '6px',
+            fontSize: '0.86rem',
+            fontFamily: 'var(--font-sans)',
+            outline: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="">-- Seleccionar Cliente / Entidad --</option>
+          {clients.map(c => (
+            <option key={c.id} value={c.nombre} style={{ background: 'var(--bg-surface)' }}>
+              {c.nombre} {c.tipo ? `(${c.tipo === 'ENTIDAD_PUBLICA' ? 'Pública' : c.tipo === 'EMPRESA_PRIVADA' ? 'Privada' : 'Natural'})` : ''}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onClick={onOpenManageClients}
+          title="Gestionar Clientes / Entidades (CRUD)"
+          style={{
+            background: 'rgba(34, 197, 94, 0.12)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            color: '#22c55e',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap',
+            height: '38px'
+          }}
+        >
+          <LiteIcon name="plus" size={15} />
+          <span>Gestionar</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export const ManageClientsModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  clients: ClientEntity[];
+  onSaveClient: (client: ClientEntity) => void;
+  onDeleteClient: (id: string) => void;
+}> = ({ isOpen, onClose, clients, onSaveClient, onDeleteClient }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [nombre, setNombre] = useState('');
+  const [tipo, setTipo] = useState<'ENTIDAD_PUBLICA' | 'EMPRESA_PRIVADA' | 'PERSONA_NATURAL'>('ENTIDAD_PUBLICA');
+  const [ruc, setRuc] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
+
+  const resetForm = () => {
+    setEditingId(null);
+    setNombre('');
+    setTipo('ENTIDAD_PUBLICA');
+    setRuc('');
+    setDireccion('');
+  };
+
+  const handleStartEdit = (c: ClientEntity) => {
+    setEditingId(c.id);
+    setNombre(c.nombre);
+    setTipo(c.tipo || 'ENTIDAD_PUBLICA');
+    setRuc(c.ruc || '');
+    setDireccion(c.direccion || '');
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nombre.trim()) return;
+    const newOrUpdated: ClientEntity = {
+      id: editingId || `cli_${Date.now()}`,
+      nombre: nombre.trim().toUpperCase(),
+      tipo,
+      ruc: ruc.trim(),
+      direccion: direccion.trim()
+    };
+    onSaveClient(newOrUpdated);
+    resetForm();
+  };
+
+  const filtered = clients.filter(c =>
+    c.nombre.toLowerCase().includes(filterSearch.toLowerCase()) ||
+    (c.ruc && c.ruc.includes(filterSearch))
+  );
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Gestión de Clientes y Entidades (CRUD)">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '78vh', overflowY: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h4 style={{ margin: 0, fontSize: '0.92rem', color: 'var(--color-primary)', fontWeight: 800 }}>
+            {editingId ? '✏️ Editar Cliente / Entidad' : '➕ Registrar Nuevo Cliente / Entidad'}
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <Input
+              label="Nombre de Cliente / Entidad *"
+              placeholder="Ej. MUNICIPALIDAD PROVINCIAL DE LIMA"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+            />
+            <Select
+              label="Tipo de Entidad"
+              value={tipo}
+              onChange={(e: any) => setTipo(e.target.value)}
+              options={[
+                { value: 'ENTIDAD_PUBLICA', label: '🏛️ Entidad Pública (Estado)' },
+                { value: 'EMPRESA_PRIVADA', label: '🏢 Empresa Privada' },
+                { value: 'PERSONA_NATURAL', label: '👤 Persona Natural' }
+              ]}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <Input
+              label="RUC / DNI"
+              placeholder="Ej. 20123456789"
+              value={ruc}
+              onChange={(e) => setRuc(e.target.value)}
+            />
+            <Input
+              label="Dirección / Ubicación"
+              placeholder="Ej. Av. Principal #123"
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            {editingId && (
+              <Button type="button" variant="secondary" onClick={resetForm} style={{ padding: '6px 14px' }}>
+                Cancelar Edición
+              </Button>
+            )}
+            <Button type="submit" style={{ padding: '6px 18px', fontWeight: 800 }}>
+              {editingId ? 'Guardar Cambios' : 'Registrar Cliente'}
+            </Button>
+          </div>
+        </form>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 800 }}>
+              Clientes Registrados ({clients.length})
+            </h4>
+            <Input
+              placeholder="Buscar por nombre o RUC..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              style={{ width: '220px', padding: '4px 10px', fontSize: '0.8rem' }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {filtered.map(c => (
+              <div
+                key={c.id}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>{c.nombre}</strong>
+                    <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: c.tipo === 'ENTIDAD_PUBLICA' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(34, 197, 94, 0.15)', color: c.tipo === 'ENTIDAD_PUBLICA' ? '#3b82f6' : '#22c55e', fontWeight: 700 }}>
+                      {c.tipo === 'ENTIDAD_PUBLICA' ? 'Pública' : c.tipo === 'EMPRESA_PRIVADA' ? 'Privada' : 'Natural'}
+                    </span>
+                  </div>
+                  {c.ruc && <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>RUC: {c.ruc}</span>}
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(c)}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '6px', padding: '4px 8px', fontSize: '0.78rem', cursor: 'pointer' }}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteClient(c.id)}
+                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', borderRadius: '6px', padding: '4px 8px', fontSize: '0.78rem', cursor: 'pointer' }}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+export const AIBudgetProposalModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  initialPrompt: string;
+  clientsList: ClientEntity[];
+  groups: string[];
+  onCreateFromProposal: (budget: Budget) => void;
+  onCreateBlank: (data: { nombre: string; cliente: string; fechaBase: string; grupo: string }) => void;
+  onOpenManageClients: () => void;
+}> = ({
+  isOpen,
+  onClose,
+  initialPrompt,
+  clientsList,
+  groups,
+  onCreateFromProposal,
+  onCreateBlank,
+  onOpenManageClients
+}) => {
+  const [budgetName, setBudgetName] = useState('');
+  const [selectedCliente, setSelectedCliente] = useState('');
+  const [selectedGrupo, setSelectedGrupo] = useState('EDIFICACIONES');
+  const [isGenerating, setIsGenerating] = useState(true);
+  const [stepText, setStepText] = useState('⚡ Analizando especificaciones y metrados...');
+  const [expandedProposalId, setExpandedProposalId] = useState<string | null>('prop_2');
+
+  useEffect(() => {
+    if (isOpen) {
+      const defaultTitle = initialPrompt.trim()
+        ? initialPrompt.toUpperCase()
+        : 'CONSTRUCCIÓN Y REMODELACIÓN DE OBRAS DE INFRAESTRUCTURA';
+      setBudgetName(defaultTitle);
+      setSelectedCliente(clientsList[0]?.nombre || 'MUNICIPALIDAD DISTRITAL DE YARINACOCHA');
+      startAIGeneration();
+    }
+  }, [isOpen, initialPrompt]);
+
+  const startAIGeneration = () => {
+    setIsGenerating(true);
+    setStepText('⚡ Analizando requerimientos y alcance del proyecto...');
+    setTimeout(() => {
+      setStepText('📐 Estructurando árbol de títulos y partidas según RNE...');
+      setTimeout(() => {
+        setStepText('📊 Calculando metrados, rendimientos y análisis APUs...');
+        setTimeout(() => {
+          setIsGenerating(false);
+        }, 500);
+      }, 500);
+    }, 500);
+  };
+
+  if (!isOpen) return null;
+
+  const proposals = [
+    {
+      id: 'prop_1',
+      tag: 'OPCIÓN ESTÁNDAR (ECONÓMICA)',
+      color: '#22c55e',
+      title: 'Alternativa Optimizada',
+      resumen: 'Especificaciones con materiales locales homologados, optimizando costos directos y plazo ejecutable.',
+      costoTotal: 88450.00,
+      partidasCount: 16,
+      partidas: [
+        { id: 'ai1_t1', item: '01', nombre: 'ESTRUCTURAS Y TRABAJOS PRELIMINARES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai1_p1', item: '01.01', nombre: 'LIMPIEZA DE TERRENO MANUAL', unidad: 'M2', metrado: 120.00, esTitulo: false, rendimiento: 40, insumos: [
+          { id: 'i1', codigo: '0147010004', nombre: 'PEON', unidad: 'HH', cuadrilla: 2.0, pu: 21.29, tipo: 'MO' as const },
+          { id: 'i2', codigo: '0337010001', nombre: 'HERRAMIENTAS MANUALES', unidad: '%MO', cuadrilla: 3.0, pu: 8.50, tipo: 'EQ' as const }
+        ]},
+        { id: 'ai1_p2', item: '01.02', nombre: 'EXCAVACIÓN MANUAL EN TERRENO NORMAL', unidad: 'M3', metrado: 45.00, esTitulo: false, rendimiento: 4.5, insumos: [
+          { id: 'i3', codigo: '0147010004', nombre: 'PEON', unidad: 'HH', cuadrilla: 2.0, pu: 21.29, tipo: 'MO' as const }
+        ]},
+        { id: 'ai1_t2', item: '02', nombre: 'ARQUITECTURA Y ACABADOS', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai1_p3', item: '02.01', nombre: 'MURO DE LADRILLO ARCILLA 18 HUECOS', unidad: 'M2', metrado: 140.00, esTitulo: false, rendimiento: 12, insumos: [
+          { id: 'i4', codigo: '0147010002', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1.0, pu: 29.90, tipo: 'MO' as const },
+          { id: 'i5', codigo: '0239010001', nombre: 'LADRILLO KING KONG 18 HUECOS', unidad: 'UND', cuadrilla: 38, pu: 1.10, tipo: 'MT' as const }
+        ]}
+      ]
+    },
+    {
+      id: 'prop_2',
+      tag: 'OPCIÓN COMPLETA (RECOMENDADA)',
+      color: '#3b82f6',
+      title: 'Alternativa Integral Recomendada',
+      resumen: 'Proyecto integral con desglose completo de ESTRUCTURAS, ARQUITECTURA, INSTALACIONES Y MITIGACIÓN.',
+      costoTotal: 134600.00,
+      partidasCount: 28,
+      partidas: [
+        { id: 'ai2_t1', item: '01', nombre: 'ESTRUCTURAS Y CONCRETO ARMADO', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai2_p1', item: '01.01', nombre: 'CONCRETO EN ZAPATAS f\'c=210 kg/cm2', unidad: 'M3', metrado: 28.50, esTitulo: false, rendimiento: 25, insumos: [
+          { id: 'i6', codigo: '0147010002', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 2.0, pu: 29.90, tipo: 'MO' as const },
+          { id: 'i7', codigo: '0205010001', nombre: 'PIEDRA CHANCADA DE 1/2"', unidad: 'M3', cuadrilla: 0.85, pu: 65.00, tipo: 'MT' as const },
+          { id: 'i8', codigo: '0213010001', nombre: 'CEMENTO PORTLAND TIPO I (42.5KG)', unidad: 'BOL', cuadrilla: 8.5, pu: 27.50, tipo: 'MT' as const }
+        ]},
+        { id: 'ai2_p2', item: '01.02', nombre: 'ENCOFRADO Y DESENCOFRADO NORMAL EN ZAPATAS', unidad: 'M2', metrado: 42.00, esTitulo: false, rendimiento: 14, insumos: [
+          { id: 'i9', codigo: '0147010002', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1.0, pu: 29.90, tipo: 'MO' as const }
+        ]},
+        { id: 'ai2_t2', item: '02', nombre: 'ARQUITECTURA Y COBERTURA', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai2_p3', item: '02.01', nombre: 'TARRAJEO EN INTERIORES Y EXTERIORES F\'C=1:4', unidad: 'M2', metrado: 210.00, esTitulo: false, rendimiento: 15, insumos: [
+          { id: 'i10', codigo: '0147010002', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 1.0, pu: 29.90, tipo: 'MO' as const }
+        ]}
+      ]
+    },
+    {
+      id: 'prop_3',
+      tag: 'OPCIÓN ALTA GAMA (PREMIUM)',
+      color: '#a855f7',
+      title: 'Alternativa Premium / Consorcio',
+      resumen: 'Especificaciones técnicas de alta gama con control de calidad, ensayos de laboratorio e instalaciones inteligentes.',
+      costoTotal: 189200.00,
+      partidasCount: 38,
+      partidas: [
+        { id: 'ai3_t1', item: '01', nombre: 'ESTRUCTURAS Y CIMENTACIONES ESPECIALES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai3_p1', item: '01.01', nombre: 'CONCRETO PREMEZCLADO CON ADITIVO IMPERMEABILIZANTE f\'c=280 kg/cm2', unidad: 'M3', metrado: 45.00, esTitulo: false, rendimiento: 30, insumos: [
+          { id: 'i11', codigo: '0147010002', nombre: 'OPERARIO', unidad: 'HH', cuadrilla: 3.0, pu: 29.90, tipo: 'MO' as const }
+        ]},
+        { id: 'ai3_t2', item: '02', nombre: 'INSTALACIONES ELÉCTRICAS E INTELIGENTES', unidad: '', metrado: 0, esTitulo: true, rendimiento: 1, insumos: [] },
+        { id: 'ai3_p2', item: '02.01', nombre: 'TABLERO GENERAL DE DISTRIBUCIÓN AUTOMATIZADO', unidad: 'UND', metrado: 1.00, esTitulo: false, rendimiento: 1, insumos: [
+          { id: 'i12', codigo: '0147010001', nombre: 'CAPATAZ', unidad: 'HH', cuadrilla: 1.0, pu: 36.50, tipo: 'MO' as const }
+        ]}
+      ]
+    }
+  ];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="🤖 Propuestas de Presupuesto Asistidas por IA">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', maxWidth: '980px', width: '100%', maxHeight: '82vh', overflowY: 'auto' }}>
+        
+        <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ flexGrow: 1 }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Nombre del Presupuesto (Editable):</label>
+              <input
+                type="text"
+                value={budgetName}
+                onChange={(e) => setBudgetName(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--color-primary)',
+                  color: 'var(--text-primary)',
+                  fontWeight: 800,
+                  fontSize: '1.05rem',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                onCreateBlank({
+                  nombre: budgetName,
+                  cliente: selectedCliente,
+                  fechaBase: new Date().toISOString().split('T')[0],
+                  grupo: selectedGrupo
+                });
+                onClose();
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <LiteIcon name="file-text" size={16} />
+              Empezar en blanco
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <ClientSelectField
+              value={selectedCliente}
+              onChange={setSelectedCliente}
+              clients={clientsList}
+              onOpenManageClients={onOpenManageClients}
+              required
+            />
+            <Select
+              label="Grupo / Sector"
+              value={selectedGrupo}
+              onChange={(e: any) => setSelectedGrupo(e.target.value)}
+              options={groups.filter(g => g !== 'TODOS LOS PRESUPUESTOS').map(g => ({ value: g, label: g }))}
+            />
+          </div>
+        </div>
+
+        {isGenerating ? (
+          <div style={{ background: 'var(--bg-surface)', border: '1.5px dashed var(--color-primary)', borderRadius: '16px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <div className="spin" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '4px solid rgba(34, 197, 94, 0.15)', borderTopColor: '#22c55e' }} />
+            <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.15rem', fontWeight: 800 }}>
+              {stepText}
+            </h3>
+            <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+              Procesando norma técnica peruana RNE y análisis de insumos en tiempo real...
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                ✨ 3 Propuestas Generadas para tu Proyecto:
+              </h3>
+              <button
+                type="button"
+                onClick={startAIGeneration}
+                style={{
+                  background: 'rgba(34, 197, 94, 0.12)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  color: '#22c55e',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <LiteIcon name="refresh-cw" size={14} />
+                Generar más propuestas (Iterar)
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {proposals.map(prop => {
+                const isExpanded = expandedProposalId === prop.id;
+
+                return (
+                  <div
+                    key={prop.id}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: `1.5px solid ${isExpanded ? prop.color : 'var(--border-color)'}`,
+                      borderRadius: '14px',
+                      padding: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: isExpanded ? `0 8px 24px ${prop.color}22` : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: prop.color, background: `${prop.color}15`, border: `1px solid ${prop.color}35`, padding: '3px 8px', borderRadius: '4px' }}>
+                        {prop.tag}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        {prop.partidasCount} Partidas
+                      </span>
+                    </div>
+
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {prop.title}
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                      {prop.resumen}
+                    </p>
+
+                    <div style={{ background: 'var(--modal-panel-bg)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>Costo Total Estimado:</span>
+                      <strong style={{ fontSize: '1.05rem', color: prop.color, fontFamily: 'monospace', fontWeight: 800 }}>
+                        S/ {prop.costoTotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                      </strong>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandedProposalId(isExpanded ? null : prop.id)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-secondary)',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                        <LiteIcon name="chevron-down" size={14} />
+                      </span>
+                      {isExpanded ? 'Ocultar Estructura' : '👁️ Ver Estructura (Títulos y Partidas)'}
+                    </button>
+
+                    {isExpanded && (
+                      <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px', maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem' }}>
+                        {prop.partidas.map(p => (
+                          <div key={p.id} style={{ paddingLeft: p.esTitulo ? '0px' : '12px', fontWeight: p.esTitulo ? 800 : 500, color: p.esTitulo ? prop.color : 'var(--text-primary)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{p.item} {p.nombre}</span>
+                            {!p.esTitulo && <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{p.metrado} {p.unidad}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={() => {
+                        const newBudget: Budget = {
+                          id: `b_ai_${Date.now()}`,
+                          nombre: budgetName,
+                          cliente: selectedCliente,
+                          fechaBase: new Date().toISOString().split('T')[0],
+                          grupo: selectedGrupo,
+                          categoria: 'Recientes',
+                          partidas: prop.partidas as any,
+                          jornada: 8,
+                          moneda: 'SOLES',
+                          direccion: 'NN',
+                          distrito: 'NN',
+                          provincia: 'NN',
+                          departamento: 'NN',
+                          subPresupuestos: ['SUB PRESUPUESTO 1']
+                        };
+                        onCreateFromProposal(newBudget);
+                        onClose();
+                      }}
+                      style={{ background: prop.color, border: 'none', padding: '10px', fontSize: '0.86rem', fontWeight: 800, width: '100%', marginTop: '4px' }}
+                    >
+                      🚀 Usar esta Propuesta
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
 // Create Budget Modal
 export const CreateBudgetModal: React.FC<{
   isOpen: boolean;
@@ -72,7 +669,9 @@ export const CreateBudgetModal: React.FC<{
   grupo: string;
   setGrupo: (v: string) => void;
   groups: string[];
-}> = ({ isOpen, onClose, onSubmit, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups }) => {
+  clientsList?: ClientEntity[];
+  onOpenManageClients?: () => void;
+}> = ({ isOpen, onClose, onSubmit, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups, clientsList = INITIAL_CLIENTS, onOpenManageClients = () => {} }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Crear Nuevo Presupuesto">
       <form onSubmit={onSubmit} className="login-form">
@@ -83,11 +682,12 @@ export const CreateBudgetModal: React.FC<{
           onChange={(e) => setNombre(e.target.value)}
           required
         />
-        <Input
-          label="Cliente / Entidad"
-          placeholder="Ej. GOBIERNO REGIONAL DE UCAYALI"
+        <ClientSelectField
           value={cliente}
-          onChange={(e) => setCliente(e.target.value)}
+          onChange={setCliente}
+          clients={clientsList}
+          onOpenManageClients={onOpenManageClients}
+          required
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Input
@@ -118,7 +718,7 @@ export const CreateBudgetModal: React.FC<{
   );
 };
 
-// Edit Budget Modal
+// Create Budget from Template Modal
 export const CreateFromTemplateModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -133,7 +733,9 @@ export const CreateFromTemplateModal: React.FC<{
   grupo: string;
   setGrupo: (v: string) => void;
   groups: string[];
-}> = ({ isOpen, onClose, onSubmit, templateName, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups }) => {
+  clientsList?: ClientEntity[];
+  onOpenManageClients?: () => void;
+}> = ({ isOpen, onClose, onSubmit, templateName, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups, clientsList = INITIAL_CLIENTS, onOpenManageClients = () => {} }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Crear Presupuesto desde Plantilla">
       <form onSubmit={onSubmit} className="login-form">
@@ -155,11 +757,11 @@ export const CreateFromTemplateModal: React.FC<{
           onChange={(e) => setNombre(e.target.value)}
           required
         />
-        <Input
-          label="Cliente / Entidad *"
-          placeholder="Ej. MUNICIPALIDAD DE PANAILLO"
+        <ClientSelectField
           value={cliente}
-          onChange={(e) => setCliente(e.target.value)}
+          onChange={setCliente}
+          clients={clientsList}
+          onOpenManageClients={onOpenManageClients}
           required
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -205,7 +807,9 @@ export const EditBudgetModal: React.FC<{
   grupo: string;
   setGrupo: (v: string) => void;
   groups: string[];
-}> = ({ isOpen, onClose, onSubmit, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups }) => {
+  clientsList?: ClientEntity[];
+  onOpenManageClients?: () => void;
+}> = ({ isOpen, onClose, onSubmit, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups, clientsList = INITIAL_CLIENTS, onOpenManageClients = () => {} }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Modificar Datos Generales">
       <form onSubmit={onSubmit} className="login-form">
@@ -215,10 +819,11 @@ export const EditBudgetModal: React.FC<{
           onChange={(e) => setNombre(e.target.value)}
           required
         />
-        <Input
-          label="Cliente / Entidad"
+        <ClientSelectField
           value={cliente}
-          onChange={(e) => setCliente(e.target.value)}
+          onChange={setCliente}
+          clients={clientsList}
+          onOpenManageClients={onOpenManageClients}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <Input
@@ -684,13 +1289,11 @@ export const DatosGeneralesModal: React.FC<{
             </div>
 
             <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>Cliente / Entidad</label>
-              <input
-                type="text"
+              <ClientSelectField
                 value={dgCliente}
-                onChange={(e) => setDgCliente(e.target.value)}
-                style={dgInputStyle}
-                placeholder="Nombre del cliente..."
+                onChange={setDgCliente}
+                clients={INITIAL_CLIENTS}
+                onOpenManageClients={() => {}}
               />
             </div>
 

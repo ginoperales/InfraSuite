@@ -43,6 +43,7 @@ interface BudgetsListLiteProps {
   onDownloadBudget?: (b: Budget) => void;
   onSync?: () => void;
   isSyncing?: boolean;
+  onOpenAIGenerate?: (promptText: string) => void;
 }
 
 const formatMoney = (value: number) =>
@@ -284,7 +285,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   onShareBudget,
   onDownloadBudget,
   onSync,
-  isSyncing = false
+  isSyncing = false,
+  onOpenAIGenerate
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const closeBudgetMenu = () => closeMenu?.();
@@ -480,28 +482,26 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
             border: '1.5px solid rgba(22, 163, 74, 0.4)',
             borderRadius: '20px',
-            padding: '22px 26px',
+            padding: '24px 28px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '18px',
             boxShadow: theme === 'light' ? '0 12px 35px rgba(22, 163, 74, 0.06)' : '0 12px 35px rgba(0,0,0,0.35)',
             transition: 'all 0.3s'
           }}
         >
-          {/* Card Title & Subtitle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
-                ¿Qué presupuesto deseas crear o buscar?
-              </h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
-                Usa la IA para generar análisis de costos o busca en tus presupuestos existentes
-              </p>
-            </div>
-            
-            {/* Group Filter Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>
+          {/* Card Title & Subtitle (CENTRADOS) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '6px', position: 'relative' }}>
+            <h2 style={{ fontSize: '1.55rem', fontWeight: 800, margin: 0, letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
+              ¿Qué presupuesto deseas crear o buscar?
+            </h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>
+              Usa la IA para generar análisis de costos o busca en tus presupuestos existentes
+            </p>
+
+            {/* Group Filter Selector (positioned neatly top-right inside card) */}
+            <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>
               <select
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
@@ -510,8 +510,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                   border: '1px solid var(--border-color)',
                   color: 'var(--text-primary)',
                   borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '0.84rem',
+                  padding: '6px 10px',
+                  fontSize: '0.82rem',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-sans)',
                   outline: 'none'
@@ -524,42 +524,37 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             </div>
           </div>
 
-          {/* Main Textarea Input */}
-          <div style={{ position: 'relative', width: '100%' }}>
+          {/* Main Textarea Input (TEXTO CENTRADO) */}
+          <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
             <textarea
               placeholder="Describe tu proyecto o busca por nombre de presupuesto, cliente o código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              rows={3}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (onOpenAIGenerate) onOpenAIGenerate(searchTerm);
+                }
+              }}
+              rows={2}
               style={{
                 width: '100%',
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
                 color: 'var(--text-primary)',
-                fontSize: '1rem',
+                fontSize: '1.05rem',
                 fontFamily: 'inherit',
                 resize: 'none',
-                lineHeight: 1.5
+                lineHeight: 1.5,
+                textAlign: 'center'
               }}
             />
           </div>
 
-          {/* Action Row Inside Card */}
+          {/* Action Row Inside Card (SIN BOTÓN ACTUALIZAR NI NUEVO PRESUPUESTO QUE YA ESTÁN ARRIBA) */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              {/* Create New Budget Button */}
-              <Button
-                onClick={() => {
-                  resetBudgetForm();
-                  setIsCreateOpen(true);
-                }}
-                style={{ background: 'var(--grad-primary)', border: 'none', minHeight: 38, padding: '0 16px', fontSize: '0.84rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
-              >
-                <LiteIcon name="plus" size={16} />
-                Nuevo Presupuesto
-              </Button>
-
               {/* Upload File Button */}
               <Button
                 onClick={() => fileInputRef.current?.click()}
@@ -581,34 +576,18 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                   e.target.value = '';
                 }} 
               />
-
-              {/* Sync Button */}
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (onSync) onSync();
-                  setIsLoading(true);
-                  setTimeout(() => setIsLoading(false), 500);
-                }}
-                disabled={isSyncing}
-                style={{ minHeight: 38, padding: '0 14px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
-              >
-                <LiteIcon name="refresh-cw" size={15} className={isSyncing ? 'spin' : ''} />
-                {isSyncing ? 'Actualizando...' : 'Actualizar'}
-              </Button>
             </div>
 
-            {/* Green Circular Action Button */}
+            {/* Green Circular Action Button (FLECHA HACIA LA DERECHA/ADELANTE PARA CREAR NUEVO PRESUPUESTO CON IA) */}
             <button
               type="button"
               onClick={() => {
-                resetBudgetForm();
-                setIsCreateOpen(true);
+                if (onOpenAIGenerate) onOpenAIGenerate(searchTerm);
               }}
-              title="Crear o consultar presupuesto con IA"
+              title="Generar propuestas de presupuesto con IA"
               style={{
-                width: '42px',
-                height: '42px',
+                width: '46px',
+                height: '46px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                 border: 'none',
@@ -616,140 +595,64 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+                boxShadow: '0 4px 16px rgba(22, 163, 74, 0.4)',
                 transition: 'transform 0.2s, boxShadow 0.2s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.06)';
+                e.currentTarget.style.transform = 'scale(1.08)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </button>
           </div>
 
-          {/* Quick Action Chips inside Lite */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '4px' }}>
-            <button
-              type="button"
-              onClick={() => setSearchTerm('Vivienda')}
-              style={{
-                background: 'var(--modal-panel-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                padding: '6px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#16a34a';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              🏠 Presupuesto de vivienda
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchTerm('Estructuras')}
-              style={{
-                background: 'var(--modal-panel-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                padding: '6px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#16a34a';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              📑 Análisis de precios unitarios
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchTerm('Metrado')}
-              style={{
-                background: 'var(--modal-panel-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                padding: '6px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#16a34a';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              🧮 Metrados de obra
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchTerm('Cronograma')}
-              style={{
-                background: 'var(--modal-panel-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                padding: '6px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#16a34a';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              📅 Cronograma y costos
-            </button>
+          {/* Quick Action Chips inside Lite (CENTRADAS TAMBIÉN) */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '4px', justifyContent: 'center' }}>
+            {[
+              { label: '🏠 Presupuesto de vivienda', query: 'Presupuesto de vivienda unifamiliar de 2 pisos' },
+              { label: '📊 Análisis de precios unitarios', query: 'Análisis de precios unitarios de concreto y albañilería' },
+              { label: '📐 Metrados de obra', query: 'Metrados y movimiento de tierras para infraestructura' },
+              { label: '📅 Cronograma y costos', query: 'Cronograma valorizado y presupuestación de obras viales' }
+            ].map(chip => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => {
+                  setSearchTerm(chip.query);
+                  if (onOpenAIGenerate) onOpenAIGenerate(chip.query);
+                }}
+                style={{
+                  background: 'var(--modal-panel-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '6px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: 650,
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.color = 'var(--color-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
         </div>
 
