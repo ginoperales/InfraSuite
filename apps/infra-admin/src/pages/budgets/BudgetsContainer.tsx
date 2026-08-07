@@ -643,7 +643,44 @@ const mergeBudgetsByFreshness = (...budgetLists: Budget[][]): Budget[] => {
   return merged;
 };
 
-import { getLocalBudgets, saveLocalBudget, deleteLocalBudget, isElectron, syncToCloud } from '../../lib/databaseAdapter';
+import { getLocalBudgets, saveLocalBudget, deleteLocalBudget, isElectron, syncToCloud, saveBudgetWithStorage } from '../../lib/databaseAdapter';
+import { downloadBudgetJsonFromStorage } from '../../lib/supabaseStorage';
+import type { BudgetDraftBackup } from './types';
+
+const saveBudgetLocalDraftBackup = (budget: Budget) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const draft: BudgetDraftBackup = {
+      budgetId: budget.id,
+      budgetData: {
+        ...budget,
+        hasLocalChanges: true
+      },
+      hasUnsavedChanges: true,
+      draftTimestamp: Date.now()
+    };
+    localStorage.setItem(`draft_budget_${budget.id}`, JSON.stringify(draft));
+  } catch (e) {
+    console.warn('Error guardando borrador en localStorage:', e);
+  }
+};
+
+const getBudgetLocalDraftBackup = (budgetId: string): BudgetDraftBackup | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const data = localStorage.getItem(`draft_budget_${budgetId}`);
+    return data ? (JSON.parse(data) as BudgetDraftBackup) : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearBudgetLocalDraftBackup = (budgetId: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(`draft_budget_${budgetId}`);
+  } catch {}
+};
 
 const persistBudgetsLocally = (nextBudgets: Budget[]) => {
   if (typeof window === 'undefined') return;
@@ -714,10 +751,11 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const lastSavedBudgetJson = useRef<string>("");
   const lastSavedBudgetId = useRef<string | null>(null);
 
-  // Custom setter for activeBudget that records history
+  // Custom setter for activeBudget that records history & updates local draft backup
   const setHistoricalActiveBudget = (newBudget: Budget, skipHistory = false): Budget => {
     const stampedBudget = {
       ...newBudget,
+      hasLocalChanges: true,
       updatedAt: Date.now()
     };
     Object.assign(newBudget, stampedBudget);
@@ -730,6 +768,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
     }
 
     activeBudgetRef.current = stampedBudget;
+    saveBudgetLocalDraftBackup(stampedBudget);
     persistBudgetLocally(stampedBudget);
     setActiveBudget(stampedBudget);
     setBudgets(prev => prev.map(b => b.id === stampedBudget.id ? stampedBudget : b));
@@ -1948,17 +1987,53 @@ export const Budgets: React.FC<BudgetsProps> = ({
     return totals;
   };
 
+  // Unsaved Draft Recovery Modal State
+  const [recoveryModal, setRecoveryModal] = useState<{
+    isOpen: boolean;
+    budgetId: string;
+    budgetName: string;
+    draft: BudgetDraftBackup | null;
+    cloudUrl?: string;
+  }>({
+    isOpen: false,
+    budgetId: '',
+    budgetName: '',
+    draft: null
+  });
+
+  const checkAndOpenBudget = async (targetBudget: Budget) => {
+    const draft = getBudgetLocalDraftBackup(targetBudget.id);
+    if (draft && draft.hasUnsavedChanges && (draft.draftTimestamp > (targetBudget.updatedAt || 0))) {
+      setRecoveryModal({
+        isOpen: true,
+        budgetId: targetBudget.id,
+        budgetName: targetBudget.nombre,
+        draft,
+        cloudUrl: targetBudget.storageUrl
+      });
+      return;
+    }
+
+    let fullBudget = targetBudget;
+    if (targetBudget.storageUrl && (!targetBudget.partidas || targetBudget.partidas.length === 0)) {
+      const downloaded = await downloadBudgetJsonFromStorage(targetBudget.storageUrl, targetBudget.id);
+      if (downloaded) fullBudget = downloaded;
+    }
+
+    setActiveBudget(fullBudget);
+    setOpenBudgetIds(prev => prev.includes(fullBudget.id) ? prev : [...prev, fullBudget.id]);
+    setViewState('editor');
+  };
+
   // Actions
   const handleOpenBudgetEditor = (b: Budget) => {
     if (publicReadOnly && b.linkAccess !== 'ANYONE_WITH_LINK') return;
-    setOpenBudgetIds(prev => prev.includes(b.id) ? prev : [...prev, b.id]);
-    setActiveBudget(b);
-    setViewState('editor');
+    checkAndOpenBudget(b);
   };
 
   const handleSelectBudgetTab = (id: string) => {
     const b = budgets.find(x => x.id === id);
-    if (b) setActiveBudget(b);
+    if (b) checkAndOpenBudget(b);
   };
 
   const handleCloseBudgetTab = (id: string, e: React.MouseEvent) => {
@@ -3261,6 +3336,71 @@ export const Budgets: React.FC<BudgetsProps> = ({
           activeBudgetId={activeBudget?.id ?? ''}
           onAddPartida={handleAddPartidaConIA}
         />
+
+        {/* Unsaved Changes Recovery Modal */}
+        <Modal
+          isOpen={recoveryModal.isOpen}
+          onClose={() => setRecoveryModal(prev => ({ ...prev, isOpen: false }))}
+          title="Cambios sin guardar detectados"
+        >
+          <div style={{ padding: '8px 0', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '2rem' }}>⚠️</span>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>{recoveryModal.budgetName}</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
+                  Se encontraron modificaciones en este presupuesto en este navegador que no se han guardado en la nube.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface-elevated, #18181b)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px', marginBottom: '20px', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Borrador local temporal:</span>
+                <strong>{recoveryModal.draft?.draftTimestamp ? new Date(recoveryModal.draft.draftTimestamp).toLocaleString('es-PE') : 'Reciente'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Última versión en la nube:</span>
+                <span>{recoveryModal.draft?.budgetData.updatedAt ? new Date(recoveryModal.draft.budgetData.updatedAt).toLocaleString('es-PE') : 'Nube'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  clearBudgetLocalDraftBackup(recoveryModal.budgetId);
+                  let cloudBudget = null;
+                  if (recoveryModal.cloudUrl) {
+                    cloudBudget = await downloadBudgetJsonFromStorage(recoveryModal.cloudUrl, recoveryModal.budgetId);
+                  }
+                  if (!cloudBudget) {
+                    cloudBudget = budgets.find(b => b.id === recoveryModal.budgetId) || null;
+                  }
+                  if (cloudBudget) setActiveBudget(cloudBudget);
+                  setRecoveryModal(prev => ({ ...prev, isOpen: false }));
+                  setViewState('editor');
+                }}
+              >
+                ☁️ Descargar versión de la nube
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  if (recoveryModal.draft?.budgetData) {
+                    setActiveBudget(recoveryModal.draft.budgetData);
+                  }
+                  setRecoveryModal(prev => ({ ...prev, isOpen: false }));
+                  setViewState('editor');
+                }}
+              >
+                💾 Recuperar cambios locales
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </>
     );
   }

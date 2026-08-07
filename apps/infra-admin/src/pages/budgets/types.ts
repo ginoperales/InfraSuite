@@ -65,6 +65,8 @@ export interface Budget {
   isLocal?: boolean;
   hasLocalChanges?: boolean;
   syncedAt?: number;
+  storageUrl?: string; // Supabase Storage public/signed URL
+  storagePath?: string; // Supabase Storage file path (e.g. budgets/b1.json)
 
   // Extended fields for "Datos Generales"
   direccion: string;
@@ -83,6 +85,33 @@ export interface Budget {
   linkRole?: 'VIEWER' | 'COMMENTER' | 'EDITOR';
   createdAt?: number;
   updatedAt?: number;
+}
+
+export interface BudgetMetadataIndex {
+  id: string;
+  nombre: string;
+  cliente: string;
+  fechaBase: string;
+  grupo: string;
+  categoria: 'Recientes' | 'Antiguos';
+  storageUrl?: string;
+  storagePath?: string;
+  ownerId?: string;
+  permissions?: Record<string, 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER'>;
+  linkAccess?: 'RESTRICTED' | 'ANYONE_WITH_LINK' | 'COMMUNITY_TEMPLATE';
+  linkRole?: 'VIEWER' | 'COMMENTER' | 'EDITOR';
+  createdAt?: number;
+  updatedAt?: number;
+  isLocal?: boolean;
+  hasLocalChanges?: boolean;
+  syncedAt?: number;
+}
+
+export interface BudgetDraftBackup {
+  budgetId: string;
+  budgetData: Budget;
+  hasUnsavedChanges: boolean;
+  draftTimestamp: number;
 }
 
 export type PartidaColumnKey = 'item' | 'descripcion' | 'unidad' | 'metrado' | 'cu' | 'parcial' | 'mo' | 'mt' | 'eq' | 'sc';

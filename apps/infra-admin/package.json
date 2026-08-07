@@ -22,7 +22,9 @@
     "protocols": [
       {
         "name": "InfraSuite",
-        "schemes": ["infrasuite"]
+        "schemes": [
+          "infrasuite"
+        ]
       }
     ],
     "files": [
@@ -50,6 +52,7 @@
     "@infrasuite/sqlite": "*",
     "@infrasuite/sync-service": "*",
     "@splinetool/react-spline": "^4.1.0",
+    "@supabase/supabase-js": "^2.112.2",
     "animejs": "^4.4.1",
     "better-sqlite3": "^13.0.3",
     "electron-log": "^5.4.4",
