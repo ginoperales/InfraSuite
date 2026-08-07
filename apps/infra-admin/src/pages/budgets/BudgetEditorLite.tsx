@@ -1133,7 +1133,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
               <LiteIcon name="calculator" size={16} />
             </div>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.02rem', color: 'var(--color-primary)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>InfraCost Lite</span>
-            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)', whiteSpace: 'nowrap' }}>v1.0.1</span>
+            <span style={{ fontSize: '0.6rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)', whiteSpace: 'nowrap' }}>v1.0.2</span>
           </div>
 
           <button

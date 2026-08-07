@@ -172,7 +172,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Pro</span>
-            <span style={{ fontSize: '0.65rem', background: 'rgba(0, 240, 255, 0.12)', color: 'var(--color-primary)', fontWeight: 'bold', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.25)' }}>v1.0.1</span>
+            <span style={{ fontSize: '0.65rem', background: 'rgba(0, 240, 255, 0.12)', color: 'var(--color-primary)', fontWeight: 'bold', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.25)' }}>v1.0.2</span>
           </div>
         </div>
         <div style={{ marginLeft: 'auto' }}>
