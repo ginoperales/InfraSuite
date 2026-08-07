@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db, app, isOnline, withTimeout } from '@infrasuite/firebase';
+import { db, app, isOnline } from '@infrasuite/firebase';
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 empresaId = '';
               } else {
                 try {
-                  const usersList = await withTimeout(db.getDocs('users'), 2000);
+                  const usersList = await db.getDocs('users');
                   const found = usersList.find((u: any) => u.email === email);
                   if (found) {
                     role = found.role;
@@ -121,24 +121,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         let authUserCred: any = null;
         try {
-          // Attempt online login with the user's typed password
-          authUserCred = await withTimeout(
-            signInWithEmailAndPassword(authInstance, email, password),
-            3000
-          );
+          // Attempt online login with Firebase Auth
+          authUserCred = await signInWithEmailAndPassword(authInstance, email, password);
         } catch (authErr: any) {
-          // If password is wrong or credentials invalid, throw immediately (do not bypass)
           if (authErr.code === 'auth/wrong-password' || authErr.code === 'auth/invalid-credential') {
             throw authErr;
           } else if (authErr.code === 'auth/user-not-found') {
-            // Auto-create only if it's a new user email, using the password they typed
             try {
-              authUserCred = await withTimeout(
-                createUserWithEmailAndPassword(authInstance, email, password),
-                3000
-              );
+              authUserCred = await createUserWithEmailAndPassword(authInstance, email, password);
             } catch (createErr) {
-              console.warn("Could not auto-create online account:", createErr);
+              console.warn("Could not auto-create online account in Firebase Auth:", createErr);
               throw createErr;
             }
           } else {
@@ -148,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const uid = authUserCred?.user.uid || Math.random().toString(36).substring(2, 9);
         
-        // Resolve role, company and name dynamically from database!
         let dbRole: User['role'] = role || 'ADMIN';
         let dbEmpresaId = empresaId || 'c1';
         let dbNombre = email.split('@')[0].toUpperCase();
@@ -158,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dbEmpresaId = '';
         } else {
           try {
-            const usersList = await withTimeout(db.getDocs('users'), 2000);
+            const usersList = await db.getDocs('users');
             const found = usersList.find((u: any) => u.email === email);
             if (found) {
               dbRole = found.role;
@@ -166,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (found.nombre) dbNombre = found.nombre;
             }
           } catch (e) {
-            console.warn("Could not retrieve user info from Firestore, using defaults:", e);
+            console.warn("Could not retrieve user info from Supabase DB, using defaults:", e);
           }
         }
 
@@ -178,17 +169,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: dbRole
         };
 
-        // Save doc to Cloud Firestore to make sure the user profile matches (timeout 2000ms max)
-        await withTimeout(db.addDoc('users', finalUser), 2000);
+        // Sync profile to Supabase DB
+        await db.addDoc('users', finalUser);
 
       } catch (err: any) {
-        // Stop login if wrong password error was explicitly thrown
         if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
           setIsLoading(false);
           throw new Error("Contraseña incorrecta. Por favor, verifica tus credenciales en Firebase.");
         }
         
-        console.warn("Online auth process encountered errors/timeouts, falling back to local credentials:", err);
+        console.warn("Online Firebase Auth error, using local fallback profile:", err);
         
         let dbRole: User['role'] = role || 'ADMIN';
         let dbEmpresaId = empresaId || 'c1';
@@ -220,7 +210,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
     } else {
-      // Offline mode fallback
       let dbRole: User['role'] = role || 'ADMIN';
       let dbEmpresaId = empresaId || 'c1';
       let dbNombre = email.split('@')[0].toUpperCase();
@@ -260,15 +249,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
 
     if (isOnline() && !mockEmail) {
-      // Electron does not support signInWithPopup natively for Firebase without deep-linking
       const isElectron = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent.toLowerCase().includes('electron');
       
       if (isElectron) {
         if ((window as any).electron?.auth) {
-          // Open the browser for secure OAuth in Production
           (window as any).electron.auth.openExternal('https://infrasuitee.web.app/desktop-login');
         } else {
-          // Fallback if IPC is missing
           const finalUser: User = {
             uid: 'desktop_local_user',
             nombre: 'Usuario Desktop (Local)',
@@ -286,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const authInstance = getFirebaseAuth();
         if (!authInstance) {
-          throw new Error("Firebase Auth is not available");
+          throw new Error("Firebase Auth instance is not initialized");
         }
 
         const provider = new GoogleAuthProvider();
@@ -294,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           prompt: 'select_account'
         });
 
-        // Trigger Google account selector popup
+        // Trigger Google account selector popup in browser
         const authUserCred = await signInWithPopup(authInstance, provider);
         const email = authUserCred.user.email || '';
         
@@ -305,16 +291,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role = 'SUPER_ADMIN';
           empresaId = '';
         } else {
-          // Check if there is an existing user mapping in Firestore
           try {
-            const usersList = await withTimeout(db.getDocs('users'), 2000);
+            const usersList = await db.getDocs('users');
             const found = usersList.find((u: any) => u.email === email);
             if (found) {
               role = found.role;
               empresaId = found.empresaId;
             }
           } catch (e) {
-            console.warn("Could not retrieve user info from Firestore, using default ADMIN role:", e);
+            console.warn("Could not retrieve user info from Supabase DB:", e);
           }
         }
 
@@ -326,16 +311,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role
         };
 
-        // Save/Sync user profile to Cloud Firestore
-        await withTimeout(db.addDoc('users', finalUser), 2000);
+        // Sync user profile to Supabase DB
+        await db.addDoc('users', finalUser);
 
         setUser(finalUser);
         localStorage.setItem('infrasuite_session', JSON.stringify(finalUser));
         setIsLoading(false);
         return;
 
-      } catch (err) {
-        console.warn("Online Google Auth encountered errors or was canceled, invoking fallback chooser:", err);
+      } catch (err: any) {
+        console.error("Firebase Google Auth error:", err);
+
+        if (err?.code === 'auth/unauthorized-domain') {
+          setIsLoading(false);
+          throw new Error("El dominio '" + window.location.hostname + "' no está autorizado en Firebase Console (Authentication > Settings > Authorized Domains).");
+        }
+        if (err?.code === 'auth/operation-not-allowed') {
+          setIsLoading(false);
+          throw new Error("El proveedor de Google no está activado en tu consola de Firebase (Authentication > Sign-in method > Google).");
+        }
+        if (err?.code === 'auth/popup-closed-by-user') {
+          setIsLoading(false);
+          throw new Error("Inicio de sesión cancelado al cerrar la ventana emergente.");
+        }
       }
     }
 
@@ -375,7 +373,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setIsLoading(false);
-    throw new Error("offline_fallback");
+    throw new Error("No se pudo completar el inicio de sesión con Google.");
   };
 
   const logout = async () => {
@@ -383,10 +381,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const authInstance = getFirebaseAuth();
         if (authInstance) {
-          await withTimeout(signOut(authInstance), 1500);
+          await signOut(authInstance);
         }
       } catch (e) {
-        console.warn("Firebase online logout error/timeout:", e);
+        console.warn("Firebase online logout error:", e);
       }
     }
     setUser(null);
