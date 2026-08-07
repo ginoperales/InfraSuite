@@ -1,6 +1,6 @@
 import type { Budget, BudgetMetadataIndex } from '../pages/budgets/types';
-import { db } from '@infrasuite/firebase';
 import { uploadBudgetJsonToStorage, downloadBudgetJsonFromStorage } from './supabaseStorage';
+import { upsertBudgetMetadataToSupabase, fetchBudgetsMetadataFromSupabase } from './supabaseDB';
 
 const BUDGETS_LOCAL_STORAGE_KEY = 'infrasuite_budgets';
 const USER_ID = 'user123'; // Replace with actual user ID from auth when ready
@@ -10,7 +10,7 @@ export const isElectron = () => {
 };
 
 /**
- * Extracts lightweight metadata index (stripping heavy partidas & pieRows arrays) for Firestore catalog index
+ * Extracts lightweight metadata index (stripping heavy partidas & pieRows arrays) for Supabase DB catalog index
  */
 export const extractBudgetMetadata = (budget: Budget): BudgetMetadataIndex => {
   return {
@@ -124,7 +124,7 @@ export interface SyncResult {
 }
 
 /**
- * Saves full budget payload to Supabase Storage as JSON and updates lightweight metadata document in Firestore index.
+ * Saves full budget payload to Supabase Storage as JSON and updates lightweight metadata document in Supabase Database.
  */
 export const saveBudgetWithStorage = async (
   budget: Budget,
@@ -147,18 +147,13 @@ export const saveBudgetWithStorage = async (
     updatedAt: budget.updatedAt || now
   };
 
-  // 2. Extract lightweight metadata index for Firestore (NO heavy partidas array!)
+  // 2. Extract lightweight metadata index for Supabase DB (NO heavy partidas array!)
   const metadataIndex = extractBudgetMetadata(updatedBudget);
 
   try {
-    await db.updateDoc(`users/${userId}/budgets`, budget.id, metadataIndex).catch(async () => {
-      await db.addDoc(`users/${userId}/budgets`, metadataIndex).catch(() => {});
-    });
-    await db.updateDoc(`budgets`, budget.id, metadataIndex).catch(async () => {
-      await db.addDoc(`budgets`, metadataIndex).catch(() => {});
-    });
+    await upsertBudgetMetadataToSupabase(metadataIndex);
   } catch (err) {
-    console.warn('Firestore index update warning:', err);
+    console.warn('Supabase DB index update warning:', err);
   }
 
   // 3. Save local copy
@@ -171,22 +166,15 @@ export const syncToCloud = async (
   onProgress?: (msg: string) => void,
   userId: string = USER_ID
 ): Promise<SyncResult> => {
-  if (onProgress) onProgress('Iniciando sincronización (Índice Firestore + JSON Supabase)...');
+  if (onProgress) onProgress('Iniciando sincronización (Supabase DB + Supabase Storage)...');
   let downloadedCount = 0;
   let uploadedCount = 0;
   
   try {
-    // 1. Descargar metadatos de presupuestos de la nube
+    // 1. Descargar metadatos de presupuestos desde Supabase DB
     try {
-      if (onProgress) onProgress('Verificando índice de presupuestos en Firestore...');
-      const cloudDocsUser = await db.getDocs(`users/${userId}/budgets`).catch(() => []);
-      const cloudDocsGeneral = await db.getDocs(`budgets`).catch(() => []);
-      
-      const map = new Map<string, any>();
-      for (const d of [...cloudDocsUser, ...cloudDocsGeneral]) {
-        if (d && d.id) map.set(d.id, d);
-      }
-      const cloudDocs = Array.from(map.values());
+      if (onProgress) onProgress('Verificando índice de presupuestos en Supabase Database...');
+      const cloudDocs = await fetchBudgetsMetadataFromSupabase(userId);
       const localBudgets = await getLocalBudgets();
 
       for (const cloudMeta of cloudDocs) {
@@ -212,10 +200,10 @@ export const syncToCloud = async (
         }
       }
     } catch (e) {
-      console.warn('Error comprobando índice en la nube durante la sincronización:', e);
+      console.warn('Error comprobando índice en Supabase DB durante la sincronización:', e);
     }
 
-    // 2. Subir presupuestos con modificaciones locales a Supabase Storage + Firestore Index
+    // 2. Subir presupuestos con modificaciones locales a Supabase Storage + Supabase DB
     const currentLocalBudgets = await getLocalBudgets();
     for (const budget of currentLocalBudgets) {
       if (!budget.id) continue;
@@ -227,13 +215,13 @@ export const syncToCloud = async (
       }
     }
 
-    const summaryMsg = `Sincronización exitosa: ${downloadedCount} descargado(s) de Supabase Storage, ${uploadedCount} subido(s).`;
+    const summaryMsg = `Sincronización exitosa: ${downloadedCount} descargado(s) de Supabase Storage, ${uploadedCount} subido(s) a Supabase DB.`;
     if (onProgress) onProgress(summaryMsg);
 
     return { downloaded: downloadedCount, uploaded: uploadedCount, message: summaryMsg };
   } catch (error) {
     console.error('Error durante syncToCloud:', error);
-    if (onProgress) onProgress('Error en la sincronización con Supabase / Firestore.');
+    if (onProgress) onProgress('Error en la sincronización con Supabase Database / Storage.');
     throw error;
   }
 };

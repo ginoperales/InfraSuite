@@ -10,8 +10,7 @@ import { BudgetEditorLite, LiteIcon, type LiteIconName } from './BudgetEditorLit
 import { BudgetEditorPro } from './BudgetEditorPro';
 import { ShareModal } from './ShareModal';
 import * as Modals from './Modals';
-import { firestore } from '@infrasuite/firebase';
-import { collection, onSnapshot, doc, setDoc, getDocs, deleteDoc, query, where, or } from 'firebase/firestore';
+import { fetchBudgetsMetadataFromSupabase, deleteBudgetMetadataFromSupabase, subscribeToBudgetsChangesFromSupabase } from '../../lib/supabaseDB';
 
 // Initial Data representing the screenshot data
 const INITIAL_BUDGETS: Budget[] = [
@@ -1019,152 +1018,84 @@ export const Budgets: React.FC<BudgetsProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [historyPast, historyFuture, activeBudget, viewState, selectedPartidaId, selectedPartidaIds, partidaSelectionAnchorId, partidaClipboardRows, handleUndo, handleRedo]);
 
-  // Firestore Sync - Load Budgets
+  // Supabase Database Sync - Load Metadata Index
   useEffect(() => {
-    if (publicReadOnly && initialOpenBudgetId) {
-      const budgetRef = doc(firestore, 'budgets', initialOpenBudgetId);
+    let isSubscribed = true;
 
-      const unsubscribe = onSnapshot(budgetRef, (snapshot) => {
-        if (!snapshot.exists()) {
-          setBudgets([]);
-          setPublicLinkState('not_found');
-          return;
-        }
-
-        const loadedBudget = { id: snapshot.id, ...snapshot.data() } as Budget;
-        setBudgets([loadedBudget]);
-        setPublicLinkState(loadedBudget.linkAccess === 'ANYONE_WITH_LINK' ? 'allowed' : 'denied');
-      }, (error) => {
-        console.error("Error fetching public budget from Firestore:", error);
-        setBudgets([]);
-        setPublicLinkState('denied');
-      });
-
-      return () => unsubscribe();
-    }
-
-    const budgetsCollectionRef = collection(firestore, 'budgets');
-    
-    let budgetsQuery = budgetsCollectionRef as any;
-    if (user && !publicReadOnly) {
-      budgetsQuery = query(
-        budgetsCollectionRef,
-        or(
-          where('ownerId', '==', user.uid),
-          where('linkAccess', '==', 'COMMUNITY_TEMPLATE')
-        )
-      );
-    }
-    
-    const unsubscribe = onSnapshot(budgetsQuery, (snapshot: any) => {
-      const loaded: Budget[] = snapshot.docs.map((snapshotDoc: any) => ({ id: snapshotDoc.id, ...snapshotDoc.data(), isLocal: false } as Budget));
-      const localStoredBudgets = readBudgetsFromLocalStorage().map(b => ({ ...b, isLocal: true }));
-      
-      if (loaded.length === 0) {
-        const localBudgets = mergeBudgetsByFreshness(localStoredBudgets, budgetsRef.current);
-        if (localBudgets.length > 0 && user && !publicReadOnly) {
-          setBudgets(localBudgets);
-          localBudgets.forEach((localBudget) => {
-            const freshness = getBudgetFreshness(localBudget);
-            if (recoveredBudgetUploadsRef.current[localBudget.id] === freshness) return;
-            recoveredBudgetUploadsRef.current[localBudget.id] = freshness;
-            void saveBudgetToCloud(localBudget);
-          });
-        } else if (user && !publicReadOnly) {
-          // Seed initial budgets if empty
-          const now = Date.now();
-          INITIAL_BUDGETS.forEach(b => {
-            setDoc(doc(firestore, 'budgets', b.id), {
-              ...b,
-              ownerId: user.uid,
-              permissions: {},
-              createdAt: now,
-              updatedAt: now
-            });
-          });
-        } else {
-          setBudgets([]);
-        }
-      } else {
-        const mergedBudgets = mergeBudgetsByFreshness(loaded, localStoredBudgets, budgetsRef.current);
-        const remoteById = new Map(loaded.map(remoteBudget => [remoteBudget.id, remoteBudget]));
-
-        setBudgets(mergedBudgets);
-
-        mergedBudgets.forEach((mergedBudget) => {
-          const remoteBudget = remoteById.get(mergedBudget.id);
-          const mergedFreshness = getBudgetFreshness(mergedBudget);
-          const remoteFreshness = remoteBudget ? getBudgetFreshness(remoteBudget) : 0;
-          if (mergedFreshness <= remoteFreshness) return;
-
-          if (recoveredBudgetUploadsRef.current[mergedBudget.id] === mergedFreshness) return;
-          recoveredBudgetUploadsRef.current[mergedBudget.id] = mergedFreshness;
-          void saveBudgetToCloud(mergedBudget);
-        });
+    const loadSupabaseBudgets = async () => {
+      try {
+        const cloudMeta = await fetchBudgetsMetadataFromSupabase(user?.uid);
+        const localStoredBudgets = readBudgetsFromLocalStorage().map(b => ({ ...b, isLocal: true }));
         
-        // Update activeBudget safely
-        setActiveBudget(prev => {
-          if (!prev) return prev;
-          const updatedActive = mergedBudgets.find(b => b.id === prev.id);
-          if (updatedActive) {
-            const remoteTime = getBudgetFreshness(updatedActive);
-            const localTime = getBudgetFreshness(prev);
-            
-            if (remoteTime >= localTime) {
-              if (JSON.stringify(updatedActive) !== JSON.stringify(prev)) {
-                activeBudgetRef.current = updatedActive;
-                const { updatedAt, ...budgetContent } = updatedActive;
-                lastSavedBudgetJson.current = JSON.stringify(budgetContent);
-                return updatedActive;
-              }
-              return prev;
-            } else {
-              return prev;
-            }
+        if (!isSubscribed) return;
+
+        if (cloudMeta.length === 0) {
+          const localBudgets = mergeBudgetsByFreshness(localStoredBudgets, budgetsRef.current);
+          if (localBudgets.length > 0) {
+            setBudgets(localBudgets);
+          } else {
+            setBudgets(INITIAL_BUDGETS);
           }
-          return prev;
-        });
+        } else {
+          const loadedBudgets: Budget[] = cloudMeta.map(meta => ({
+            id: meta.id,
+            nombre: meta.nombre,
+            cliente: meta.cliente,
+            fechaBase: meta.fechaBase,
+            grupo: meta.grupo,
+            categoria: meta.categoria,
+            storageUrl: meta.storageUrl,
+            storagePath: meta.storagePath,
+            ownerId: meta.ownerId,
+            permissions: meta.permissions,
+            linkAccess: meta.linkAccess,
+            linkRole: meta.linkRole,
+            createdAt: meta.createdAt,
+            updatedAt: meta.updatedAt,
+            isLocal: false,
+            direccion: 'NN',
+            distrito: 'NN',
+            provincia: 'NN',
+            departamento: 'NN',
+            jornada: 8,
+            moneda: 'SOLES',
+            subPresupuestos: ['SUB PRESUPUESTO 1'],
+            partidas: []
+          }));
+
+          const mergedBudgets = mergeBudgetsByFreshness(loadedBudgets, localStoredBudgets, budgetsRef.current);
+          setBudgets(mergedBudgets);
+        }
+      } catch (err) {
+        console.error("Error cargando metadatos de Supabase DB:", err);
+        const localBudgets = readBudgetsFromLocalStorage();
+        setBudgets(localBudgets.length > 0 ? localBudgets : INITIAL_BUDGETS);
       }
-    }, (error) => {
-      console.error("Error fetching budgets from Firestore:", error);
-      // Fallback to localStorage logic if Firestore fails completely (e.g. no IndexedDB)
-      const localBudgets = readBudgetsFromLocalStorage();
-      if (localBudgets.length > 0) {
-        setBudgets(localBudgets);
-      } else {
-        setBudgets(INITIAL_BUDGETS);
-      }
+    };
+
+    loadSupabaseBudgets();
+
+    const unsubscribeRealtime = subscribeToBudgetsChangesFromSupabase(() => {
+      loadSupabaseBudgets();
     });
 
-    return () => unsubscribe();
+    return () => {
+      isSubscribed = false;
+      unsubscribeRealtime();
+    };
   }, [user, publicReadOnly, initialOpenBudgetId]);
 
-  // Handle saving specific budget to Firestore
+  // Save budget to cloud (Supabase Storage JSON + Supabase DB Metadata)
   const saveBudgetToCloud = async (updatedBudget: Budget) => {
     if (publicReadOnly) return;
     try {
-      const timestamp = Date.now();
-      const budgetData = {
-        ...updatedBudget,
-        updatedAt: timestamp
-      };
-      persistBudgetLocally(budgetData);
-      // Optimistic update of local budgets array to have exact same timestamp
-      setBudgets(prev => {
-        const exists = prev.some(b => b.id === budgetData.id);
-        return exists
-          ? prev.map(b => b.id === budgetData.id ? budgetData : b)
-          : [budgetData, ...prev];
-      });
-      setActiveBudget(prev => {
-        if (prev?.id !== budgetData.id) return prev;
-        activeBudgetRef.current = budgetData;
-        return budgetData;
-      });
-      
-      await setDoc(doc(firestore, 'budgets', updatedBudget.id), budgetData);
+      const saved = await saveBudgetWithStorage(updatedBudget, user?.uid);
+      clearBudgetLocalDraftBackup(updatedBudget.id);
+      setBudgets(prev => prev.map(b => b.id === saved.id ? saved : b));
+      setActiveBudget(prev => prev?.id === saved.id ? saved : prev);
+      return saved;
     } catch (err) {
-      console.error("Error saving budget to cloud:", err);
+      console.error("Error guardando presupuesto en Supabase Storage / Supabase DB:", err);
     }
   };
 
@@ -2213,7 +2144,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
       setViewState('list');
     }
     setMenuOpenId(null);
-    void deleteDoc(doc(firestore, 'budgets', id));
+    void deleteBudgetMetadataFromSupabase(id);
   };
 
   const handlePartidaCellClick = (p: Partida, e?: React.MouseEvent) => {
