@@ -484,56 +484,34 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
           gap: '22px'
         }}
       >
+        {/* ── AI CREATION & SEARCH CARD (ADAPTED TO INFRACOST LITE) ── */}
         <div
-          className="lite-controls-card"
           style={{
+            background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
+            border: '1.5px solid rgba(22, 163, 74, 0.4)',
+            borderRadius: '20px',
+            padding: '22px 26px',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '18px',
-            background: 'var(--bg-surface)',
-            padding: '20px 22px',
-            borderRadius: '10px',
-            border: '1px solid var(--border-color)',
-            boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)'
+            flexDirection: 'column',
+            gap: '16px',
+            boxShadow: theme === 'light' ? '0 12px 35px rgba(22, 163, 74, 0.06)' : '0 12px 35px rgba(0,0,0,0.35)',
+            transition: 'all 0.3s'
           }}
         >
-          <div className="lite-controls-group" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Button
-              onClick={() => {
-                resetBudgetForm();
-                setIsCreateOpen(true);
-              }}
-              style={{ background: 'var(--grad-primary)', border: 'none', minHeight: 42, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-            >
-              <LiteIcon name="plus" size={17} />
-              Nuevo Presupuesto
-            </Button>
-
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', minHeight: 42, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-            >
-              <LiteIcon name="upload" size={17} />
-              Subir Presupuesto
-            </Button>
-            <input 
-              type="file" 
-              accept=".json" 
-              style={{ display: 'none' }} 
-              ref={fileInputRef} 
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file && handleUploadBudget) {
-                  handleUploadBudget(file);
-                }
-                e.target.value = '';
-              }} 
-            />
-
+          {/* Card Title & Subtitle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
+                ¿Qué presupuesto deseas crear o buscar?
+              </h2>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
+                Usa la IA para generar análisis de costos o busca en tus presupuestos existentes
+              </p>
+            </div>
+            
+            {/* Group Filter Selector */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>
               <select
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
@@ -542,12 +520,11 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                   border: '1px solid var(--border-color)',
                   color: 'var(--text-primary)',
                   borderRadius: '8px',
-                  padding: '10px 14px',
-                  fontSize: '0.85rem',
+                  padding: '8px 12px',
+                  fontSize: '0.84rem',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-sans)',
-                  outline: 'none',
-                  minHeight: 42
+                  outline: 'none'
                 }}
               >
                 {groups.map(g => (
@@ -555,42 +532,234 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                 ))}
               </select>
             </div>
-
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (onSync) onSync();
-                setIsLoading(true);
-                setTimeout(() => setIsLoading(false), 500);
-              }}
-              disabled={isSyncing}
-              style={{ minHeight: 42, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-            >
-              <LiteIcon name="refresh-cw" size={16} className={isSyncing ? 'spin' : ''} />
-              {isSyncing ? 'Actualizando...' : 'Actualizar'}
-            </Button>
           </div>
 
-          <div className="lite-search-box" style={{ width: '100%', maxWidth: '390px', position: 'relative' }}>
-            <span
-              style={{
-                position: 'absolute',
-                left: 14,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-                pointerEvents: 'none',
-                display: 'flex'
-              }}
-            >
-              <LiteIcon name="search" size={16} />
-            </span>
-            <Input
-              placeholder="Buscar presupuesto..."
+          {/* Main Textarea Input */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <textarea
+              placeholder="Describe tu proyecto o busca por nombre de presupuesto, cliente o código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ margin: 0, paddingLeft: 40, minHeight: 42 }}
+              rows={3}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text-primary)',
+                fontSize: '1rem',
+                fontFamily: 'inherit',
+                resize: 'none',
+                lineHeight: 1.5
+              }}
             />
+          </div>
+
+          {/* Action Row Inside Card */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Create New Budget Button */}
+              <Button
+                onClick={() => {
+                  resetBudgetForm();
+                  setIsCreateOpen(true);
+                }}
+                style={{ background: 'var(--grad-primary)', border: 'none', minHeight: 38, padding: '0 16px', fontSize: '0.84rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
+              >
+                <LiteIcon name="plus" size={16} />
+                Nuevo Presupuesto
+              </Button>
+
+              {/* Upload File Button */}
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', minHeight: 38, padding: '0 16px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
+              >
+                <LiteIcon name="upload" size={16} />
+                Adjuntar / Subir
+              </Button>
+              <input 
+                type="file" 
+                accept=".json" 
+                style={{ display: 'none' }} 
+                ref={fileInputRef} 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file && handleUploadBudget) {
+                    handleUploadBudget(file);
+                  }
+                  e.target.value = '';
+                }} 
+              />
+
+              {/* Sync Button */}
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (onSync) onSync();
+                  setIsLoading(true);
+                  setTimeout(() => setIsLoading(false), 500);
+                }}
+                disabled={isSyncing}
+                style={{ minHeight: 38, padding: '0 14px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
+              >
+                <LiteIcon name="refresh-cw" size={15} className={isSyncing ? 'spin' : ''} />
+                {isSyncing ? 'Actualizando...' : 'Actualizar'}
+              </Button>
+            </div>
+
+            {/* Green Circular Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                resetBudgetForm();
+                setIsCreateOpen(true);
+              }}
+              title="Crear o consultar presupuesto con IA"
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+                transition: 'transform 0.2s, boxShadow 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          {/* Quick Action Chips inside Lite */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '4px' }}>
+            <button
+              type="button"
+              onClick={() => setSearchTerm('Vivienda')}
+              style={{
+                background: 'var(--modal-panel-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '6px 14px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#16a34a';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              🏠 Presupuesto de vivienda
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSearchTerm('Estructuras')}
+              style={{
+                background: 'var(--modal-panel-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '6px 14px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#16a34a';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              📑 Análisis de precios unitarios
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSearchTerm('Metrado')}
+              style={{
+                background: 'var(--modal-panel-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '6px 14px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#16a34a';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              🧮 Metrados de obra
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSearchTerm('Cronograma')}
+              style={{
+                background: 'var(--modal-panel-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                padding: '6px 14px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#16a34a';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              📅 Cronograma y costos
+            </button>
           </div>
         </div>
 
