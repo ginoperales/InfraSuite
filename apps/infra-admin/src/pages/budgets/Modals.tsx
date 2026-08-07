@@ -119,6 +119,79 @@ export const CreateBudgetModal: React.FC<{
 };
 
 // Edit Budget Modal
+export const CreateFromTemplateModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (e: React.FormEvent) => void;
+  templateName: string;
+  nombre: string;
+  setNombre: (v: string) => void;
+  cliente: string;
+  setCliente: (v: string) => void;
+  fechaBase: string;
+  setFechaBase: (v: string) => void;
+  grupo: string;
+  setGrupo: (v: string) => void;
+  groups: string[];
+}> = ({ isOpen, onClose, onSubmit, templateName, nombre, setNombre, cliente, setCliente, fechaBase, setFechaBase, grupo, setGrupo, groups }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Crear Presupuesto desde Plantilla">
+      <form onSubmit={onSubmit} className="login-form">
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '8px',
+          background: 'rgba(0, 240, 255, 0.08)',
+          border: '1px solid rgba(0, 240, 255, 0.2)',
+          marginBottom: '16px',
+          fontSize: '0.86rem',
+          color: 'var(--text-secondary)'
+        }}>
+          💡 Basado en la plantilla: <strong style={{ color: 'var(--color-primary)' }}>{templateName}</strong>. Ingresa los datos del nuevo proyecto para generar tu versión personalizada.
+        </div>
+        <Input
+          label="Nombre de tu Presupuesto *"
+          placeholder="Ej. CONSTRUCCIÓN DE HOSPITAL REGIONAL MIRAFLORES"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+        />
+        <Input
+          label="Cliente / Entidad *"
+          placeholder="Ej. MUNICIPALIDAD DE PANAILLO"
+          value={cliente}
+          onChange={(e) => setCliente(e.target.value)}
+          required
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <Input
+            type="date"
+            label="Fecha Base *"
+            value={fechaBase}
+            onChange={(e) => setFechaBase(e.target.value)}
+            required
+          />
+          <Select
+            label="Grupo / Sector"
+            value={grupo}
+            onChange={(e: any) => setGrupo(e.target.value)}
+            options={groups.filter(g => g !== 'TODOS LOS PRESUPUESTOS').map(g => ({ value: g, label: g }))}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', marginTop: '18px' }}>
+          <Button type="button" variant="secondary" onClick={onClose} style={{ flex: 1 }}>
+            Cancelar
+          </Button>
+          <Button type="submit" style={{ flex: 1, background: 'var(--grad-primary)', border: 'none', fontWeight: 'bold' }}>
+            Crear y Abrir Presupuesto
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+// Edit Budget Modal
 export const EditBudgetModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;

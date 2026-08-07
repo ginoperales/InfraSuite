@@ -1280,6 +1280,12 @@ export const Budgets: React.FC<BudgetsProps> = ({
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateFromTemplateOpen, setIsCreateFromTemplateOpen] = useState(false);
+  const [sourceTemplate, setSourceTemplate] = useState<Budget | null>(null);
+  const [tplNombre, setTplNombre] = useState('');
+  const [tplCliente, setTplCliente] = useState('');
+  const [tplFechaBase, setTplFechaBase] = useState(new Date().toISOString().split('T')[0]);
+  const [tplGrupo, setTplGrupo] = useState('EDIFICACIONES');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddInsumoOpen, setIsAddInsumoOpen] = useState(false);
   const [addInsumoTargetPartidaId, setAddInsumoTargetPartidaId] = useState<string | null>(null);
@@ -1984,7 +1990,52 @@ export const Budgets: React.FC<BudgetsProps> = ({
   // Actions
   const handleOpenBudgetEditor = (b: Budget) => {
     if (publicReadOnly && b.linkAccess !== 'ANYONE_WITH_LINK') return;
+
+    const isTemplate = b.linkAccess === 'COMMUNITY_TEMPLATE' || 
+                       b.categoria === 'PLANTILLA' || 
+                       (b.nombre && b.nombre.toUpperCase().includes('PLANTILLA'));
+    const isOwnerOrSuperAdmin = user && (b.ownerId === user.uid || b.ownerId === user.email || user.role === 'SUPER_ADMIN');
+
+    if (isTemplate && !isOwnerOrSuperAdmin) {
+      setSourceTemplate(b);
+      setTplNombre(b.nombre.replace(/ - PLANTILLA PRO| - PLANTILLA/gi, ''));
+      setTplCliente('');
+      setTplFechaBase(new Date().toISOString().split('T')[0]);
+      setTplGrupo(b.grupo || 'EDIFICACIONES');
+      setIsCreateFromTemplateOpen(true);
+      return;
+    }
+
     checkAndOpenBudget(b);
+  };
+
+  const handleCreateFromTemplateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sourceTemplate) return;
+
+    const now = Date.now();
+    const newBudget: Budget = {
+      ...sourceTemplate,
+      id: 'b_' + Math.random().toString(36).substring(2, 9),
+      nombre: tplNombre.trim().toUpperCase() || `${sourceTemplate.nombre} (Mi Proyecto)`,
+      cliente: tplCliente.trim() || 'Sin cliente asignado',
+      fechaBase: tplFechaBase,
+      grupo: tplGrupo,
+      categoria: 'Recientes',
+      ownerId: user?.uid || 'u_anon',
+      linkAccess: 'RESTRICTED',
+      permissions: {},
+      createdAt: now,
+      updatedAt: now
+    };
+
+    persistBudgetLocally(newBudget);
+    setBudgets(prev => [newBudget, ...prev]);
+    setIsCreateFromTemplateOpen(false);
+    setSourceTemplate(null);
+
+    void saveBudgetToCloud(newBudget);
+    checkAndOpenBudget(newBudget);
   };
 
   const handleSelectBudgetTab = (id: string) => {
@@ -2908,6 +2959,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
           />
           <Modals.CreateBudgetModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreateBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
           <Modals.EditBudgetModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSubmit={handleEditBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
+          <Modals.DatosGeneralesModal isOpen={isDatosGeneralesOpen} onClose={() => setIsDatosGeneralesOpen(false)} activeBudget={activeBudget} dgActiveTab={dgActiveTab} setDgActiveTab={setDgActiveTab} dgGrupo={dgGrupo} setDgGrupo={setDgGrupo} dgPresupuesto={dgPresupuesto} setDgPresupuesto={setDgPresupuesto} dgCliente={dgCliente} setDgCliente={setDgCliente} dgDireccion={dgDireccion} setDgDireccion={setDgDireccion} dgDistrito={dgDistrito} setDgDistrito={setDgDistrito} dgProvincia={dgProvincia} setDgProvincia={setDgProvincia} dgDepartamento={dgDepartamento} setDgDepartamento={setDgDepartamento} dgFechaBase={dgFechaBase} setDgFechaBase={setDgFechaBase} dgJornada={dgJornada} setDgJornada={setDgJornada} dgMoneda={dgMoneda} setDgMoneda={setDgMoneda} dgSubPresupuestos={dgSubPresupuestos} setDgSubPresupuestos={setDgSubPresupuestos} newSubPresupuesto={newSubPresupuesto} setNewSubPresupuesto={setNewSubPresupuesto} groups={groups} onSave={handleSaveDatosGenerales} />
+          <Modals.CreateFromTemplateModal isOpen={isCreateFromTemplateOpen} onClose={() => { setIsCreateFromTemplateOpen(false); setSourceTemplate(null); }} onSubmit={handleCreateFromTemplateSubmit} templateName={sourceTemplate?.nombre || 'Plantilla'} nombre={tplNombre} setNombre={setTplNombre} cliente={tplCliente} setCliente={setTplCliente} fechaBase={tplFechaBase} setFechaBase={setTplFechaBase} grupo={tplGrupo} setGrupo={setTplGrupo} groups={groups} />
           <ShareModal 
             isOpen={isShareModalOpen} 
             onClose={() => {
@@ -2973,6 +3026,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
         />
         <Modals.CreateBudgetModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSubmit={handleCreateBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
         <Modals.EditBudgetModal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} onSubmit={handleEditBudget} nombre={nombre} setNombre={setNombre} cliente={cliente} setCliente={setCliente} fechaBase={fechaBase} setFechaBase={setFechaBase} grupo={grupo} setGrupo={setGrupo} groups={groups} />
+        <Modals.DatosGeneralesModal isOpen={isDatosGeneralesOpen} onClose={() => setIsDatosGeneralesOpen(false)} activeBudget={activeBudget} dgActiveTab={dgActiveTab} setDgActiveTab={setDgActiveTab} dgGrupo={dgGrupo} setDgGrupo={setDgGrupo} dgPresupuesto={dgPresupuesto} setDgPresupuesto={setDgPresupuesto} dgCliente={dgCliente} setDgCliente={setDgCliente} dgDireccion={dgDireccion} setDgDireccion={setDgDireccion} dgDistrito={dgDistrito} setDgDistrito={setDgDistrito} dgProvincia={dgProvincia} setDgProvincia={setDgProvincia} dgDepartamento={dgDepartamento} setDgDepartamento={setDgDepartamento} dgFechaBase={dgFechaBase} setDgFechaBase={setDgFechaBase} dgJornada={dgJornada} setDgJornada={setDgJornada} dgMoneda={dgMoneda} setDgMoneda={setDgMoneda} dgSubPresupuestos={dgSubPresupuestos} setDgSubPresupuestos={setDgSubPresupuestos} newSubPresupuesto={newSubPresupuesto} setNewSubPresupuesto={setNewSubPresupuesto} groups={groups} onSave={handleSaveDatosGenerales} />
+        <Modals.CreateFromTemplateModal isOpen={isCreateFromTemplateOpen} onClose={() => { setIsCreateFromTemplateOpen(false); setSourceTemplate(null); }} onSubmit={handleCreateFromTemplateSubmit} templateName={sourceTemplate?.nombre || 'Plantilla'} nombre={tplNombre} setNombre={setTplNombre} cliente={tplCliente} setCliente={setTplCliente} fechaBase={tplFechaBase} setFechaBase={setTplFechaBase} grupo={tplGrupo} setGrupo={setTplGrupo} groups={groups} />
       </>
     );
   }
