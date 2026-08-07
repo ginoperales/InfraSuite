@@ -2752,8 +2752,31 @@ export const Budgets: React.FC<BudgetsProps> = ({
     setShowSuggestions(false);
   };
 
+  const displayableBudgets = useMemo(() => {
+    if (!user) return budgets;
+
+    const isSuperAdmin = user.role === 'SUPER_ADMIN' || 
+                         user.email === 'superadmin@infrasuite.com' || 
+                         user.email === 'superadmin.google@gmail.com' || 
+                         user.email === 'gin.zu.ken@gmail.com';
+
+    if (isSuperAdmin) {
+      return budgets;
+    }
+
+    return budgets.filter(b => {
+      if (!b) return false;
+      const isTemplate = b.linkAccess === 'COMMUNITY_TEMPLATE' || 
+                         b.categoria === 'PLANTILLA' || 
+                         (b.nombre && b.nombre.toUpperCase().includes('PLANTILLA'));
+      
+      const isUserOwner = (b.ownerId === user.uid || b.ownerId === user.email);
+      return isTemplate || isUserOwner;
+    });
+  }, [budgets, user]);
+
   // Filtered budgets for Lite
-  const filteredBudgets = budgets.filter((b) => {
+  const filteredBudgets = displayableBudgets.filter((b) => {
     if (!b) return false;
     const matchesSearch = (b.nombre || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
                           (b.cliente || '').toLowerCase().includes((searchTerm || '').toLowerCase());
@@ -2907,7 +2930,7 @@ export const Budgets: React.FC<BudgetsProps> = ({
       <>
         <BudgetsListPro
           theme={theme}
-          budgets={budgets}
+          budgets={displayableBudgets}
           setViewState={setViewState}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}

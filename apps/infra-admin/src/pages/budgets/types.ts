@@ -58,7 +58,7 @@ export interface Budget {
   cliente: string;
   fechaBase: string;
   grupo: string;
-  categoria: 'Recientes' | 'Antiguos';
+  categoria: 'Recientes' | 'Antiguos' | 'PLANTILLA';
   partidas: Partida[];
   
   // Storage location and Sync flags
@@ -93,7 +93,7 @@ export interface BudgetMetadataIndex {
   cliente: string;
   fechaBase: string;
   grupo: string;
-  categoria: 'Recientes' | 'Antiguos';
+  categoria: 'Recientes' | 'Antiguos' | 'PLANTILLA';
   storageUrl?: string;
   storagePath?: string;
   ownerId?: string;
