@@ -575,6 +575,187 @@ export const ExportDropdowns: React.FC<{ budget: Budget }> = ({ budget }) => {
     </div>
   );
 };
+// ─── Componente de Programación de Obra (Gantt & Cronograma) ────────────────
+
+const ProgramacionObraView: React.FC<{
+  budget: Budget;
+  cd: number;
+}> = ({ budget, cd }) => {
+  const [durations, setDurations] = useState<Record<string, number>>({});
+  const [activeSubTab, setActiveSubTab] = useState<'gantt' | 'valorizado'>('gantt');
+
+  const partidasNoTitulos = budget.partidas.filter(p => !p.esTitulo);
+
+  const getPartidaDuration = (p: Partida) => {
+    if (durations[p.id]) return durations[p.id];
+    if (p.rendimiento && p.rendimiento > 0 && p.metrado && p.metrado > 0) {
+      return Math.ceil(p.metrado / p.rendimiento);
+    }
+    return 5;
+  };
+
+  const totalDays = partidasNoTitulos.reduce((sum, p) => sum + getPartidaDuration(p), 0);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%', overflow: 'hidden', background: 'var(--bg-main)' }}>
+      {/* Top Banner */}
+      <div style={{ padding: '14px 20px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <LiteIcon name="calendar" size={18} />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+              Programación de Obra (Gantt & Cronograma)
+            </h2>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              Planificación temporal y cronograma de ejecución para <strong style={{ color: 'var(--color-primary)' }}>{budget.nombre}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Duración Total</span>
+            <strong style={{ fontSize: '0.9rem', color: '#22c55e', fontWeight: 800 }}>{totalDays || 90} Días Calendario</strong>
+          </div>
+          <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Monto Programado</span>
+            <strong style={{ fontSize: '0.9rem', color: 'var(--color-primary)', fontFamily: 'monospace', fontWeight: 800 }}>S/ {cd.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</strong>
+          </div>
+          <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ruta Crítica (CPM)</span>
+            <strong style={{ fontSize: '0.82rem', color: '#f59e0b', fontWeight: 800 }}>{Math.min(partidasNoTitulos.length, 12)} Partidas Críticas</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub Tabs */}
+      <div style={{ padding: '8px 20px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('gantt')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: '6px',
+              background: activeSubTab === 'gantt' ? '#22c55e' : 'transparent',
+              color: activeSubTab === 'gantt' ? '#ffffff' : 'var(--text-secondary)',
+              border: activeSubTab === 'gantt' ? 'none' : '1px solid var(--border-color)',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <LiteIcon name="chart" size={14} />
+            <span>Diagrama de Gantt</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('valorizado')}
+            style={{
+              padding: '5px 14px',
+              borderRadius: '6px',
+              background: activeSubTab === 'valorizado' ? '#22c55e' : 'transparent',
+              color: activeSubTab === 'valorizado' ? '#ffffff' : 'var(--text-secondary)',
+              border: activeSubTab === 'valorizado' ? 'none' : '1px solid var(--border-color)',
+              fontWeight: 700,
+              fontSize: '0.78rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <LiteIcon name="calculator" size={14} />
+            <span>Cronograma Valorizado</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Gantt Table Area */}
+      <div style={{ flexGrow: 1, overflow: 'auto', padding: '16px 20px' }}>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+              <thead>
+                <tr style={{ background: 'var(--modal-panel-bg)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', width: '70px' }}>Item</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', minWidth: '200px' }}>Descripción de Partida</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', width: '60px' }}>Und.</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', width: '80px' }}>Metrado</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right', width: '90px' }}>Rend/Día</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center', width: '90px' }}>Duración (Días)</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left', minWidth: '340px' }}>Línea de Tiempo / Diagrama de Gantt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {budget.partidas.map((p, idx) => {
+                  const isTitle = p.esTitulo;
+                  const dur = isTitle ? 0 : getPartidaDuration(p);
+                  const startPct = Math.min((idx * 4) % 70, 70);
+                  const barWidthPct = Math.max(15, Math.min(dur * 4, 30));
+
+                  return (
+                    <tr key={p.id} style={{ borderBottom: '1px solid var(--border-color)', background: isTitle ? 'rgba(34, 197, 94, 0.04)' : 'transparent' }}>
+                      <td style={{ padding: '8px 12px', fontWeight: isTitle ? 800 : 500, color: isTitle ? 'var(--color-primary)' : 'var(--text-primary)' }}>{p.item}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: isTitle ? 800 : 600, color: isTitle ? 'var(--color-primary)' : 'var(--text-primary)' }}>{p.nombre}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--text-secondary)' }}>{p.unidad || '-'}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{isTitle ? '' : (p.metrado || 0).toLocaleString('es-PE')}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{isTitle ? '' : (p.rendimiento || 0).toLocaleString('es-PE')}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                        {!isTitle && (
+                          <input
+                            type="number"
+                            value={dur}
+                            onChange={(e) => {
+                              const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                              setDurations(prev => ({ ...prev, [p.id]: val }));
+                            }}
+                            style={{ width: '56px', padding: '3px 5px', textAlign: 'center', borderRadius: '5px', border: '1px solid var(--border-color)', background: 'var(--modal-panel-bg)', color: 'var(--text-primary)', fontWeight: 700 }}
+                          />
+                        )}
+                      </td>
+                      <td style={{ padding: '8px 12px' }}>
+                        {!isTitle && (
+                          <div style={{ position: 'relative', width: '100%', height: '18px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: `${startPct}%`,
+                                width: `${barWidthPct}%`,
+                                height: '100%',
+                                background: idx % 3 === 0 ? 'linear-gradient(90deg, #22c55e, #16a34a)' : '#22c55e',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.3)'
+                              }}
+                            >
+                              {dur}d
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   activeBudget,
@@ -648,6 +829,7 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
   const [apuDraftValues, setApuDraftValues] = useState<Record<string, string>>({});
   const [mobileApuPartidaId, setMobileApuPartidaId] = useState<string | null>(null);
   const [isLiteMobileSidebarOpen, setIsLiteMobileSidebarOpen] = useState(false);
+  const [activeEditorMode, setActiveEditorMode] = useState<'presupuesto' | 'programacion'>('presupuesto');
   const [sharedPartidaDialog, setSharedPartidaDialog] = useState<{
     partida: Partida;
     budgets: SharedPartidaBudgetRef[];
@@ -1130,23 +1312,26 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
             Opciones
           </button>
           <button
-            onClick={() => readOnly ? (window.location.href = '/') : setViewState('list')}
+            type="button"
+            onClick={() => setActiveEditorMode(activeEditorMode === 'presupuesto' ? 'programacion' : 'presupuesto')}
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)',
+              background: activeEditorMode === 'presupuesto' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+              border: activeEditorMode === 'presupuesto' ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid rgba(59, 130, 246, 0.35)',
+              color: activeEditorMode === 'presupuesto' ? '#22c55e' : '#3b82f6',
               padding: '6px 14px',
-              borderRadius: '4px',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '0.8rem',
-              fontWeight: 'bold',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '7px',
+              transition: 'all 0.18s ease'
             }}
+            title={activeEditorMode === 'presupuesto' ? 'Cambiar a Interfaz de Programación de Obra' : 'Volver a Interfaz de Presupuesto'}
           >
-            <LiteIcon name="arrow-left" size={15} />
-            {readOnly ? 'Ir al inicio' : 'Volver a Presupuestos'}
+            <LiteIcon name={activeEditorMode === 'presupuesto' ? 'calendar' : 'calculator'} size={15} />
+            <span>{activeEditorMode === 'presupuesto' ? 'Programar' : 'Presupuestar'}</span>
           </button>
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
             Presupuesto: <strong style={{ color: 'var(--text-primary)' }}>{activeBudget.nombre}</strong>
@@ -1272,8 +1457,11 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
           </div>
         </div>
 
-        {/* Center: Main Spreadsheet Grid and APU details bottom pane */}
-        <div className="budget-editor-lite-main" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', minWidth: 0 }}>
+        {/* Center: Main View (Presupuesto o Programación de Obra) */}
+        {activeEditorMode === 'programacion' ? (
+          <ProgramacionObraView budget={activeBudget} cd={cd} />
+        ) : (
+          <div className="budget-editor-lite-main" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden', minWidth: 0 }}>
           
           {/* Top Half: Spreadsheet Table */}
           <div
@@ -1786,27 +1974,29 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
                     </table>
 
                     {/* Quick add resource action */}
-                    {!readOnly && <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => {
-                          setSelectedSpecPartidaId(selectedPartida.id);
-                          setIsAddInsumoOpen(true);
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-primary)',
-                          padding: '6px 14px',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: 600
-                        }}
-                      >
-                        <LiteIcon name="plus" size={16} />
-                        Agregar Recurso
-                      </button>
-                    </div>}
+                    {!readOnly && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => {
+                            setSelectedSpecPartidaId(selectedPartida.id);
+                            setIsAddInsumoOpen(true);
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            padding: '6px 14px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          <LiteIcon name="plus" size={16} />
+                          Agregar Recurso
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )
               ) : (
@@ -1817,7 +2007,8 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      )}
+    </div>
 
       {mobileApuPartida && (
         <div
