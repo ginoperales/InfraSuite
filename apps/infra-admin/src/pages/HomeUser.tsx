@@ -3,6 +3,8 @@ import { useAuth } from '@infrasuite/auth';
 import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { db } from '@infrasuite/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isElectron, syncToCloud } from '../lib/databaseAdapter';
+import { SyncButton } from '../components/SyncButton';
 
 interface HomeUserProps {
   onNavigate: (tab: string, budgetId?: string) => void;
@@ -93,6 +95,30 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
     y: number;
     fileId: string;
   }>({ visible: false, x: 0, y: 0, fileId: '' });
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    if (isElectron() && (window as any).electron?.updater) {
+      (window as any).electron.updater.onUpdateAvailable(() => {
+        setUpdateAvailable(true);
+      });
+    }
+  }, []);
+
+  const handleSync = async () => {
+    if (!isElectron()) return;
+    setIsSyncing(true);
+    try {
+      await syncToCloud();
+      alert('¡Sincronización completada con éxito!');
+    } catch (e) {
+      alert('Error en la sincronización. Revisa tu conexión.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     if (promotions.length <= 1) return;
@@ -284,6 +310,13 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
         overflow: 'hidden',
       }}
     >
+      {/* ── UPDATE BANNER ── */}
+      {updateAvailable && (
+        <div style={{ background: '#2563eb', color: 'white', padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>
+          ¡Nueva actualización disponible! Descargando en segundo plano...
+        </div>
+      )}
+
       {/* ── TOP HEADER / TOOLBAR ── */}
       <div
         style={{
@@ -333,8 +366,10 @@ export const HomeUser: React.FC<HomeUserProps> = ({ onNavigate, installedModules
           />
         </div>
 
-        {/* Right: Theme Switcher & Configuration */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {/* Right: Sync & Theme Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginLeft: 'auto' }}>
+          <SyncButton />
+
           <button
             type="button"
             onClick={onToggleTheme}

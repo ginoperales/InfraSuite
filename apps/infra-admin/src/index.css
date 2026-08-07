@@ -2,6 +2,14 @@
 @import "../../../shared/theme/variables.css";
 @import "../../../shared/theme/components.css";
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite !important;
+}
+
 /* Dashboard Layout */
 .app-container {
   display: flex;
@@ -602,7 +610,7 @@
   align-items: center;
   padding: 0 5%;
   border-bottom: 1px solid var(--border-color);
-  background: rgba(6, 7, 10, 0.7);
+  background: var(--bg-surface);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;

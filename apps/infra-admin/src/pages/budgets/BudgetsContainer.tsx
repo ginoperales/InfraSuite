@@ -643,6 +643,8 @@ const mergeBudgetsByFreshness = (...budgetLists: Budget[][]): Budget[] => {
   return merged;
 };
 
+import { getLocalBudgets, saveLocalBudget, deleteLocalBudget, isElectron, syncToCloud } from '../../lib/databaseAdapter';
+
 const persistBudgetsLocally = (nextBudgets: Budget[]) => {
   if (typeof window === 'undefined') return;
   try {
@@ -651,7 +653,7 @@ const persistBudgetsLocally = (nextBudgets: Budget[]) => {
 };
 
 const persistBudgetLocally = (budget: Budget) => {
-  persistBudgetsLocally(mergeBudgetsByFreshness(readBudgetsFromLocalStorage(), [budget]));
+  saveLocalBudget(budget).catch(console.error);
 };
 
 const normalizeInsumoSearchText = (value: unknown) =>
@@ -683,7 +685,19 @@ export const Budgets: React.FC<BudgetsProps> = ({
 }) => {
   const { user } = useAuth();
   
-  const [budgets, setBudgets] = useState<Budget[]>(() => publicReadOnly ? [] : readBudgetsFromLocalStorage());
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgetsLoaded, setBudgetsLoaded] = useState(false);
+  
+  useEffect(() => {
+    if (publicReadOnly) {
+      setBudgetsLoaded(true);
+      return;
+    }
+    getLocalBudgets().then(data => {
+      setBudgets(data);
+      setBudgetsLoaded(true);
+    });
+  }, [publicReadOnly]);
   const budgetsRef = useRef<Budget[]>(budgets);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [budgetToShare, setBudgetToShare] = useState<Budget | null>(null);
@@ -1003,10 +1017,9 @@ export const Budgets: React.FC<BudgetsProps> = ({
       );
     }
     
-    // Subscribe to real-time changes
     const unsubscribe = onSnapshot(budgetsQuery, (snapshot: any) => {
-      const loaded: Budget[] = snapshot.docs.map((snapshotDoc: any) => ({ id: snapshotDoc.id, ...snapshotDoc.data() } as Budget));
-      const localStoredBudgets = readBudgetsFromLocalStorage();
+      const loaded: Budget[] = snapshot.docs.map((snapshotDoc: any) => ({ id: snapshotDoc.id, ...snapshotDoc.data(), isLocal: false } as Budget));
+      const localStoredBudgets = readBudgetsFromLocalStorage().map(b => ({ ...b, isLocal: true }));
       
       if (loaded.length === 0) {
         const localBudgets = mergeBudgetsByFreshness(localStoredBudgets, budgetsRef.current);
@@ -1449,18 +1462,18 @@ export const Budgets: React.FC<BudgetsProps> = ({
       }
     };
 
-    activeBudget?.partidas.forEach(partida => {
-      partida.insumos.forEach(insumo => register(insumo, 0, 'Este presupuesto'));
+    activeBudget?.partidas?.forEach(partida => {
+      partida?.insumos?.forEach(insumo => register(insumo, 0, 'Este presupuesto'));
     });
 
-    budgets.forEach(budget => {
+    budgets?.forEach(budget => {
       if (budget.id === activeBudget?.id) return;
-      budget.partidas.forEach(partida => {
-        partida.insumos.forEach(insumo => register(insumo, 1, 'Otros presupuestos'));
+      budget?.partidas?.forEach(partida => {
+        partida?.insumos?.forEach(insumo => register(insumo, 1, 'Otros presupuestos'));
       });
     });
 
-    catalogoInsumos.forEach((item: any) => register(item, 2, 'Catalogo'));
+    catalogoInsumos?.forEach((item: any) => register(item, 2, 'Catalogo'));
 
     return Array.from(byKey.values()).sort((a, b) => {
       if (a.sourceRank !== b.sourceRank) return a.sourceRank - b.sourceRank;
@@ -2040,6 +2053,24 @@ export const Budgets: React.FC<BudgetsProps> = ({
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleDownloadBudget = (b: Budget) => {
+    try {
+      const jsonStr = JSON.stringify(b, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(b.nombre || 'Presupuesto').replace(/[^a-zA-Z0-9_\-\.]/g, '_')}_Presupuesto.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading budget JSON', err);
+      alert('Error al descargar el archivo del presupuesto.');
+    }
   };
 
   const startEditBudget = (b: Budget) => {
@@ -2814,6 +2845,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
             handleDeleteBudget={handleDeleteBudget}
             menuItemStyle={Modals.menuItemStyle}
             onNavigate={onNavigate}
+            handleUploadBudget={handleUploadBudget}
+            onDownloadBudget={handleDownloadBudget}
             onShareBudget={(budget) => {
               setBudgetToShare(budget);
               setIsShareModalOpen(true);
@@ -2879,6 +2912,8 @@ export const Budgets: React.FC<BudgetsProps> = ({
           startEditBudget={startEditBudget}
           handleDuplicateBudget={handleDuplicateBudget}
           handleDeleteBudget={handleDeleteBudget}
+          handleUploadBudget={handleUploadBudget}
+          onDownloadBudget={handleDownloadBudget}
           menuItemStyle={Modals.menuItemStyle}
           onNavigate={onNavigate}
         />

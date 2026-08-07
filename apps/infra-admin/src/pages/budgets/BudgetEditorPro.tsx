@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
 import type { Budget, Partida, Insumo, PartidaColumnKey, SharedPartidaBudgetRef } from './types';
 import { ExportDropdowns, LiteIcon } from './BudgetEditorLite';
+import { SyncButton } from '../../components/SyncButton';
 
 const contextMenuItemStyle: React.CSSProperties = {
   background: 'transparent',
@@ -1274,7 +1275,8 @@ export const BudgetEditorPro: React.FC<BudgetEditorProProps> = ({
           ))}
         </div>
 
-        <div style={{ flexShrink: 0, marginLeft: '10px' }}>
+        <div style={{ flexShrink: 0, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <SyncButton />
           <ExportDropdowns budget={activeBudget} />
         </div>
 

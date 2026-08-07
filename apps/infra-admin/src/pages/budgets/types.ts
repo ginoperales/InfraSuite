@@ -61,6 +61,11 @@ export interface Budget {
   categoria: 'Recientes' | 'Antiguos';
   partidas: Partida[];
   
+  // Storage location and Sync flags
+  isLocal?: boolean;
+  hasLocalChanges?: boolean;
+  syncedAt?: number;
+
   // Extended fields for "Datos Generales"
   direccion: string;
   distrito: string;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Budget, Partida, Insumo, PartidaColumnKey, ApuColumnKey, SharedPartidaBudgetRef } from './types';
 import { exportPDF, exportExcel, type ExportOption } from './exportUtils';
+import { SyncButton } from '../../components/SyncButton';
 
 const tableInputStyle: React.CSSProperties = {
   background: 'transparent',
@@ -60,10 +61,11 @@ export type LiteIconName =
   | 'sparkles'
   | 'x';
 
-export const LiteIcon: React.FC<{ name: LiteIconName; size?: number; strokeWidth?: number }> = ({
+export const LiteIcon: React.FC<{ name: LiteIconName; size?: number; strokeWidth?: number; className?: string }> = ({
   name,
   size = 18,
-  strokeWidth = 1.9
+  strokeWidth = 1.9,
+  className
 }) => {
   const common = {
     fill: 'none',
@@ -353,7 +355,7 @@ export const LiteIcon: React.FC<{ name: LiteIconName; size?: number; strokeWidth
   };
 
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...common}>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={className} {...common}>
       {paths[name]}
     </svg>
   );
@@ -1127,8 +1129,11 @@ export const BudgetEditorLite: React.FC<BudgetEditorLiteProps> = ({
           </span>
         </div>
 
-        {/* ── Export Buttons ── */}
-        <ExportDropdowns budget={activeBudget} />
+        {/* ── Export Buttons & Sync ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+          <SyncButton />
+          <ExportDropdowns budget={activeBudget} />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {readOnly && (

@@ -31,8 +31,12 @@ import {
   UserRound,
   Users,
   Wrench,
-  Zap
+  Zap,
+  HardDrive,
+  Cloud
 } from 'lucide-react';
+import { isElectron } from '../../lib/databaseAdapter';
+import { SyncButton } from '../../components/SyncButton';
 import type { LucideIcon } from 'lucide-react';
 import type { Budget } from './types';
 
@@ -62,6 +66,7 @@ interface BudgetsListProProps {
   menuItemStyle: React.CSSProperties;
   onNavigate?: (tab: string) => void;
   handleUploadBudget?: (file: File) => void;
+  onDownloadBudget?: (b: Budget) => void;
 }
 
 const proToolbarItemStyle: React.CSSProperties = {
@@ -133,23 +138,60 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
   theme,
   menuItemStyle,
   onNavigate,
-  handleUploadBudget
+  handleUploadBudget,
+  onDownloadBudget
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [mobileTab, setMobileTab] = React.useState<'projects' | 'portfolio' | 'options'>('projects');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
-      {/* Delphin Express Inspired Ribbon Menu */}
-      <div style={{
+      <style>{`
+        @media (max-width: 900px) {
+          .pro-mobile-tab-bar { display: flex !important; }
+          .pro-ribbon-top { flex-wrap: wrap !important; padding: 10px 14px !important; gap: 10px !important; }
+          .pro-ribbon-sub { overflow-x: auto !important; padding: 8px 14px !important; white-space: nowrap !important; }
+          .pro-column-portfolio { display: ${mobileTab === 'portfolio' ? 'flex' : 'none'} !important; width: 100% !important; border-right: none !important; }
+          .pro-column-projects { display: ${mobileTab === 'projects' ? 'flex' : 'none'} !important; width: 100% !important; }
+          .pro-column-options { display: ${mobileTab === 'options' ? 'flex' : 'none'} !important; width: 100% !important; border-left: none !important; }
+        }
+      `}</style>
+      {/* ── TOP BRAND HEADER (ARRIBA DE TODO) ── */}
+      <div className="pro-header-top" style={{
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-color)',
-        padding: '10px 24px',
+        padding: '10px 20px',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
         flexShrink: 0
       }}>
-        {/* Left: Navigation and user tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ ...proToolbarIconStyle, width: '34px', height: '34px', borderRadius: '9px', animation: 'pulse 2s infinite', background: 'var(--color-primary-glow)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ChartNoAxesCombined size={20} strokeWidth={2.4} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Pro</span>
+            <span style={{ fontSize: '0.65rem', background: 'rgba(0, 240, 255, 0.12)', color: 'var(--color-primary)', fontWeight: 'bold', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.25)' }}>v1.0.1</span>
+          </div>
+        </div>
+        <div style={{ marginLeft: 'auto' }}>
+          <SyncButton />
+        </div>
+      </div>
+
+      {/* Delphin Express Inspired Ribbon Menu */}
+      <div className="pro-ribbon-top" style={{
+        background: 'var(--bg-surface-elevated)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '8px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0
+      }}>
+        {/* Navigation and user tools */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', maxWidth: '100%', marginLeft: 'auto' }}>
           <ProToolbarItem label="Volver" icon={ArrowLeft} onClick={() => setViewState('list')} />
           {/* Cerrar sesión removed */}
           <ProToolbarItem label="Usuarios" icon={Users} onClick={() => alert('Abriendo directorio de usuarios...')} />
@@ -160,27 +202,17 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           {/* InfraSuite Navigation Shortcuts */}
           {onNavigate && (
             <>
-              <div style={{ width: '1px', height: '40px', background: 'var(--border-color)', margin: '0 4px' }} />
+              <div style={{ width: '1px', height: '40px', background: 'var(--border-color)', margin: '0 4px', flexShrink: 0 }} />
               <ProToolbarItem label="Compartido" icon={FolderOpen} onClick={() => onNavigate('shared')} />
               <ProToolbarItem label="Contactos" icon={ContactRound} onClick={() => onNavigate('contacts')} />
               <ProToolbarItem label="Papelera" icon={Trash2} onClick={() => onNavigate('trash')} />
             </>
           )}
         </div>
-        {/* Right: Brand logo/Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Pro</span>
-            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', letterSpacing: '2px', textTransform: 'uppercase' }}>2026</div>
-          </div>
-          <div style={{ ...proToolbarIconStyle, width: '34px', height: '34px', borderRadius: '9px', animation: 'pulse 2s infinite' }}>
-            <ChartNoAxesCombined size={20} strokeWidth={2.4} />
-          </div>
-        </div>
       </div>
 
       {/* Actions sub-bar ribbon */}
-      <div style={{
+      <div className="pro-ribbon-sub" style={{
         background: 'var(--bg-surface-elevated)',
         padding: '8px 24px',
         display: 'flex',
@@ -203,7 +235,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            flexShrink: 0
           }}
         >
           <FileText size={14} strokeWidth={2.3} />
@@ -224,7 +257,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            flexShrink: 0
           }}
         >
           <Upload size={14} strokeWidth={2.3} />
@@ -257,7 +291,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            flexShrink: 0
           }}
         >
           <RefreshCw size={14} strokeWidth={2.3} />
@@ -276,7 +311,8 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             fontWeight: 'bold',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            flexShrink: 0
           }}
         >
           <KeyRound size={14} strokeWidth={2.3} />
@@ -284,11 +320,74 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         </button>
       </div>
 
+      {/* Mobile Tab Switcher */}
+      <div className="pro-mobile-tab-bar" style={{
+        display: 'none',
+        background: 'var(--bg-surface-elevated)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '6px 12px',
+        justifyContent: 'space-around',
+        gap: '6px',
+        flexShrink: 0
+      }}>
+        <button
+          type="button"
+          onClick={() => setMobileTab('projects')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: '6px',
+            border: 'none',
+            background: mobileTab === 'projects' ? 'rgba(0, 240, 255, 0.15)' : 'transparent',
+            color: mobileTab === 'projects' ? '#00f0ff' : 'var(--text-secondary)',
+            fontWeight: 'bold',
+            fontSize: '0.82rem',
+            cursor: 'pointer'
+          }}
+        >
+          📋 Proyectos
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('portfolio')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: '6px',
+            border: 'none',
+            background: mobileTab === 'portfolio' ? 'rgba(0, 240, 255, 0.15)' : 'transparent',
+            color: mobileTab === 'portfolio' ? '#00f0ff' : 'var(--text-secondary)',
+            fontWeight: 'bold',
+            fontSize: '0.82rem',
+            cursor: 'pointer'
+          }}
+        >
+          🌳 Portafolio
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('options')}
+          style={{
+            flex: 1,
+            padding: '8px',
+            borderRadius: '6px',
+            border: 'none',
+            background: mobileTab === 'options' ? 'rgba(0, 240, 255, 0.15)' : 'transparent',
+            color: mobileTab === 'options' ? '#00f0ff' : 'var(--text-secondary)',
+            fontWeight: 'bold',
+            fontSize: '0.82rem',
+            cursor: 'pointer'
+          }}
+        >
+          ⚙️ Opciones
+        </button>
+      </div>
+
       {/* 3-column Layout */}
       <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
         
         {/* COLUMN 1: Tree navigation portfolio */}
-        <div style={{
+        <div className="pro-column-portfolio" style={{
           width: '280px',
           borderRight: '1px solid var(--border-color)',
           background: 'var(--bg-surface)',
@@ -373,7 +472,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         </div>
 
         {/* COLUMN 2: Projects List with Search */}
-        <div style={{
+        <div className="pro-column-projects" style={{
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -430,14 +529,27 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '12px',
                       transition: 'all 0.2s'
                     }}
                     className="budget-list-row"
                   >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '70%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <LockKeyhole size={15} strokeWidth={2.3} color="#eab308" />
                         <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{b.nombre}</strong>
+                        {isElectron() && (
+                          b.isLocal ? (
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', border: '1px solid rgba(249, 115, 22, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <HardDrive size={13} /> Local
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Cloud size={13} /> Nube
+                            </span>
+                          )
+                        )}
                       </div>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         Cliente: {b.cliente} · Costos al: {b.fechaBase}
@@ -470,7 +582,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
         </div>
 
         {/* COLUMN 3: Opciones Metro Grid */}
-        <div style={{
+        <div className="pro-column-options" style={{
           width: '320px',
           borderLeft: '1px solid var(--border-color)',
           background: 'var(--bg-surface)',
@@ -579,6 +691,16 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
             style={menuItemStyle}
           >
             📋 Duplicar
+          </button>
+          <button
+            onClick={() => {
+              const b = budgets.find(x => x.id === menuOpenId);
+              if (b) onDownloadBudget?.(b);
+              handleOpenMenu({} as any, '');
+            }}
+            style={menuItemStyle}
+          >
+            📥 Descargar presupuesto (.json)
           </button>
           <button
             onClick={() => { alert(`Presupuesto enviado con éxito.`); handleOpenMenu({} as any, ''); }}

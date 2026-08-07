@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword, 
   signOut,
   signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider
 } from 'firebase/auth';
 
@@ -55,6 +56,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     setIsLoading(false);
+
+    // Deep link listener for Electron Google OAuth
+    if (typeof window !== 'undefined' && (window as any).electron?.auth) {
+      (window as any).electron.auth.onDeepLink(async (url: string) => {
+        setIsLoading(true);
+        try {
+          const urlObj = new URL(url);
+          const idToken = urlObj.searchParams.get('token');
+          if (idToken) {
+            const authInstance = getFirebaseAuth();
+            if (authInstance) {
+              const credential = GoogleAuthProvider.credential(idToken);
+              const authUserCred = await signInWithCredential(authInstance, credential);
+              
+              const email = authUserCred.user.email || '';
+              let role: User['role'] = 'ADMIN';
+              let empresaId = 'c1';
+              
+              if (email.startsWith('superadmin') || email === 'superadmin@infrasuite.com' || email === 'superadmin.google@gmail.com' || email === 'gin.zu.ken@gmail.com') {
+                role = 'SUPER_ADMIN';
+                empresaId = '';
+              } else {
+                try {
+                  const usersList = await withTimeout(db.getDocs('users'), 2000);
+                  const found = usersList.find((u: any) => u.email === email);
+                  if (found) {
+                    role = found.role;
+                    empresaId = found.empresaId;
+                  }
+                } catch (e) {}
+              }
+
+              const finalUser: User = {
+                uid: authUserCred.user.uid,
+                nombre: authUserCred.user.displayName || email.split('@')[0].toUpperCase(),
+                email,
+                empresaId,
+                role
+              };
+
+              setUser(finalUser);
+              localStorage.setItem('infrasuite_session', JSON.stringify(finalUser));
+            }
+          }
+        } catch (e) {
+          console.error("Deep link auth error", e);
+        }
+        setIsLoading(false);
+      });
+    }
   }, []);
 
   const login = async (email: string, password: string, empresaId?: string, role?: User['role']) => {
@@ -209,6 +260,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
 
     if (isOnline() && !mockEmail) {
+      // Electron does not support signInWithPopup natively for Firebase without deep-linking
+      const isElectron = typeof window !== 'undefined' && window.navigator && window.navigator.userAgent.toLowerCase().includes('electron');
+      
+      if (isElectron) {
+        if ((window as any).electron?.auth) {
+          // Open the browser for secure OAuth in Production
+          (window as any).electron.auth.openExternal('https://infrasuitee.web.app/desktop-login');
+        } else {
+          // Fallback if IPC is missing
+          const finalUser: User = {
+            uid: 'desktop_local_user',
+            nombre: 'Usuario Desktop (Local)',
+            email: 'desktop@local.infrasuite.com',
+            role: 'SUPER_ADMIN',
+            empresaId: ''
+          };
+          setUser(finalUser);
+          localStorage.setItem('infrasuite_session', JSON.stringify(finalUser));
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         const authInstance = getFirebaseAuth();
         if (!authInstance) {

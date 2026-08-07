@@ -5,6 +5,7 @@ import { animate, stagger } from 'animejs';
 import Spline from '@splinetool/react-spline';
 import { Button, Card } from '@infrasuite/shared';
 import { db } from '@infrasuite/firebase';
+import { BookOpen, Tag, Headset } from 'lucide-react';
 
 // 1. React Error Boundary to catch Spline runtime/deserialization crashes
 interface ErrorBoundaryProps {
@@ -48,9 +49,15 @@ const ThreeFallbackVisual: React.FC = () => {
     const camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
     camera.position.z = 12;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+      renderer.setSize(canvas.clientWidth || 300, canvas.clientHeight || 300);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    } catch (e) {
+      console.warn('WebGL renderer initialization failed:', e);
+      return;
+    }
 
     // Torus Knot Tech Geometry
     const geometry = new THREE.TorusKnotGeometry(2.2, 0.6, 120, 16);
@@ -201,9 +208,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
     const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
     camera.position.z = 60;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+      renderer.setSize(canvas.clientWidth || 300, canvas.clientHeight || 300);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    } catch (e) {
+      console.warn('Constellation WebGL renderer initialization failed:', e);
+      return;
+    }
 
     const particlesCount = 200;
     const geometry = new THREE.BufferGeometry();
@@ -434,8 +447,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
               <Button onClick={onStartLogin} style={{ padding: '14px 32px', fontSize: '1rem' }}>
                 Comenzar Ahora (SSO)
               </Button>
-              <a href="#modulos" className="btn btn-secondary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-                Explorar Módulos
+              <a href="/InfraSuite_Setup.zip" download="InfraSuite_Setup.zip" className="btn btn-secondary" style={{ padding: '14px 32px', fontSize: '1rem', background: theme === 'light' ? 'rgba(0,0,0,0.04)' : undefined, color: theme === 'light' ? '#334155' : undefined, borderColor: theme === 'light' ? '#cbd5e1' : undefined }}>
+                Descargar InfraSuite
               </a>
             </motion.div>
           </div>
@@ -470,18 +483,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
           <div style={{
             display: 'flex',
-            background: 'var(--bg-surface)',
+            background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
             padding: '6px',
             borderRadius: '100px',
-            border: '1px solid var(--border-color)',
-            boxShadow: 'var(--shadow-md)',
+            border: theme === 'light' ? '1px solid #e2e8f0' : '1px solid var(--border-color)',
+            boxShadow: theme === 'light' ? '0 4px 14px rgba(0,0,0,0.08)' : 'var(--shadow-md)',
             backdropFilter: 'blur(8px)',
             gap: '8px'
           }}>
             {[
-              { id: 'docs', label: 'Documentación', icon: '📄' },
-              { id: 'price', label: 'Precio', icon: '💰' },
-              { id: 'support', label: 'Soporte', icon: '🛠️' }
+              { id: 'docs', label: 'Documentación', icon: <BookOpen size={16} /> },
+              { id: 'price', label: 'Precio', icon: <Tag size={16} /> },
+              { id: 'support', label: 'Soporte', icon: <Headset size={16} /> }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -494,7 +507,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
                 }}
                 style={{
                   background: activeLandingTab === tab.id ? 'var(--color-primary)' : 'transparent',
-                  color: activeLandingTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
+                  color: activeLandingTab === tab.id 
+                    ? '#ffffff' 
+                    : (theme === 'light' ? '#475569' : 'var(--text-secondary)'),
                   border: 'none',
                   padding: '10px 24px',
                   borderRadius: '100px',
@@ -505,7 +520,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
                   alignItems: 'center',
                   gap: '8px',
                   transition: 'all 0.2s ease',
-                  outline: 'none'
+                  outline: 'none',
+                  boxShadow: activeLandingTab === tab.id && theme === 'light' ? '0 2px 8px rgba(0, 110, 255, 0.3)' : 'none'
                 }}
               >
                 <span>{tab.icon}</span>

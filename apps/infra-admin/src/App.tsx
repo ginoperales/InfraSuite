@@ -7,6 +7,8 @@ import { getSQLiteDatabase } from '@infrasuite/sqlite';
 import { syncModuleData } from '@infrasuite/sync-service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCompanyModules } from '@infrasuite/license-service';
+import { isElectron, syncToCloud } from './lib/databaseAdapter';
+import { SyncButton } from './components/SyncButton';
 import {
   AppWindow,
   Building2,
@@ -47,6 +49,7 @@ import { HomeUser } from './pages/HomeUser';
 import { SharedItems } from './pages/SharedItems';
 import { Contacts } from './pages/Contacts';
 import { RecycleBin } from './pages/RecycleBin';
+import DesktopLogin from './pages/DesktopLogin';
 
 type SidebarIconTone =
   | 'blue'
@@ -298,11 +301,21 @@ const AppContent: React.FC = () => {
     const match = window.location.pathname.match(/^\/budgets\/([^/?#]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   })();
+  const isDesktopLoginRoute = window.location.pathname.includes('/desktop-login');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('infrasuite_theme', theme);
   }, [theme]);
+
+  // Sincronización automática al abrir la aplicación en Windows
+  useEffect(() => {
+    if (isElectron()) {
+      syncToCloud().catch((err) => {
+        console.warn('Auto sync al iniciar falló:', err);
+      });
+    }
+  }, []);
 
   // Monitor login success to trigger custom transition screen
   useEffect(() => {
@@ -506,6 +519,10 @@ const AppContent: React.FC = () => {
     }
   };
 
+
+  if (isDesktopLoginRoute) {
+    return <DesktopLogin />;
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -1642,7 +1659,8 @@ const AppContent: React.FC = () => {
                   </h1>
                   <span className="page-subtitle">Ecosistema InfraSuite • Modos SSO activos</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
+                  <SyncButton />
                   <button
                     type="button"
                     onClick={toggleTheme}

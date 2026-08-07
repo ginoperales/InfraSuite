@@ -1,7 +1,10 @@
 import React from 'react';
 import { Card, Button, Input } from '@infrasuite/shared';
+import { HardDrive, Cloud } from 'lucide-react';
 import type { Budget } from './types';
 import { LiteIcon, type LiteIconName } from './BudgetEditorLite';
+import { isElectron } from '../../lib/databaseAdapter';
+import { SyncButton } from '../../components/SyncButton';
 
 interface BudgetsListLiteProps {
   budgets: Budget[];
@@ -37,6 +40,9 @@ interface BudgetsListLiteProps {
   menuItemStyle?: React.CSSProperties;
   onNavigate?: (tab: string, budgetId?: string) => void;
   onShareBudget?: (b: Budget) => void;
+  onDownloadBudget?: (b: Budget) => void;
+  onSync?: () => void;
+  isSyncing?: boolean;
 }
 
 const formatMoney = (value: number) =>
@@ -275,7 +281,10 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   handleDuplicateBudget,
   handleDeleteBudget,
   onNavigate,
-  onShareBudget
+  onShareBudget,
+  onDownloadBudget,
+  onSync,
+  isSyncing = false
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const closeBudgetMenu = () => closeMenu?.();
@@ -289,27 +298,108 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .lite-header-top { flex-wrap: wrap !important; padding: 8px 12px !important; gap: 8px !important; }
+          .lite-controls-card { padding: 14px !important; gap: 12px !important; }
+          .lite-controls-group { width: 100% !important; flex-direction: column !important; align-items: stretch !important; }
+          .lite-controls-group > button, .lite-controls-group > div { width: 100% !important; justify-content: center !important; }
+          .lite-controls-group select { width: 100% !important; flex-grow: 1 !important; }
+          .lite-search-box { max-width: 100% !important; width: 100% !important; }
+        }
+      `}</style>
+
+      {/* ── TOP BRAND HEADER (ARRIBA DE TODO) ── */}
+      <div className="lite-header-top" style={{
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-color)',
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <LiteIcon name="calculator" size={20} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-primary)', letterSpacing: '-0.5px' }}>InfraCost Lite</span>
+            <span style={{ fontSize: '0.65rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', fontWeight: 'bold', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>v1.0.1</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', marginLeft: 'auto' }}>
+          <SyncButton />
+
+          {onNavigate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid var(--border-color)', paddingRight: '8px' }}>
+              <HeaderIconButton label="Compartido" icon="folder-open" onClick={() => onNavigate('shared')} />
+              <HeaderIconButton label="Contactos" icon="users" onClick={() => onNavigate('contacts')} />
+              <HeaderIconButton label="Papelera" icon="trash" onClick={() => onNavigate('trash')} />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
+            style={{
+              background: 'var(--modal-panel-bg)',
+              border: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 34,
+              height: 34,
+              borderRadius: '8px'
+            }}
+          >
+            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
+          </button>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--modal-panel-bg)',
+              fontSize: '0.78rem',
+              color: 'var(--text-secondary)'
+            }}
+          >
+            <LiteIcon name="database" size={14} />
+            <strong style={{ color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentCompany}
+            </strong>
+          </span>
+        </div>
+      </div>
+
+      {/* Tabs bar */}
       <div
         style={{
-          minHeight: '52px',
-          background: 'var(--bg-surface)',
+          minHeight: '44px',
+          background: 'var(--bg-surface-elevated)',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
           padding: '0 14px',
           gap: '10px',
           flexShrink: 0
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0, paddingRight: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', flexGrow: 1, minWidth: 0 }}>
           <button
             type="button"
             onClick={() => {}}
             style={{
-              minHeight: 36,
-              padding: '7px 14px',
-              background: 'var(--bg-surface-elevated)',
+              minHeight: 34,
+              padding: '6px 14px',
+              background: 'var(--bg-surface)',
               border: '1px solid var(--border-color)',
               borderBottom: 'none',
               borderRadius: '8px 8px 0 0',
@@ -334,8 +424,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                 onClick={() => handleSelectBudgetTab(b.id)}
                 title={b.nombre}
                 style={{
-                  minHeight: 36,
-                  padding: '7px 34px 7px 12px',
+                  minHeight: 34,
+                  padding: '6px 34px 6px 12px',
                   background: 'transparent',
                   border: '1px solid var(--border-color)',
                   borderBottom: 'none',
@@ -380,56 +470,6 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             </div>
           ))}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingRight: '8px' }}>
-          {onNavigate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', borderRight: '1px solid var(--border-color)', paddingRight: '12px' }}>
-              <HeaderIconButton label="Compartido" icon="folder-open" onClick={() => onNavigate('shared')} />
-              <HeaderIconButton label="Contactos" icon="users" onClick={() => onNavigate('contacts')} />
-              <HeaderIconButton label="Papelera" icon="trash" onClick={() => onNavigate('trash')} />
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Tema claro' : 'Tema oscuro'}
-            style={{
-              background: 'var(--modal-panel-bg)',
-              border: '1px solid var(--border-color)',
-              cursor: 'pointer',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 36,
-              borderRadius: '8px',
-              transition: 'background 0.2s'
-            }}
-          >
-            <LiteIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
-          </button>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '7px',
-              minHeight: 36,
-              padding: '7px 11px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)',
-              background: 'var(--modal-panel-bg)',
-              fontSize: '0.8rem',
-              color: 'var(--text-secondary)',
-              maxWidth: 260
-            }}
-          >
-            <LiteIcon name="database" size={15} />
-            <strong style={{ color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {currentCompany}
-            </strong>
-          </span>
-        </div>
       </div>
 
       <div
@@ -445,6 +485,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
         }}
       >
         <div
+          className="lite-controls-card"
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -458,7 +499,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)'
           }}
         >
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="lite-controls-group" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <Button
               onClick={() => {
                 resetBudgetForm();
@@ -518,17 +559,19 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             <Button
               variant="secondary"
               onClick={() => {
+                if (onSync) onSync();
                 setIsLoading(true);
                 setTimeout(() => setIsLoading(false), 500);
               }}
+              disabled={isSyncing}
               style={{ minHeight: 42, display: 'inline-flex', alignItems: 'center', gap: 8 }}
             >
-              <LiteIcon name="refresh-cw" size={16} />
-              Actualizar
+              <LiteIcon name="refresh-cw" size={16} className={isSyncing ? 'spin' : ''} />
+              {isSyncing ? 'Actualizando...' : 'Actualizar'}
             </Button>
           </div>
 
-          <div style={{ width: '100%', maxWidth: '390px', position: 'relative' }}>
+          <div className="lite-search-box" style={{ width: '100%', maxWidth: '390px', position: 'relative' }}>
             <span
               style={{
                 position: 'absolute',
@@ -659,6 +702,14 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
               closeBudgetMenu();
             }}
           />
+          <MenuAction
+            icon="upload"
+            label="Descargar presupuesto (.json)"
+            onClick={() => {
+              if (openMenuBudget) onDownloadBudget?.(openMenuBudget);
+              closeBudgetMenu();
+            }}
+          />
           <div style={{ height: '1px', background: 'var(--border-color)', margin: '6px 2px' }} />
           <MenuAction
             icon="trash"
@@ -739,6 +790,17 @@ const BudgetRow: React.FC<{
           <MetaChip icon="user" label="Cliente" value={budget.cliente} />
           <MetaChip icon="calendar" label="Fecha base" value={budget.fechaBase} />
           <Tag tone="blue">{budget.grupo}</Tag>
+          {isElectron() && (
+            budget.isLocal ? (
+              <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', border: '1px solid rgba(249, 115, 22, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
+                <HardDrive size={13} /> Local
+              </span>
+            ) : (
+              <span style={{ fontSize: '0.72rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
+                <Cloud size={13} /> Nube
+              </span>
+            )
+          )}
           <Tag tone="green">
             <LiteIcon name="clock" size={13} />
             {formatUpdatedLabel(budget.updatedAt)}

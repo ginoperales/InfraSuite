@@ -3,6 +3,8 @@ node_modules/
 
 # Build outputs
 dist/
+dist-electron/
+release/
 build/
 .next/
 out/
@@ -11,6 +13,7 @@ out/
 *.db
 *.sqlite
 *.sqlite3
+*.zip
 
 # Environment variables
 .env
