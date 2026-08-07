@@ -301,13 +301,61 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-main)', overflow: 'hidden', width: '100%' }}>
       <style>{`
+        .lite-header-top::-webkit-scrollbar { display: none; }
         @media (max-width: 768px) {
-          .lite-header-top { flex-wrap: wrap !important; padding: 8px 12px !important; gap: 8px !important; }
-          .lite-controls-card { padding: 14px !important; gap: 12px !important; }
-          .lite-controls-group { width: 100% !important; flex-direction: column !important; align-items: stretch !important; }
-          .lite-controls-group > button, .lite-controls-group > div { width: 100% !important; justify-content: center !important; }
-          .lite-controls-group select { width: 100% !important; flex-grow: 1 !important; }
-          .lite-search-box { max-width: 100% !important; width: 100% !important; }
+          .lite-header-top {
+            height: auto !important;
+            min-height: 44px !important;
+            padding: 6px 10px !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .lite-header-top > div {
+            flex-shrink: 0 !important;
+          }
+          .content-container {
+            padding: 12px !important;
+            gap: 16px !important;
+          }
+          .lite-search-card {
+            padding: 16px !important;
+            gap: 14px !important;
+          }
+          .lite-card-header {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 10px !important;
+          }
+          .lite-card-group-filter {
+            position: static !important;
+            width: 100% !important;
+            justify-content: center !important;
+            margin-top: 4px !important;
+          }
+          .lite-card-header h2 {
+            font-size: 1.2rem !important;
+          }
+          .lite-card-header p {
+            font-size: 0.82rem !important;
+          }
+          .budget-list-row {
+            grid-template-columns: 1fr !important;
+            padding: 14px !important;
+            gap: 12px !important;
+          }
+          .budget-list-row-right {
+            width: 100% !important;
+            justify-content: space-between !important;
+            justify-self: stretch !important;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: 4px;
+          }
+          .budget-list-row-right > div {
+            text-align: left !important;
+            min-width: auto !important;
+          }
         }
       `}</style>
 
@@ -478,6 +526,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
       >
         {/* ── AI CREATION & SEARCH CARD (ADAPTED TO INFRACOST LITE) ── */}
         <div
+          className="lite-search-card"
           style={{
             background: theme === 'light' ? '#ffffff' : 'var(--bg-surface)',
             border: '1.5px solid rgba(22, 163, 74, 0.4)',
@@ -490,8 +539,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             transition: 'all 0.3s'
           }}
         >
-          {/* Card Title & Subtitle (CENTRADOS) */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '6px', position: 'relative' }}>
+          {/* Card Title & Subtitle (CENTRADOS Y ADAPTADOS A MOVILES) */}
+          <div className="lite-card-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '6px', position: 'relative' }}>
             <h2 style={{ fontSize: '1.55rem', fontWeight: 800, margin: 0, letterSpacing: '-0.3px', color: 'var(--text-primary)' }}>
               ¿Qué presupuesto deseas crear o buscar?
             </h2>
@@ -499,8 +548,8 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
               Usa la IA para generar análisis de costos o busca en tus presupuestos existentes
             </p>
 
-            {/* Group Filter Selector (positioned neatly top-right inside card) */}
-            <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Group Filter Selector */}
+            <div className="lite-card-group-filter" style={{ position: 'absolute', right: 0, top: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Grupo:</span>
               <select
                 value={selectedGroup}
@@ -552,7 +601,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
             />
           </div>
 
-          {/* Action Row Inside Card (SIN BOTÓN ACTUALIZAR NI NUEVO PRESUPUESTO QUE YA ESTÁN ARRIBA) */}
+          {/* Action Row Inside Card */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               {/* Upload File Button */}
@@ -578,7 +627,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
               />
             </div>
 
-            {/* Green Circular Action Button (FLECHA HACIA LA DERECHA/ADELANTE PARA CREAR NUEVO PRESUPUESTO CON IA) */}
+            {/* Green Circular Action Button */}
             <button
               type="button"
               onClick={() => {
@@ -610,49 +659,6 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </button>
-          </div>
-
-          {/* Quick Action Chips inside Lite (CENTRADAS TAMBIÉN) */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '4px', justifyContent: 'center' }}>
-            {[
-              { label: '🏠 Presupuesto de vivienda', query: 'Presupuesto de vivienda unifamiliar de 2 pisos' },
-              { label: '📊 Análisis de precios unitarios', query: 'Análisis de precios unitarios de concreto y albañilería' },
-              { label: '📐 Metrados de obra', query: 'Metrados y movimiento de tierras para infraestructura' },
-              { label: '📅 Cronograma y costos', query: 'Cronograma valorizado y presupuestación de obras viales' }
-            ].map(chip => (
-              <button
-                key={chip.label}
-                type="button"
-                onClick={() => {
-                  setSearchTerm(chip.query);
-                  if (onOpenAIGenerate) onOpenAIGenerate(chip.query);
-                }}
-                style={{
-                  background: 'var(--modal-panel-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '6px 14px',
-                  fontSize: '0.8rem',
-                  fontWeight: 650,
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--color-primary)';
-                  e.currentTarget.style.color = 'var(--color-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border-color)';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }}
-              >
-                {chip.label}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -841,7 +847,8 @@ const BudgetRow: React.FC<{
               color: 'var(--text-primary)',
               lineHeight: '1.35',
               margin: 0,
-              overflowWrap: 'anywhere'
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word'
             }}
           >
             {budget.nombre}
@@ -870,7 +877,7 @@ const BudgetRow: React.FC<{
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '18px', justifySelf: 'end' }}>
+      <div className="budget-list-row-right" style={{ display: 'flex', alignItems: 'center', gap: '18px', justifySelf: 'end' }}>
         <div style={{ textAlign: 'right', minWidth: 150 }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Costo Directo</div>
           <div
