@@ -1024,52 +1024,67 @@ export const Budgets: React.FC<BudgetsProps> = ({
 
     const loadSupabaseBudgets = async () => {
       try {
+        const deletedStr = localStorage.getItem('infrasuite_deleted_budget_ids');
+        const deletedIds: string[] = deletedStr ? JSON.parse(deletedStr) : [];
+
         const cloudMeta = await fetchBudgetsMetadataFromSupabase(user?.uid);
-        const localStoredBudgets = readBudgetsFromLocalStorage().map(b => ({ ...b, isLocal: true }));
-        const baseBudgets = localStoredBudgets.length > 0 ? localStoredBudgets : INITIAL_BUDGETS;
+        const localStoredBudgets = readBudgetsFromLocalStorage()
+          .filter(b => !deletedIds.includes(b.id))
+          .map(b => ({ ...b, isLocal: true }));
+
+        const cleanInitialBudgets = INITIAL_BUDGETS.filter(b => !deletedIds.includes(b.id));
+        const baseBudgets = localStoredBudgets.length > 0 ? localStoredBudgets : cleanInitialBudgets;
         
         if (!isSubscribed) return;
 
         if (cloudMeta.length === 0) {
-          const merged = mergeBudgetsByFreshness(baseBudgets, budgetsRef.current);
+          const merged = mergeBudgetsByFreshness(baseBudgets, budgetsRef.current)
+            .filter(b => !deletedIds.includes(b.id));
           setBudgets(merged);
         } else {
-          const loadedBudgets: Budget[] = cloudMeta.map(meta => {
-            const matchLocal = baseBudgets.find(b => b.id === meta.id);
-            return {
-              id: meta.id,
-              nombre: meta.nombre,
-              cliente: meta.cliente,
-              fechaBase: meta.fechaBase,
-              grupo: meta.grupo,
-              categoria: meta.categoria,
-              storageUrl: meta.storageUrl,
-              storagePath: meta.storagePath,
-              ownerId: meta.ownerId,
-              permissions: meta.permissions,
-              linkAccess: meta.linkAccess,
-              linkRole: meta.linkRole,
-              createdAt: meta.createdAt,
-              updatedAt: meta.updatedAt,
-              isLocal: false,
-              direccion: matchLocal?.direccion || 'NN',
-              distrito: matchLocal?.distrito || 'NN',
-              provincia: matchLocal?.provincia || 'NN',
-              departamento: matchLocal?.departamento || 'NN',
-              jornada: matchLocal?.jornada || 8,
-              moneda: matchLocal?.moneda || 'SOLES',
-              subPresupuestos: matchLocal?.subPresupuestos || ['SUB PRESUPUESTO 1'],
-              partidas: matchLocal?.partidas || []
-            };
-          });
+          const loadedBudgets: Budget[] = cloudMeta
+            .filter(meta => !deletedIds.includes(meta.id))
+            .map(meta => {
+              const matchLocal = baseBudgets.find(b => b.id === meta.id);
+              return {
+                id: meta.id,
+                nombre: meta.nombre,
+                cliente: meta.cliente,
+                fechaBase: meta.fechaBase,
+                grupo: meta.grupo,
+                categoria: meta.categoria,
+                storageUrl: meta.storageUrl,
+                storagePath: meta.storagePath,
+                ownerId: meta.ownerId,
+                permissions: meta.permissions,
+                linkAccess: meta.linkAccess,
+                linkRole: meta.linkRole,
+                createdAt: meta.createdAt,
+                updatedAt: meta.updatedAt,
+                isLocal: false,
+                direccion: matchLocal?.direccion || 'NN',
+                distrito: matchLocal?.distrito || 'NN',
+                provincia: matchLocal?.provincia || 'NN',
+                departamento: matchLocal?.departamento || 'NN',
+                jornada: matchLocal?.jornada || 8,
+                moneda: matchLocal?.moneda || 'SOLES',
+                subPresupuestos: matchLocal?.subPresupuestos || ['SUB PRESUPUESTO 1'],
+                partidas: matchLocal?.partidas || []
+              };
+            });
 
-          const mergedBudgets = mergeBudgetsByFreshness(loadedBudgets, baseBudgets, budgetsRef.current);
-          setBudgets(mergedBudgets);
+          const activeLocalDrafts = baseBudgets.filter(b => b.isLocal && !deletedIds.includes(b.id));
+          const finalBudgets = mergeBudgetsByFreshness(loadedBudgets, activeLocalDrafts)
+            .filter(b => !deletedIds.includes(b.id));
+
+          setBudgets(finalBudgets);
         }
       } catch (err) {
         console.error("Error cargando metadatos de Supabase DB:", err);
-        const localBudgets = readBudgetsFromLocalStorage();
-        setBudgets(localBudgets.length > 0 ? localBudgets : INITIAL_BUDGETS);
+        const deletedStr = localStorage.getItem('infrasuite_deleted_budget_ids');
+        const deletedIds: string[] = deletedStr ? JSON.parse(deletedStr) : [];
+        const localBudgets = readBudgetsFromLocalStorage().filter(b => !deletedIds.includes(b.id));
+        setBudgets(localBudgets.length > 0 ? localBudgets : INITIAL_BUDGETS.filter(b => !deletedIds.includes(b.id)));
       }
     };
 

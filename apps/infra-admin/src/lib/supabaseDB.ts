@@ -121,12 +121,22 @@ export const upsertBudgetMetadataToSupabase = async (
 };
 
 /**
- * Deletes a budget metadata row from Supabase Database.
+ * Deletes a budget metadata row from Supabase Database and cleans up local caches.
  */
 export const deleteBudgetMetadataFromSupabase = async (
   budgetId: string
 ): Promise<boolean> => {
-  // Update local metadata cache
+  // 1. Record deleted budget ID locally so it is never re-created by INITIAL_BUDGETS fallback
+  try {
+    const deletedStr = localStorage.getItem('infrasuite_deleted_budget_ids');
+    const deletedIds: string[] = deletedStr ? JSON.parse(deletedStr) : [];
+    if (!deletedIds.includes(budgetId)) {
+      deletedIds.push(budgetId);
+      localStorage.setItem('infrasuite_deleted_budget_ids', JSON.stringify(deletedIds));
+    }
+  } catch {}
+
+  // 2. Update local metadata cache
   try {
     const cachedStr = localStorage.getItem(LOCAL_METADATA_CACHE_KEY);
     if (cachedStr) {
@@ -136,6 +146,22 @@ export const deleteBudgetMetadataFromSupabase = async (
     }
   } catch {}
 
+  // 3. Remove from main infrasuite_budgets local storage array
+  try {
+    const storedBudgets = localStorage.getItem('infrasuite_budgets');
+    if (storedBudgets) {
+      const parsed: any[] = JSON.parse(storedBudgets);
+      const filtered = parsed.filter(b => b.id !== budgetId);
+      localStorage.setItem('infrasuite_budgets', JSON.stringify(filtered));
+    }
+  } catch {}
+
+  // 4. Remove JSON cache
+  try {
+    localStorage.removeItem(`supabase_json_cache_${budgetId}`);
+  } catch {}
+
+  // 5. Delete row in Supabase DB
   try {
     const { error } = await supabase
       .from(TABLE_NAME)
@@ -144,13 +170,18 @@ export const deleteBudgetMetadataFromSupabase = async (
 
     if (error) {
       console.warn('Supabase DB delete notice:', error.message);
-      return false;
     }
-    return true;
   } catch (err) {
     console.warn('Supabase DB delete error:', err);
-    return false;
   }
+
+  // 6. Delete JSON file from Supabase Storage
+  try {
+    const filePath = `${budgetId}.json`;
+    await supabase.storage.from('budgets').remove([filePath]);
+  } catch {}
+
+  return true;
 };
 
 /**
