@@ -262,7 +262,7 @@ export const BudgetsListPro: React.FC<BudgetsListProProps> = ({
           }}
         >
           <Upload size={14} strokeWidth={2.3} />
-          <span>Subir Presupuesto</span>
+          <span>Adjuntar</span>
         </button>
         <input 
           type="file" 

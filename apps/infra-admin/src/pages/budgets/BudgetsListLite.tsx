@@ -561,7 +561,7 @@ export const BudgetsListLite: React.FC<BudgetsListLiteProps> = ({
                 style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', minHeight: 38, padding: '0 16px', fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: '20px' }}
               >
                 <LiteIcon name="upload" size={16} />
-                Adjuntar / Subir
+                Adjuntar
               </Button>
               <input 
                 type="file" 

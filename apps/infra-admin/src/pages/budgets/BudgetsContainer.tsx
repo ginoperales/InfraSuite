@@ -828,6 +828,16 @@ export const Budgets: React.FC<BudgetsProps> = ({
   const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false);
   const [aiPromptText, setAiPromptText] = useState('');
 
+  const [conflictModalState, setConflictModalState] = useState<{
+    isOpen: boolean;
+    pendingBudget: Budget | null;
+    conflicts: Modals.InsumoConflictItem[];
+  }>({
+    isOpen: false,
+    pendingBudget: null,
+    conflicts: []
+  });
+
   const handleSaveClient = (client: Modals.ClientEntity) => {
     setClientsList(prev => {
       const idx = prev.findIndex(c => c.id === client.id);
@@ -2161,16 +2171,136 @@ export const Budgets: React.FC<BudgetsProps> = ({
           createdAt: now,
           updatedAt: now
         };
-        
-        persistBudgetLocally(newB);
-        setBudgets(prev => [newB, ...prev]);
-        alert('Presupuesto subido exitosamente.');
+
+        const conflicts: Modals.InsumoConflictItem[] = [];
+        const newCatalogItems: any[] = [];
+        const currentCatalog = [...catalogoInsumos];
+
+        if (Array.isArray(newB.partidas)) {
+          newB.partidas.forEach(partida => {
+            if (Array.isArray(partida.insumos)) {
+              partida.insumos.forEach(ins => {
+                if (!ins || !ins.nombre) return;
+                const normalizedName = normalizeInsumoSearchText(ins.nombre);
+                
+                const catMatch = currentCatalog.find(c => 
+                  normalizeInsumoSearchText(c.nombre) === normalizedName ||
+                  (ins.codigo && c.codigo && ins.codigo === c.codigo)
+                );
+
+                if (!catMatch) {
+                  // Insumo NO existe en base de datos: se crea automáticamente en nuestro catálogo
+                  const assignedCode = ins.codigo || ('02' + Math.floor(10000000 + Math.random() * 90000000).toString());
+                  ins.codigo = assignedCode;
+                  
+                  const newItem = {
+                    codigo: assignedCode,
+                    nombre: ins.nombre.trim().toUpperCase(),
+                    unidad: (ins.unidad || 'UND').trim().toUpperCase(),
+                    precio: ins.pu || 0,
+                    tipo: ins.tipo === 'MO' ? 'MANO DE OBRA' : ins.tipo === 'MT' ? 'MATERIAL' : ins.tipo === 'EQ' ? 'EQUIPO' : ins.tipo === 'SC' ? 'SUB CONTRATO' : 'MATERIAL',
+                    iu: '39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)',
+                    color: ins.tipo === 'MO' ? '#f97316' : ins.tipo === 'MT' ? '#00f0ff' : '#8b5cf6'
+                  };
+
+                  currentCatalog.push(newItem);
+                  newCatalogItems.push(newItem);
+                } else {
+                  // Insumo EXISTE en base de datos: asignamos su código de la base de datos si falta
+                  if (catMatch.codigo) {
+                    ins.codigo = catMatch.codigo;
+                  }
+
+                  const dbPrice = typeof catMatch.precio === 'number' ? catMatch.precio : (catMatch.pu || 0);
+                  const filePrice = ins.pu || 0;
+
+                  // Detectar discrepancia de precios
+                  if (Math.abs(dbPrice - filePrice) > 0.001) {
+                    const alreadyRecorded = conflicts.some(c => normalizeInsumoSearchText(c.nombre) === normalizedName);
+                    if (!alreadyRecorded) {
+                      conflicts.push({
+                        codigo: catMatch.codigo || ins.codigo,
+                        nombre: ins.nombre,
+                        unidad: ins.unidad,
+                        tipo: ins.tipo,
+                        dbPrecio: dbPrice,
+                        filePrecio: filePrice
+                      });
+                    }
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        if (newCatalogItems.length > 0) {
+          setCatalogoInsumos(currentCatalog);
+        }
+
+        if (conflicts.length > 0) {
+          setConflictModalState({
+            isOpen: true,
+            pendingBudget: newB,
+            conflicts
+          });
+        } else {
+          persistBudgetLocally(newB);
+          setBudgets(prev => [newB, ...prev]);
+          alert('Presupuesto adjuntado exitosamente. Se integraron todos los insumos al catálogo base.');
+        }
+
       } catch (err) {
         console.error('Error parsing uploaded budget', err);
         alert('El archivo no es un presupuesto válido.');
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleResolveUpdateDB = () => {
+    const { pendingBudget, conflicts } = conflictModalState;
+    if (!pendingBudget) return;
+
+    const updatedCatalog = catalogoInsumos.map(item => {
+      const match = conflicts.find(c => normalizeInsumoSearchText(c.nombre) === normalizeInsumoSearchText(item.nombre));
+      if (match) {
+        return { ...item, precio: match.filePrecio, pu: match.filePrecio };
+      }
+      return item;
+    });
+
+    setCatalogoInsumos(updatedCatalog);
+    persistBudgetLocally(pendingBudget);
+    setBudgets(prev => [pendingBudget, ...prev]);
+    setConflictModalState({ isOpen: false, pendingBudget: null, conflicts: [] });
+    alert('Base de datos de insumos actualizada con los precios del presupuesto adjuntado.');
+  };
+
+  const handleResolveReplaceBudget = () => {
+    const { pendingBudget } = conflictModalState;
+    if (!pendingBudget) return;
+
+    const catalogMap = new Map(catalogoInsumos.map(c => [normalizeInsumoSearchText(c.nombre), typeof c.precio === 'number' ? c.precio : c.pu]));
+
+    const modifiedBudget: Budget = {
+      ...pendingBudget,
+      partidas: pendingBudget.partidas.map(p => ({
+        ...p,
+        insumos: p.insumos.map(ins => {
+          const dbPrice = catalogMap.get(normalizeInsumoSearchText(ins.nombre));
+          if (typeof dbPrice === 'number') {
+            return { ...ins, pu: dbPrice };
+          }
+          return ins;
+        })
+      }))
+    };
+
+    persistBudgetLocally(modifiedBudget);
+    setBudgets(prev => [modifiedBudget, ...prev]);
+    setConflictModalState({ isOpen: false, pendingBudget: null, conflicts: [] });
+    alert('Precios del presupuesto reemplazados con éxito por los de la base de datos.');
   };
 
   const handleDownloadBudget = (b: Budget) => {
@@ -3089,6 +3219,15 @@ export const Budgets: React.FC<BudgetsProps> = ({
               setHistoricalActiveBudget(blankBudget);
               setViewState('editor');
             }}
+          />
+
+          <Modals.InsumosPriceConflictModal
+            isOpen={conflictModalState.isOpen}
+            onClose={() => setConflictModalState(prev => ({ ...prev, isOpen: false }))}
+            budgetName={conflictModalState.pendingBudget?.nombre || 'Presupuesto'}
+            conflicts={conflictModalState.conflicts}
+            onChooseUpdateDB={handleResolveUpdateDB}
+            onChooseReplaceBudget={handleResolveReplaceBudget}
           />
           <ShareModal 
             isOpen={isShareModalOpen} 

@@ -4092,3 +4092,128 @@ export const AgregarConIAModal: React.FC<{
     </Modal>
   );
 };
+
+export interface InsumoConflictItem {
+  nombre: string;
+  unidad: string;
+  tipo: string;
+  dbPrecio: number;
+  filePrecio: number;
+  codigo?: string;
+}
+
+export const InsumosPriceConflictModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  budgetName: string;
+  conflicts: InsumoConflictItem[];
+  onChooseUpdateDB: () => void;
+  onChooseReplaceBudget: () => void;
+}> = ({
+  isOpen,
+  onClose,
+  budgetName,
+  conflicts,
+  onChooseUpdateDB,
+  onChooseReplaceBudget
+}) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="⚠️ Discrepancia de Precios de Insumos Detectada">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '750px', width: '100%', maxHeight: '78vh', overflowY: 'auto' }}>
+        <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <span style={{ fontSize: '1.5rem' }}>💡</span>
+          <div>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: '#eab308', fontWeight: 800 }}>
+              Diferencia de Precios en el Presupuesto Adjuntado
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              El presupuesto <strong style={{ color: 'var(--text-primary)' }}>"{budgetName}"</strong> contiene {conflicts.length} insumo(s) cuyos precios unitarios no coinciden con nuestro catálogo base. Elige cómo deseas conciliar los precios:
+            </p>
+          </div>
+        </div>
+
+        {/* Conflict Table */}
+        <div style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                <th style={{ padding: '10px 14px' }}>Código</th>
+                <th style={{ padding: '10px 14px' }}>Insumo</th>
+                <th style={{ padding: '10px 14px' }}>Unidad</th>
+                <th style={{ padding: '10px 14px', textAlign: 'right' }}>Precio Base (Catálogo)</th>
+                <th style={{ padding: '10px 14px', textAlign: 'right' }}>Precio del Archivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {conflicts.map((c, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '8px 14px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{c.codigo || '-'}</td>
+                  <td style={{ padding: '8px 14px', fontWeight: 700, color: 'var(--text-primary)' }}>{c.nombre}</td>
+                  <td style={{ padding: '8px 14px', color: 'var(--text-secondary)' }}>{c.unidad}</td>
+                  <td style={{ padding: '8px 14px', textAlign: 'right', fontFamily: 'monospace', color: '#ef4444', fontWeight: 700 }}>
+                    S/ {c.dbPrecio.toFixed(2)}
+                  </td>
+                  <td style={{ padding: '8px 14px', textAlign: 'right', fontFamily: 'monospace', color: '#22c55e', fontWeight: 800 }}>
+                    S/ {c.filePrecio.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 2 Options Buttons */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '8px' }}>
+          <button
+            type="button"
+            onClick={onChooseUpdateDB}
+            style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              border: 'none',
+              color: '#ffffff',
+              borderRadius: '10px',
+              padding: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              textAlign: 'left',
+              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.25)'
+            }}
+          >
+            <strong style={{ fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔄 Actualizar Base de Datos
+            </strong>
+            <span style={{ fontSize: '0.78rem', opacity: 0.9, lineHeight: 1.35 }}>
+              Actualizar la base de datos de insumos con los precios de este presupuesto.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onChooseReplaceBudget}
+            style={{
+              background: 'var(--modal-panel-bg)',
+              border: '1.5px solid var(--color-primary)',
+              color: 'var(--text-primary)',
+              borderRadius: '10px',
+              padding: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              textAlign: 'left'
+            }}
+          >
+            <strong style={{ fontSize: '0.92rem', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🛡️ Reemplazar con la Base de Datos
+            </strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+              Mantener los precios de nuestra base de datos y reemplazar los precios del presupuesto.
+            </span>
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
