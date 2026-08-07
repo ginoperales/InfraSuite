@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Budget } from '../pages/budgets/types';
 
 // Environmental or Default Config for Supabase Storage
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://infrasuite-storage.supabase.co';
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImluZnJhc3VpdGUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcyMzAwMDAwMCwiZXhwIjoyMDM4NTYwMDAwfQ';
+const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://smsmllenvdfvjypeplyp.supabase.co';
+const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ig3zCd8qaGg642Reu0WY4Q_s3vjazEt';
 const BUCKET_NAME = 'budgets';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
