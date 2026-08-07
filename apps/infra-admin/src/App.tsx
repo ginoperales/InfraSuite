@@ -283,6 +283,7 @@ const AppContent: React.FC = () => {
   const [localRows, setLocalRows] = useState<any[]>([]);
   const [newLocalItemName, setNewLocalItemName] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleEmailInput, setGoogleEmailInput] = useState('');
@@ -314,6 +315,11 @@ const AppContent: React.FC = () => {
       syncToCloud().catch((err) => {
         console.warn('Auto sync al iniciar falló:', err);
       });
+      if ((window as any).electron?.updater) {
+        (window as any).electron.updater.onUpdateAvailable(() => {
+          setUpdateAvailable(true);
+        });
+      }
     }
   }, []);
 
@@ -1660,6 +1666,29 @@ const AppContent: React.FC = () => {
                   <span className="page-subtitle">Ecosistema InfraSuite • Modos SSO activos</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
+                  {updateAvailable && (
+                    <button
+                      type="button"
+                      onClick={() => (window as any).electron?.updater?.restartApp()}
+                      style={{
+                        background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                        animation: 'pulse 2s infinite'
+                      }}
+                    >
+                      🚀 Nueva versión lista (Reiniciar)
+                    </button>
+                  )}
                   <SyncButton />
                   <button
                     type="button"
