@@ -56,16 +56,10 @@ const fromSupabaseRow = (row: any): BudgetMetadataIndex => {
  * Fetches lightweight budget metadata rows from Supabase Database.
  */
 export const fetchBudgetsMetadataFromSupabase = async (
-  userId?: string
+  _userId?: string
 ): Promise<BudgetMetadataIndex[]> => {
   try {
-    let query = supabase.from(TABLE_NAME).select('*');
-
-    if (userId) {
-      query = query.or(`owner_id.eq.${userId},link_access.eq.COMMUNITY_TEMPLATE,owner_id.is.null`);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.from(TABLE_NAME).select('*');
 
     if (!error && Array.isArray(data)) {
       const parsed = data.map(fromSupabaseRow);

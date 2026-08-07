@@ -1026,44 +1026,44 @@ export const Budgets: React.FC<BudgetsProps> = ({
       try {
         const cloudMeta = await fetchBudgetsMetadataFromSupabase(user?.uid);
         const localStoredBudgets = readBudgetsFromLocalStorage().map(b => ({ ...b, isLocal: true }));
+        const baseBudgets = localStoredBudgets.length > 0 ? localStoredBudgets : INITIAL_BUDGETS;
         
         if (!isSubscribed) return;
 
         if (cloudMeta.length === 0) {
-          const localBudgets = mergeBudgetsByFreshness(localStoredBudgets, budgetsRef.current);
-          if (localBudgets.length > 0) {
-            setBudgets(localBudgets);
-          } else {
-            setBudgets(INITIAL_BUDGETS);
-          }
+          const merged = mergeBudgetsByFreshness(baseBudgets, budgetsRef.current);
+          setBudgets(merged);
         } else {
-          const loadedBudgets: Budget[] = cloudMeta.map(meta => ({
-            id: meta.id,
-            nombre: meta.nombre,
-            cliente: meta.cliente,
-            fechaBase: meta.fechaBase,
-            grupo: meta.grupo,
-            categoria: meta.categoria,
-            storageUrl: meta.storageUrl,
-            storagePath: meta.storagePath,
-            ownerId: meta.ownerId,
-            permissions: meta.permissions,
-            linkAccess: meta.linkAccess,
-            linkRole: meta.linkRole,
-            createdAt: meta.createdAt,
-            updatedAt: meta.updatedAt,
-            isLocal: false,
-            direccion: 'NN',
-            distrito: 'NN',
-            provincia: 'NN',
-            departamento: 'NN',
-            jornada: 8,
-            moneda: 'SOLES',
-            subPresupuestos: ['SUB PRESUPUESTO 1'],
-            partidas: []
-          }));
+          const loadedBudgets: Budget[] = cloudMeta.map(meta => {
+            const matchLocal = baseBudgets.find(b => b.id === meta.id);
+            return {
+              id: meta.id,
+              nombre: meta.nombre,
+              cliente: meta.cliente,
+              fechaBase: meta.fechaBase,
+              grupo: meta.grupo,
+              categoria: meta.categoria,
+              storageUrl: meta.storageUrl,
+              storagePath: meta.storagePath,
+              ownerId: meta.ownerId,
+              permissions: meta.permissions,
+              linkAccess: meta.linkAccess,
+              linkRole: meta.linkRole,
+              createdAt: meta.createdAt,
+              updatedAt: meta.updatedAt,
+              isLocal: false,
+              direccion: matchLocal?.direccion || 'NN',
+              distrito: matchLocal?.distrito || 'NN',
+              provincia: matchLocal?.provincia || 'NN',
+              departamento: matchLocal?.departamento || 'NN',
+              jornada: matchLocal?.jornada || 8,
+              moneda: matchLocal?.moneda || 'SOLES',
+              subPresupuestos: matchLocal?.subPresupuestos || ['SUB PRESUPUESTO 1'],
+              partidas: matchLocal?.partidas || []
+            };
+          });
 
-          const mergedBudgets = mergeBudgetsByFreshness(loadedBudgets, localStoredBudgets, budgetsRef.current);
+          const mergedBudgets = mergeBudgetsByFreshness(loadedBudgets, baseBudgets, budgetsRef.current);
           setBudgets(mergedBudgets);
         }
       } catch (err) {
@@ -1949,6 +1949,16 @@ export const Budgets: React.FC<BudgetsProps> = ({
     if (targetBudget.storageUrl && (!targetBudget.partidas || targetBudget.partidas.length === 0)) {
       const downloaded = await downloadBudgetJsonFromStorage(targetBudget.storageUrl, targetBudget.id);
       if (downloaded) fullBudget = downloaded;
+    }
+
+    if (!fullBudget.partidas || fullBudget.partidas.length === 0) {
+      const initialMatch = INITIAL_BUDGETS.find(b => b.id === targetBudget.id);
+      const localMatch = readBudgetsFromLocalStorage().find(b => b.id === targetBudget.id);
+      if (localMatch && localMatch.partidas && localMatch.partidas.length > 0) {
+        fullBudget = { ...fullBudget, ...localMatch };
+      } else if (initialMatch && initialMatch.partidas && initialMatch.partidas.length > 0) {
+        fullBudget = { ...fullBudget, ...initialMatch };
+      }
     }
 
     setActiveBudget(fullBudget);
