@@ -448,7 +448,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartLogin, theme, t
                 Comenzar Ahora (SSO)
               </Button>
               <a href="/InfraSuite_Setup.zip" download="InfraSuite_Setup.zip" className="btn btn-secondary" style={{ padding: '14px 32px', fontSize: '1rem', background: theme === 'light' ? 'rgba(0,0,0,0.04)' : undefined, color: theme === 'light' ? '#334155' : undefined, borderColor: theme === 'light' ? '#cbd5e1' : undefined }}>
-                Descargar InfraSuite
+                Descargar InfraSuite Pro (.zip)
               </a>
             </motion.div>
           </div>

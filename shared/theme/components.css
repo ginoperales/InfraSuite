@@ -264,8 +264,8 @@
   background: var(--modal-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  width: min(760px, calc(100vw - 32px));
-  max-width: min(760px, calc(100vw - 32px));
+  width: min(980px, calc(100vw - 32px));
+  max-width: min(980px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   padding: 0;
   box-shadow: var(--modal-shadow);

@@ -1215,6 +1215,50 @@ export const Budgets: React.FC<BudgetsProps> = ({
     localStorage.setItem('infrasuite_catalogo_insumos', JSON.stringify(catalogoInsumos));
   }, [catalogoInsumos]);
 
+  const [catalogoPartidas, setCatalogoPartidas] = useState<any[]>(() => {
+    const saved = localStorage.getItem('infrasuite_catalogo_partidas');
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return MOCK_CATALOGO_PARTIDAS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('infrasuite_catalogo_partidas', JSON.stringify(catalogoPartidas));
+  }, [catalogoPartidas]);
+
+  const handleSaveCatalogInsumo = (item: any) => {
+    setCatalogoInsumos(prev => {
+      const idx = prev.findIndex(x => (x.codigo && item.codigo && x.codigo === item.codigo) || normalizeInsumoSearchText(x.nombre) === normalizeInsumoSearchText(item.nombre));
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = item;
+        return next;
+      }
+      return [item, ...prev];
+    });
+  };
+
+  const handleDeleteCatalogInsumo = (key: string) => {
+    setCatalogoInsumos(prev => prev.filter(x => x.codigo !== key && normalizeInsumoSearchText(x.nombre) !== normalizeInsumoSearchText(key)));
+  };
+
+  const handleSaveCatalogPartida = (partida: any) => {
+    setCatalogoPartidas(prev => {
+      const idx = prev.findIndex(x => x.nombre.trim().toUpperCase() === partida.nombre.trim().toUpperCase());
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = partida;
+        return next;
+      }
+      return [partida, ...prev];
+    });
+  };
+
+  const handleDeleteCatalogPartida = (name: string) => {
+    setCatalogoPartidas(prev => prev.filter(x => x.nombre.trim().toUpperCase() !== name.trim().toUpperCase()));
+  };
+
   // Open specific budget directly (from HomeUser file click)
   useEffect(() => {
     if (initialOpenBudgetId && budgets.length > 0) {
@@ -3512,16 +3556,30 @@ export const Budgets: React.FC<BudgetsProps> = ({
           <Modals.GastosGeneralesModal isOpen={isGastosGeneralesOpen} onClose={() => setIsGastosGeneralesOpen(false)} ggTipo={ggTipo} setGgTipo={setGgTipo} ggFijosItems={ggFijosItems} setGgFijosItems={setGgFijosItems} ggVariablesItems={ggVariablesItems} setGgVariablesItems={setGgVariablesItems} getBudgetCD={getBudgetCD} activeBudget={activeBudget} />
           <Modals.PiePresupuestoModal isOpen={isPiePresupuestoOpen} onClose={() => setIsPiePresupuestoOpen(false)} activeBudget={activeBudget} pieRows={pieRows} setPieRows={handleSetPieRows} getBudgetCD={getBudgetCD} />
           <Modals.FormulaPolinomicaModal isOpen={isFormulaPolinomicaOpen} onClose={() => setIsFormulaPolinomicaOpen(false)} activeBudget={activeBudget} formulaPolinomicaRows={formulaPolinomicaRows} setFormulaPolinomicaRows={setFormulaPolinomicaRows} />
-          <Modals.CatalogoInsumosModal isOpen={isCatalogoInsumosOpen} onClose={() => setIsCatalogoInsumosOpen(false)} catalogoInsumos={catalogoInsumos} ciSearchTerm={ciSearchTerm} setCiSearchTerm={setCiSearchTerm} ciSelectedTipo={ciSelectedTipo} setCiSelectedTipo={setCiSelectedTipo} onAddFromCatalog={(item) => {
-            const tipo = item.tipo === 'MATERIAL' ? 'MT' : item.tipo === 'MANO DE OBRA' ? 'MO' : 'EQ';
-            const newIns: Insumo = { id: 'i_' + Math.random().toString(36).substring(2, 9), nombre: item.nombre, unidad: item.unidad, cuadrilla: 1, desperdicio: tipo === 'MT' ? 0 : undefined, pu: item.precio, tipo };
-            if (selectedPartidaId) {
-              const p = activeBudget.partidas.find(x => x.id === selectedPartidaId);
-              if (p) handlePartidaCellChange(selectedPartidaId, 'insumos', [...p.insumos, newIns]);
-            }
-            setIsCatalogoInsumosOpen(false);
-          }} />
-          <Modals.CatalogoPartidasModal isOpen={isCatalogoPartidasOpen} onClose={() => setIsCatalogoPartidasOpen(false)} catalogoPartidas={MOCK_CATALOGO_PARTIDAS} cpSearchTerm={cpSearchTerm} setCpSearchTerm={setCpSearchTerm} cpSelectedPartidaIndex={cpSelectedPartidaIndex} setCpSelectedPartidaIndex={setCpSelectedPartidaIndex} onAddPartidaFromCatalog={handleAddPartidaFromCatalog} />
+          <Modals.CatalogoInsumosModal
+            isOpen={isCatalogoInsumosOpen}
+            onClose={() => setIsCatalogoInsumosOpen(false)}
+            catalogoInsumos={catalogoInsumos}
+            onSaveInsumo={handleSaveCatalogInsumo}
+            onDeleteInsumo={handleDeleteCatalogInsumo}
+            ciSearchTerm={ciSearchTerm}
+            setCiSearchTerm={setCiSearchTerm}
+            ciSelectedTipo={ciSelectedTipo}
+            setCiSelectedTipo={setCiSelectedTipo}
+          />
+          <Modals.CatalogoPartidasModal
+            isOpen={isCatalogoPartidasOpen}
+            onClose={() => setIsCatalogoPartidasOpen(false)}
+            catalogoPartidas={catalogoPartidas}
+            catalogoInsumos={catalogoInsumos}
+            onSavePartida={handleSaveCatalogPartida}
+            onDeletePartida={handleDeleteCatalogPartida}
+            cpSearchTerm={cpSearchTerm}
+            setCpSearchTerm={setCpSearchTerm}
+            cpSelectedPartidaIndex={cpSelectedPartidaIndex}
+            setCpSelectedPartidaIndex={setCpSelectedPartidaIndex}
+            onAddPartidaFromCatalog={handleAddPartidaFromCatalog}
+          />
           <Modals.ImportarPartidaModal
             isOpen={isImportPartidaOpen}
             onClose={() => { setIsImportPartidaOpen(false); setInsertAfterPartidaId(null); }}
@@ -3609,16 +3667,30 @@ export const Budgets: React.FC<BudgetsProps> = ({
         <Modals.GastosGeneralesModal isOpen={isGastosGeneralesOpen} onClose={() => setIsGastosGeneralesOpen(false)} ggTipo={ggTipo} setGgTipo={setGgTipo} ggFijosItems={ggFijosItems} setGgFijosItems={setGgFijosItems} ggVariablesItems={ggVariablesItems} setGgVariablesItems={setGgVariablesItems} getBudgetCD={getBudgetCD} activeBudget={activeBudget} />
         <Modals.PiePresupuestoModal isOpen={isPiePresupuestoOpen} onClose={() => setIsPiePresupuestoOpen(false)} activeBudget={activeBudget} pieRows={pieRows} setPieRows={handleSetPieRows} getBudgetCD={getBudgetCD} />
         <Modals.FormulaPolinomicaModal isOpen={isFormulaPolinomicaOpen} onClose={() => setIsFormulaPolinomicaOpen(false)} activeBudget={activeBudget} formulaPolinomicaRows={formulaPolinomicaRows} setFormulaPolinomicaRows={setFormulaPolinomicaRows} />
-        <Modals.CatalogoInsumosModal isOpen={isCatalogoInsumosOpen} onClose={() => setIsCatalogoInsumosOpen(false)} catalogoInsumos={catalogoInsumos} ciSearchTerm={ciSearchTerm} setCiSearchTerm={setCiSearchTerm} ciSelectedTipo={ciSelectedTipo} setCiSelectedTipo={setCiSelectedTipo} onAddFromCatalog={(item) => {
-          const tipo = item.tipo === 'MATERIAL' ? 'MT' : item.tipo === 'MANO DE OBRA' ? 'MO' : 'EQ';
-          const newIns: Insumo = { id: 'i_' + Math.random().toString(36).substring(2, 9), nombre: item.nombre, unidad: item.unidad, cuadrilla: 1, desperdicio: tipo === 'MT' ? 0 : undefined, pu: item.precio, tipo };
-          if (selectedPartidaId) {
-            const p = activeBudget.partidas.find(x => x.id === selectedPartidaId);
-            if (p) handlePartidaCellChange(selectedPartidaId, 'insumos', [...p.insumos, newIns]);
-          }
-          setIsCatalogoInsumosOpen(false);
-        }} />
-        <Modals.CatalogoPartidasModal isOpen={isCatalogoPartidasOpen} onClose={() => setIsCatalogoPartidasOpen(false)} catalogoPartidas={MOCK_CATALOGO_PARTIDAS} cpSearchTerm={cpSearchTerm} setCpSearchTerm={setCpSearchTerm} cpSelectedPartidaIndex={cpSelectedPartidaIndex} setCpSelectedPartidaIndex={setCpSelectedPartidaIndex} onAddPartidaFromCatalog={handleAddPartidaFromCatalog} />
+        <Modals.CatalogoInsumosModal
+          isOpen={isCatalogoInsumosOpen}
+          onClose={() => setIsCatalogoInsumosOpen(false)}
+          catalogoInsumos={catalogoInsumos}
+          onSaveInsumo={handleSaveCatalogInsumo}
+          onDeleteInsumo={handleDeleteCatalogInsumo}
+          ciSearchTerm={ciSearchTerm}
+          setCiSearchTerm={setCiSearchTerm}
+          ciSelectedTipo={ciSelectedTipo}
+          setCiSelectedTipo={setCiSelectedTipo}
+        />
+        <Modals.CatalogoPartidasModal
+          isOpen={isCatalogoPartidasOpen}
+          onClose={() => setIsCatalogoPartidasOpen(false)}
+          catalogoPartidas={catalogoPartidas}
+          catalogoInsumos={catalogoInsumos}
+          onSavePartida={handleSaveCatalogPartida}
+          onDeletePartida={handleDeleteCatalogPartida}
+          cpSearchTerm={cpSearchTerm}
+          setCpSearchTerm={setCpSearchTerm}
+          cpSelectedPartidaIndex={cpSelectedPartidaIndex}
+          setCpSelectedPartidaIndex={setCpSelectedPartidaIndex}
+          onAddPartidaFromCatalog={handleAddPartidaFromCatalog}
+        />
         <Modals.ImportarPartidaModal
           isOpen={isImportPartidaOpen}
           onClose={() => { setIsImportPartidaOpen(false); setInsertAfterPartidaId(null); }}

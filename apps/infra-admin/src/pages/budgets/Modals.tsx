@@ -3315,73 +3315,353 @@ export const FormulaPolinomicaModal: React.FC<{
   );
 };
 
-// Catalogue modals
+export interface UnifiedIndex {
+  codigo: string;
+  nombre: string;
+}
+
+export const UNIFIED_INDEXES_LIST: UnifiedIndex[] = [
+  { codigo: '01', nombre: 'Aceite y lubricante' },
+  { codigo: '02', nombre: 'Acero de construcción liso' },
+  { codigo: '03', nombre: 'Acero de construcción corrugado' },
+  { codigo: '04', nombre: 'Agregado fino' },
+  { codigo: '05', nombre: 'Agregado grueso' },
+  { codigo: '06', nombre: 'Alambre y cable de cobre desnudo' },
+  { codigo: '07', nombre: 'Alambre y cable tipo TW, THW, LSOH' },
+  { codigo: '08', nombre: 'Alambre y cable tipo WP, CPI' },
+  { codigo: '09', nombre: 'Alcantarilla metálica y guardavías' },
+  { codigo: '10', nombre: 'Aparato sanitario con grifería' },
+  { codigo: '11', nombre: 'Artefacto de alumbrado exterior' },
+  { codigo: '12', nombre: 'Artefacto de alumbrado interior' },
+  { codigo: '13', nombre: 'Asfalto' },
+  { codigo: '14', nombre: 'Baldosa acústica' },
+  { codigo: '16', nombre: 'Baldosa vinílica y PVC' },
+  { codigo: '17', nombre: 'Bloque y ladrillo' },
+  { codigo: '18', nombre: 'Cable telefónico y de red' },
+  { codigo: '19', nombre: 'Cable NYY, N2XY, NPT, N2XOH, N2XSY' },
+  { codigo: '20', nombre: 'Cemento asfáltico' },
+  { codigo: '21', nombre: 'Cemento Portland e hidráulico' },
+  { codigo: '24', nombre: 'Cerámica y porcelanato' },
+  { codigo: '26', nombre: 'Cerrajería' },
+  { codigo: '27', nombre: 'Detonante' },
+  { codigo: '28', nombre: 'Dinamita' },
+  { codigo: '30', nombre: 'Dólar más inflación mercado USA' },
+  { codigo: '31', nombre: 'Prefabricado de concreto' },
+  { codigo: '32', nombre: 'Flete terrestre' },
+  { codigo: '33', nombre: 'Flete aéreo' },
+  { codigo: '34', nombre: 'Gasolina' },
+  { codigo: '37', nombre: 'Herramienta manual' },
+  { codigo: '38', nombre: 'Hormigón' },
+  { codigo: '39', nombre: 'Índice General de Precios al Consumidor (INEI)' },
+  { codigo: '43', nombre: 'Madera en tiras para piso / Tornillo' },
+  { codigo: '44', nombre: 'Madera terciada para encofrado y carpintería' },
+  { codigo: '47', nombre: 'Mano de obra (incluye leyes sociales)' },
+  { codigo: '48', nombre: 'Maquinaria y equipo de construcción liviano' },
+  { codigo: '49', nombre: 'Maquinaria y equipo de construcción pesado' },
+  { codigo: '50', nombre: 'Marco y tapa de fierro' },
+  { codigo: '51', nombre: 'Perfil de acero al carbono' },
+  { codigo: '52', nombre: 'Perfil de aluminio' },
+  { codigo: '53', nombre: 'Petróleo diésel' },
+  { codigo: '54', nombre: 'Pintura látex' },
+  { codigo: '55', nombre: 'Pintura temple' },
+  { codigo: '56', nombre: 'Plancha de acero LAC' },
+  { codigo: '57', nombre: 'Plancha de acero LAF' },
+  { codigo: '59', nombre: 'Plancha de fibrocemento y yeso' },
+  { codigo: '60', nombre: 'Plancha de poliuretano, poliestireno y termoaislante' },
+  { codigo: '61', nombre: 'Plancha galvanizada' },
+  { codigo: '62', nombre: 'Poste de concreto' },
+  { codigo: '65', nombre: 'Tubería de acero negro y/o galvanizado' },
+  { codigo: '66', nombre: 'Tubería de PVC para la red de agua potable y alcantarillado' },
+  { codigo: '68', nombre: 'Tubería de cobre' },
+  { codigo: '71', nombre: 'Tubería de hierro fundido y dúctil' },
+  { codigo: '72', nombre: 'Tubería de PVC para redes interiores' },
+  { codigo: '77', nombre: 'Válvula de bronce y latón' },
+  { codigo: '78', nombre: 'Válvula de hierro y acero' },
+  { codigo: '79', nombre: 'Vidrio' },
+  { codigo: '80', nombre: 'Concreto premezclado' },
+  { codigo: '81', nombre: 'Aditivo de concreto y similar' },
+  { codigo: '82', nombre: 'Alambre y cable de aluminio' },
+  { codigo: '83', nombre: 'Implemento y accesorio de seguridad' }
+];
+
 export const CatalogoInsumosModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   catalogoInsumos: any[];
+  onSaveInsumo: (item: any) => void;
+  onDeleteInsumo: (key: string) => void;
   ciSearchTerm: string;
   setCiSearchTerm: (v: string) => void;
   ciSelectedTipo: string;
   setCiSelectedTipo: (v: string) => void;
-  onAddFromCatalog: (ins: any) => void;
-}> = ({ isOpen, onClose, catalogoInsumos, ciSearchTerm, setCiSearchTerm, ciSelectedTipo, setCiSelectedTipo, onAddFromCatalog }) => {
+  onAddFromCatalog?: (ins: any) => void;
+}> = ({
+  isOpen,
+  onClose,
+  catalogoInsumos,
+  onSaveInsumo,
+  onDeleteInsumo,
+  ciSearchTerm,
+  setCiSearchTerm,
+  ciSelectedTipo,
+  setCiSelectedTipo
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  const [formCodigo, setFormCodigo] = useState('');
+  const [formNombre, setFormNombre] = useState('');
+  const [formUnidad, setFormUnidad] = useState('UND');
+  const [formTipo, setFormTipo] = useState('MATERIAL');
+  const [formPrecio, setFormPrecio] = useState<number>(0);
+  const [formIU, setFormIU] = useState('39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)');
+
   const filtered = catalogoInsumos.filter(item => {
-    const matchesSearch = item.nombre.toLowerCase().includes(ciSearchTerm.toLowerCase());
+    const matchesSearch = item.nombre.toLowerCase().includes(ciSearchTerm.toLowerCase()) ||
+                          (item.codigo && item.codigo.toLowerCase().includes(ciSearchTerm.toLowerCase()));
     const matchesTipo = ciSelectedTipo === 'TODOS' || item.tipo === ciSelectedTipo;
     return matchesSearch && matchesTipo;
   });
 
+  const openCreateForm = () => {
+    setEditingItem(null);
+    setFormCodigo('02' + Math.floor(10000000 + Math.random() * 90000000).toString());
+    setFormNombre('');
+    setFormUnidad('UND');
+    setFormTipo('MATERIAL');
+    setFormPrecio(0);
+    setFormIU('39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)');
+    setIsEditing(true);
+  };
+
+  const openEditForm = (item: any) => {
+    setEditingItem(item);
+    setFormCodigo(item.codigo || '');
+    setFormNombre(item.nombre || '');
+    setFormUnidad(item.unidad || 'UND');
+    setFormTipo(item.tipo || 'MATERIAL');
+    setFormPrecio(item.precio || item.pu || 0);
+    setFormIU(item.iu || '39 : INDICE DE PRECIOS AL CONSUMIDOR (INEI)');
+    setIsEditing(true);
+  };
+
+  const handleDuplicate = (item: any) => {
+    const newItem = {
+      ...item,
+      codigo: '02' + Math.floor(10000000 + Math.random() * 90000000).toString(),
+      nombre: `${item.nombre} (COPIA)`
+    };
+    onSaveInsumo(newItem);
+  };
+
+  const handleSaveForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formNombre.trim()) return;
+
+    const newItem = {
+      codigo: formCodigo || ('02' + Math.floor(10000000 + Math.random() * 90000000).toString()),
+      nombre: formNombre.trim().toUpperCase(),
+      unidad: formUnidad.trim().toUpperCase(),
+      tipo: formTipo,
+      precio: Number(formPrecio) || 0,
+      iu: formIU,
+      color: formTipo === 'MANO DE OBRA' ? '#f97316' : formTipo === 'MATERIAL' ? '#00f0ff' : '#8b5cf6'
+    };
+
+    onSaveInsumo(newItem);
+    setIsEditing(false);
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Catálogo de Insumos">
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <input
-            type="text"
-            placeholder="Buscar en catálogo..."
-            value={ciSearchTerm}
-            onChange={(e) => setCiSearchTerm(e.target.value)}
-            style={{ ...dgInputStyle, flexGrow: 1 }}
-          />
-          <select
-            value={ciSelectedTipo}
-            onChange={(e) => setCiSelectedTipo(e.target.value)}
-            style={{ ...dgInputStyle, width: '180px' }}
-          >
-            <option value="TODOS">Todos los tipos</option>
-            <option value="MATERIAL">Materiales</option>
-            <option value="MANO DE OBRA">Mano de Obra</option>
-            <option value="EQUIPO">Equipos</option>
-            <option value="SUB CONTRATO">Subcontratos</option>
-          </select>
-        </div>
-        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8rem' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
-                <th style={{ padding: '8px 12px' }}>Descripción</th>
-                <th style={{ padding: '8px 12px', width: '10%' }}>Unidad</th>
-                <th style={{ padding: '8px 12px', width: '20%' }}>Tipo</th>
-                <th style={{ padding: '8px 12px', width: '15%', textAlign: 'right' }}>Precio (S/)</th>
-                <th style={{ padding: '8px 12px', width: '10%', textAlign: 'center' }}>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '8px 12px' }}>{item.nombre}</td>
-                  <td style={{ padding: '8px 12px' }}>{item.unidad}</td>
-                  <td style={{ padding: '8px 12px' }}>{item.tipo}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>{item.precio.toFixed(2)}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                    <Button onClick={() => onAddFromCatalog(item)} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>Agregar</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <Modal isOpen={isOpen} onClose={onClose} title="Gestión del Catálogo de Insumos (CRUD)">
+      <div className="catalogo-insumos-container" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <style>{`
+          .modal-overlay:has(.catalogo-insumos-container) .modal-content {
+            width: min(1150px, calc(100vw - 32px)) !important;
+            max-width: 1150px !important;
+          }
+        `}</style>
+
+        {isEditing ? (
+          <form onSubmit={handleSaveForm} style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ margin: 0, color: 'var(--color-primary)', fontSize: '0.96rem', fontWeight: 800 }}>
+              {editingItem ? '✏️ Editar Insumo' : '✨ Crear Nuevo Insumo en Catálogo'}
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: '12px' }}>
+              <Input
+                label="Código *"
+                value={formCodigo}
+                onChange={(e) => setFormCodigo(e.target.value)}
+                required
+              />
+              <Input
+                label="Descripción / Insumo *"
+                value={formNombre}
+                onChange={(e) => setFormNombre(e.target.value)}
+                required
+              />
+              <Input
+                label="Unidad *"
+                value={formUnidad}
+                onChange={(e) => setFormUnidad(e.target.value)}
+                required
+              />
+              <Select
+                label="Tipo *"
+                value={formTipo}
+                onChange={(e: any) => setFormTipo(e.target.value)}
+                options={[
+                  { value: 'MATERIAL', label: 'Material' },
+                  { value: 'MANO DE OBRA', label: 'Mano de Obra' },
+                  { value: 'EQUIPO', label: 'Equipo / Herramienta' },
+                  { value: 'SUB CONTRATO', label: 'Subcontrato' }
+                ]}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                  Índice Unificado (IU - INEI) *
+                </label>
+                <select
+                  value={formIU}
+                  onChange={(e) => setFormIU(e.target.value)}
+                  style={dgInputStyle}
+                >
+                  {UNIFIED_INDEXES_LIST.map(iu => (
+                    <option key={iu.codigo} value={`${iu.codigo} : ${iu.nombre.toUpperCase()}`}>
+                      {iu.codigo} - {iu.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                type="number"
+                step="0.01"
+                label="Precio Unitario (S/) *"
+                value={formPrecio}
+                onChange={(e) => setFormPrecio(parseFloat(e.target.value) || 0)}
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" style={{ background: 'var(--grad-primary)', border: 'none', fontWeight: 800 }}>
+                Guardar Insumo
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {/* Top Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexGrow: 1 }}>
+                <input
+                  type="text"
+                  placeholder="Buscar insumo por descripción o código..."
+                  value={ciSearchTerm}
+                  onChange={(e) => setCiSearchTerm(e.target.value)}
+                  style={{ ...dgInputStyle, maxWidth: '400px' }}
+                />
+                <select
+                  value={ciSelectedTipo}
+                  onChange={(e) => setCiSelectedTipo(e.target.value)}
+                  style={{ ...dgInputStyle, width: '180px' }}
+                >
+                  <option value="TODOS">Todos los tipos</option>
+                  <option value="MATERIAL">Materiales</option>
+                  <option value="MANO DE OBRA">Mano de Obra</option>
+                  <option value="EQUIPO">Equipos</option>
+                  <option value="SUB CONTRATO">Subcontratos</option>
+                </select>
+              </div>
+
+              <Button
+                onClick={openCreateForm}
+                style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', border: 'none', color: '#fff', fontWeight: 800, minHeight: 40, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                + Crear Nuevo Insumo
+              </Button>
+            </div>
+
+            {/* Table View */}
+            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-surface)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '10px 14px', width: '12%' }}>Código</th>
+                    <th style={{ padding: '10px 14px' }}>Descripción</th>
+                    <th style={{ padding: '10px 14px', width: '8%' }}>Unidad</th>
+                    <th style={{ padding: '10px 14px', width: '14%' }}>Tipo</th>
+                    <th style={{ padding: '10px 14px', width: '28%' }}>Índice Unificado (IU)</th>
+                    <th style={{ padding: '10px 14px', width: '12%', textAlign: 'right' }}>Precio (S/)</th>
+                    <th style={{ padding: '10px 14px', width: '14%', textAlign: 'center' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '9px 14px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{item.codigo || '-'}</td>
+                      <td style={{ padding: '9px 14px', fontWeight: 700, color: 'var(--text-primary)' }}>{item.nombre}</td>
+                      <td style={{ padding: '9px 14px', color: 'var(--text-secondary)' }}>{item.unidad}</td>
+                      <td style={{ padding: '9px 14px' }}>
+                        <span style={{ fontSize: '0.74rem', padding: '2px 8px', borderRadius: '4px', background: item.tipo === 'MANO DE OBRA' ? 'rgba(249, 115, 22, 0.15)' : item.tipo === 'MATERIAL' ? 'rgba(0, 240, 255, 0.15)' : 'rgba(139, 92, 246, 0.15)', color: item.tipo === 'MANO DE OBRA' ? '#f97316' : item.tipo === 'MATERIAL' ? '#00f0ff' : '#a855f7', fontWeight: 700 }}>
+                          {item.tipo}
+                        </span>
+                      </td>
+                      <td style={{ padding: '9px 14px', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                        {item.iu || '39 - Índice General de Precios (INEI)'}
+                      </td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {(item.precio || item.pu || 0).toFixed(2)}
+                      </td>
+                      <td style={{ padding: '9px 14px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => openEditForm(item)}
+                            title="Editar insumo"
+                            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--color-primary)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(item)}
+                            title="Duplicar insumo"
+                            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            📋
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`¿Eliminar el insumo "${item.nombre}" del catálogo?`)) {
+                                onDeleteInsumo(item.codigo || item.nombre);
+                              }
+                            }}
+                            title="Eliminar insumo"
+                            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: '#ef4444', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
           <Button variant="secondary" onClick={onClose}>Cerrar</Button>
         </div>
       </div>
@@ -3393,66 +3673,374 @@ export const CatalogoPartidasModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   catalogoPartidas: any[];
+  catalogoInsumos: any[];
+  onSavePartida: (partida: any) => void;
+  onDeletePartida: (name: string) => void;
   cpSearchTerm: string;
   setCpSearchTerm: (v: string) => void;
   cpSelectedPartidaIndex: number;
   setCpSelectedPartidaIndex: (v: number) => void;
-  onAddPartidaFromCatalog: (partida: any) => void;
-}> = ({ isOpen, onClose, catalogoPartidas, cpSearchTerm, setCpSearchTerm, cpSelectedPartidaIndex, setCpSelectedPartidaIndex, onAddPartidaFromCatalog }) => {
+  onAddPartidaFromCatalog?: (partida: any) => void;
+}> = ({
+  isOpen,
+  onClose,
+  catalogoPartidas,
+  catalogoInsumos,
+  onSavePartida,
+  onDeletePartida,
+  cpSearchTerm,
+  setCpSearchTerm,
+  cpSelectedPartidaIndex,
+  setCpSelectedPartidaIndex,
+  onAddPartidaFromCatalog
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPartida, setEditingPartida] = useState<any>(null);
+
+  const [formNombre, setFormNombre] = useState('');
+  const [formUnidad, setFormUnidad] = useState('M2');
+  const [formRendimiento, setFormRendimiento] = useState<number>(1);
+  const [formInsumos, setFormInsumos] = useState<any[]>([]);
+
+  const openCreateForm = () => {
+    setEditingPartida(null);
+    setFormNombre('');
+    setFormUnidad('M2');
+    setFormRendimiento(1);
+    setFormInsumos([]);
+    setIsEditing(true);
+  };
+
+  const openEditForm = (p: any) => {
+    setEditingPartida(p);
+    setFormNombre(p.nombre || '');
+    setFormUnidad(p.unidad || 'M2');
+    setFormRendimiento(p.rendimiento || 1);
+    setFormInsumos(p.insumos || []);
+    setIsEditing(true);
+  };
+
+  const handleDuplicate = (p: any) => {
+    const newP = {
+      ...p,
+      nombre: `${p.nombre} (COPIA)`
+    };
+    onSavePartida(newP);
+  };
+
+  const handleSaveForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formNombre.trim()) return;
+
+    let mo = 0, mt = 0, eq = 0, sc = 0;
+    formInsumos.forEach(ins => {
+      const val = ins.parcial || (ins.pu * (ins.cuadrilla || 1));
+      if (ins.tipo === 'MO') mo += val;
+      else if (ins.tipo === 'MT') mt += val;
+      else if (ins.tipo === 'EQ') eq += val;
+      else sc += val;
+    });
+
+    const newPartida = {
+      nombre: formNombre.trim().toUpperCase(),
+      unidad: formUnidad.trim().toUpperCase(),
+      rendimiento: Number(formRendimiento) || 1,
+      cu: mo + mt + eq + sc,
+      mo, mt, eq, sc, sp: 0,
+      insumos: formInsumos
+    };
+
+    onSavePartida(newPartida);
+    setIsEditing(false);
+  };
+
   const filtered = catalogoPartidas.filter(p => p.nombre.toLowerCase().includes(cpSearchTerm.toLowerCase()));
   const activePartida = filtered[cpSelectedPartidaIndex] || null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Catálogo de Partidas">
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <input
-          type="text"
-          placeholder="Buscar partida..."
-          value={cpSearchTerm}
-          onChange={(e) => setCpSearchTerm(e.target.value)}
-          style={dgInputStyle}
-        />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div style={{ border: '1px solid var(--border-color)', borderRadius: '4px', maxHeight: '300px', overflowY: 'auto' }}>
-            {filtered.map((p, idx) => (
-              <div
-                key={idx}
-                onClick={() => setCpSelectedPartidaIndex(idx)}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid var(--border-color)',
-                  background: cpSelectedPartidaIndex === idx ? 'rgba(0, 240, 255, 0.05)' : 'transparent',
-                  color: cpSelectedPartidaIndex === idx ? '#00f0ff' : 'var(--text-primary)',
-                  fontSize: '0.8rem'
-                }}
-              >
-                {p.nombre}
-              </div>
-            ))}
-          </div>
-          <div style={{ border: '1px solid var(--border-color)', borderRadius: '4px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {activePartida ? (
-              <>
-                <h4 style={{ color: 'var(--color-primary)', margin: 0, fontSize: '0.9rem' }}>{activePartida.nombre}</h4>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Unidad: {activePartida.unidad} | Rendimiento: {activePartida.rendimiento}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Análisis de Precios:</div>
-                <div style={{ flexGrow: 1, overflowY: 'auto', maxHeight: '180px' }}>
-                  {activePartida.insumos.map((ins: any, idx: number) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                      <span>{ins.nombre}</span>
-                      <span>S/ {ins.parcial?.toFixed(2) || (ins.pu * ins.cuadrilla).toFixed(2)}</span>
-                    </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Gestión del Catálogo de Partidas y APUs (CRUD)">
+      <div className="catalogo-partidas-container" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <style>{`
+          .modal-overlay:has(.catalogo-partidas-container) .modal-content {
+            width: min(1200px, calc(100vw - 32px)) !important;
+            max-width: 1200px !important;
+          }
+        `}</style>
+
+        {isEditing ? (
+          <form onSubmit={handleSaveForm} style={{ background: 'var(--modal-panel-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ margin: 0, color: 'var(--color-primary)', fontSize: '0.96rem', fontWeight: 800 }}>
+              {editingPartida ? '✏️ Editar Partida en Catálogo' : '✨ Crear Nueva Partida en Catálogo'}
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr', gap: '12px' }}>
+              <Input
+                label="Nombre de la Partida *"
+                value={formNombre}
+                onChange={(e) => setFormNombre(e.target.value)}
+                required
+              />
+              <Input
+                label="Unidad *"
+                value={formUnidad}
+                onChange={(e) => setFormUnidad(e.target.value)}
+                required
+              />
+              <Input
+                type="number"
+                step="0.01"
+                label="Rendimiento *"
+                value={formRendimiento}
+                onChange={(e) => setFormRendimiento(parseFloat(e.target.value) || 1)}
+                required
+              />
+            </div>
+
+            {/* APU Breakdown Editor Table */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>Análisis de Precios Unitarios (APU)</strong>
+                <select
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    const insItem = catalogoInsumos.find(x => x.nombre === e.target.value);
+                    if (insItem) {
+                      setFormInsumos(prev => [...prev, {
+                        nombre: insItem.nombre,
+                        unidad: insItem.unidad,
+                        cuadrilla: 1,
+                        pu: insItem.precio || insItem.pu || 0,
+                        tipo: insItem.tipo === 'MANO DE OBRA' ? 'MO' : insItem.tipo === 'MATERIAL' ? 'MT' : insItem.tipo === 'EQUIPO' ? 'EQ' : 'SC'
+                      }]);
+                    }
+                    e.target.value = '';
+                  }}
+                  style={{ ...dgInputStyle, width: '260px', padding: '6px 10px', fontSize: '0.8rem' }}
+                >
+                  <option value="">+ Agregar Insumo desde Catálogo...</option>
+                  {catalogoInsumos.map(ins => (
+                    <option key={ins.nombre} value={ins.nombre}>{ins.nombre} ({ins.unidad})</option>
                   ))}
-                </div>
-                <Button onClick={() => onAddPartidaFromCatalog(activePartida)} style={{ background: 'var(--color-primary)', border: 'none', color: 'var(--text-on-primary)', fontWeight: 'bold' }}>Agregar al presupuesto</Button>
-              </>
-            ) : (
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '30px' }}>Seleccione una partida del catálogo.</div>
-            )}
-          </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                </select>
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)' }}>
+                    <th style={{ padding: '8px' }}>Descripción</th>
+                    <th style={{ padding: '8px', width: '10%' }}>Tipo</th>
+                    <th style={{ padding: '8px', width: '10%' }}>Unidad</th>
+                    <th style={{ padding: '8px', width: '12%', textAlign: 'right' }}>Cuadrilla</th>
+                    <th style={{ padding: '8px', width: '14%', textAlign: 'right' }}>Precio (S/)</th>
+                    <th style={{ padding: '8px', width: '10%', textAlign: 'center' }}>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formInsumos.map((ins, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 600 }}>{ins.nombre}</td>
+                      <td style={{ padding: '6px 8px' }}>{ins.tipo}</td>
+                      <td style={{ padding: '6px 8px' }}>{ins.unidad}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={ins.cuadrilla || 1}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setFormInsumos(prev => prev.map((x, idx) => idx === i ? { ...x, cuadrilla: val } : x));
+                          }}
+                          style={{ width: '70px', textAlign: 'right', background: 'var(--modal-input-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', padding: '2px 6px' }}
+                        />
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={ins.pu || 0}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setFormInsumos(prev => prev.map((x, idx) => idx === i ? { ...x, pu: val } : x));
+                          }}
+                          style={{ width: '80px', textAlign: 'right', background: 'var(--modal-input-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px', padding: '2px 6px' }}
+                        />
+                      </td>
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setFormInsumos(prev => prev.filter((_, idx) => idx !== i))}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                        >
+                          ❌
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+              <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" style={{ background: 'var(--grad-primary)', border: 'none', fontWeight: 800 }}>
+                Guardar Partida
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {/* Top Toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <input
+                type="text"
+                placeholder="Buscar partida por nombre..."
+                value={cpSearchTerm}
+                onChange={(e) => setCpSearchTerm(e.target.value)}
+                style={{ ...dgInputStyle, maxWidth: '400px' }}
+              />
+
+              <Button
+                onClick={openCreateForm}
+                style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', border: 'none', color: '#fff', fontWeight: 800, minHeight: 40, padding: '0 18px', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                + Crear Nueva Partida
+              </Button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '16px' }}>
+              {/* Partidas List */}
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', maxHeight: '420px', overflowY: 'auto', background: 'var(--bg-surface)' }}>
+                {filtered.map((p, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setCpSelectedPartidaIndex(idx)}
+                    style={{
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border-color)',
+                      background: cpSelectedPartidaIndex === idx ? 'rgba(0, 240, 255, 0.08)' : 'transparent',
+                      color: cpSelectedPartidaIndex === idx ? 'var(--color-primary)' : 'var(--text-primary)',
+                      fontSize: '0.84rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div>
+                      <strong style={{ display: 'block', marginBottom: '2px' }}>{p.nombre}</strong>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Und: {p.unidad} | CU: S/ {(p.cu || 0).toFixed(2)}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openEditForm(p); }}
+                        title="Editar partida"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleDuplicate(p); }}
+                        title="Duplicar partida"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                      >
+                        📋
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`¿Eliminar la partida "${p.nombre}" del catálogo?`)) {
+                            onDeletePartida(p.nombre);
+                          }
+                        }}
+                        title="Eliminar partida"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* APU Breakdown View (Similar al panel inferior de análisis de costos) */}
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-surface)' }}>
+                {activePartida ? (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                      <div>
+                        <h4 style={{ color: 'var(--color-primary)', margin: '0 0 4px 0', fontSize: '1rem', fontWeight: 800 }}>{activePartida.nombre}</h4>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          Unidad: <strong>{activePartida.unidad}</strong> | Rendimiento: <strong>{activePartida.rendimiento}</strong> / Día
+                        </span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Costo Unitario (CU)</span>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-primary)' }}>S/ {(activePartida.cu || 0).toFixed(2)}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      📊 Desglose de Análisis de Precios Unitarios (APU)
+                    </div>
+
+                    {/* Table View matching APU bottom bar */}
+                    <div style={{ flexGrow: 1, overflowY: 'auto', maxHeight: '280px', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                            <th style={{ padding: '8px 10px' }}>Descripción del Insumo</th>
+                            <th style={{ padding: '8px 10px', width: '10%' }}>Tipo</th>
+                            <th style={{ padding: '8px 10px', width: '10%' }}>Und</th>
+                            <th style={{ padding: '8px 10px', width: '14%', textAlign: 'right' }}>Cuadrilla</th>
+                            <th style={{ padding: '8px 10px', width: '16%', textAlign: 'right' }}>P.U. (S/)</th>
+                            <th style={{ padding: '8px 10px', width: '18%', textAlign: 'right' }}>Parcial (S/)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(activePartida.insumos || []).map((ins: any, idx: number) => {
+                            const val = ins.parcial || (ins.pu * (ins.cuadrilla || 1));
+                            return (
+                              <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--text-primary)' }}>{ins.nombre}</td>
+                                <td style={{ padding: '7px 10px' }}>
+                                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: ins.tipo === 'MO' ? 'rgba(249, 115, 22, 0.15)' : ins.tipo === 'MT' ? 'rgba(0, 240, 255, 0.15)' : 'rgba(139, 92, 246, 0.15)', color: ins.tipo === 'MO' ? '#f97316' : ins.tipo === 'MT' ? '#00f0ff' : '#a855f7', fontWeight: 700 }}>
+                                    {ins.tipo}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '7px 10px', color: 'var(--text-secondary)' }}>{ins.unidad}</td>
+                                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'monospace' }}>{ins.cuadrilla || ins.cantidad || '-'}</td>
+                                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'monospace' }}>{(ins.pu || 0).toFixed(2)}</td>
+                                <td style={{ padding: '7px 10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-primary)' }}>{val.toFixed(2)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {onAddPartidaFromCatalog && (
+                      <Button onClick={() => onAddPartidaFromCatalog(activePartida)} style={{ background: 'var(--grad-primary)', border: 'none', color: '#fff', fontWeight: 800, marginTop: '4px' }}>
+                        ➕ Insertar esta Partida en el Presupuesto Activo
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.84rem', textAlign: 'center', padding: '50px 20px' }}>
+                    Selecciona una partida del catálogo a la izquierda para inspeccionar o editar su desglose de APU.
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
           <Button variant="secondary" onClick={onClose}>Cerrar</Button>
         </div>
       </div>
